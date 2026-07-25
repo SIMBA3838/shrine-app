@@ -71,7 +71,7 @@
     "#wcMypage{position:fixed;inset:0;z-index:290;background:"+C.bg+";overflow-y:auto;-webkit-overflow-scrolling:touch;display:none;font-family:'Shippori Mincho','Noto Serif JP',serif;color:"+C.text+";line-height:1.6;-webkit-font-smoothing:antialiased;}",
     "#wcMypage.show{display:block;animation:mpFade .45s ease;}",
     "@keyframes mpFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}",
-    ".mp-in{max-width:430px;margin:0 auto;padding-bottom:92px;}",
+    ".mp-in{max-width:430px;margin:0 auto;padding-bottom:32px;}",
     ".mp-hd{position:sticky;top:0;z-index:10;height:52px;background:rgba(248,246,242,.9);backdrop-filter:saturate(180%) blur(14px);display:flex;align-items:center;justify-content:space-between;padding:0 12px;}",
     ".mp-hd .mp-t{font-size:17px;font-weight:600;letter-spacing:.02em;}",
     ".mp-ico{width:38px;height:38px;display:flex;align-items:center;justify-content:center;color:"+C.text+";cursor:pointer;border-radius:12px;}",
@@ -214,7 +214,7 @@
 
   function render(){
     var p=WABI_PROFILE;
-    page.innerHTML='<div class="mp-hd"><span class="mp-ico" id="mpBack">'+ic('back',C.text,22,2)+'</span><span class="mp-t">マイページ</span><span class="mp-ico" id="mpGear">'+ic('settings',C.text,20,1.7)+'</span></div><div class="mp-in">'+secProfile(p)+secExp(p)+secStats(p)+secAi(p)+secPosts()+secGoshuin(p)+secBadges(p)+'</div>'+secNav();
+    page.innerHTML='<div class="mp-hd"><span class="mp-ico" id="mpBack">'+ic('back',C.text,22,2)+'</span><span class="mp-t">マイページ</span><span class="mp-ico" id="mpGear">'+ic('settings',C.text,20,1.7)+'</span></div><div class="mp-in">'+secProfile(p)+secExp(p)+secStats(p)+secAi(p)+secPosts()+secGoshuin(p)+secBadges(p)+'</div>';
     document.getElementById('mpBack').onclick=function(){page.classList.remove('show');page.style.display='none';};
     document.getElementById('mpGear').onclick=function(){toast('設定は準備中です');};
     page.querySelectorAll('[data-tap]').forEach(function(el){el.addEventListener('click',function(){toast('この機能は準備中です');});});

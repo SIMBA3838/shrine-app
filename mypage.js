@@ -17,7 +17,7 @@
     stats:[
       {ic:'torii', label:'参拝した神社', value:28, unit:'社'},
       {ic:'book',  label:'御朱印',       value:36, unit:'体'},
-      {ic:'map',   label:'作成したルート', value:5,  unit:''},
+      {ic:'star',  label:'お気に入りの神社仏閣', value:5,  unit:''},
       {ic:'edit',  label:'投稿した記録',  value:12, unit:'件'},
       {ic:'users', label:'フォロー',      value:24, unit:'人'},
       {ic:'award', label:'フォロワー',    value:37, unit:'人'}
@@ -68,7 +68,7 @@
   var SH='0 8px 24px rgba(0,0,0,.06)';
   var css=document.createElement('style');
   css.textContent=[
-    "#wcMypage{position:fixed;inset:0;z-index:290;background:"+C.bg+";overflow-y:auto;-webkit-overflow-scrolling:touch;display:none;font-family:'Noto Sans JP',sans-serif;color:"+C.text+";line-height:1.6;-webkit-font-smoothing:antialiased;}",
+    "#wcMypage{position:fixed;inset:0;z-index:290;background:"+C.bg+";overflow-y:auto;-webkit-overflow-scrolling:touch;display:none;font-family:'Shippori Mincho','Noto Serif JP',serif;color:"+C.text+";line-height:1.6;-webkit-font-smoothing:antialiased;}",
     "#wcMypage.show{display:block;animation:mpFade .45s ease;}",
     "@keyframes mpFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}",
     ".mp-in{max-width:430px;margin:0 auto;padding-bottom:92px;}",
@@ -187,12 +187,12 @@
   function secPosts(){
     var posts=(typeof USER_POSTS!=='undefined'&&USER_POSTS.length)?USER_POSTS.slice(0,8):[];
     var body=posts.length?posts.map(function(p){
-      return '<div class="mp-post" data-tap="1"><img class="mp-post-img" src="'+esc(p.img||'')+'" loading="lazy" onerror="this.style.background=\'#d8cdbf\'"><div class="mp-post-m"><span>'+ic('heart',C.shrine,14,1.8)+(p.likes||0)+'</span><span>'+ic('msg',C.mute,14,1.8)+((p.comments&&p.comments.length)||0)+'</span></div></div>';
+      return '<div class="mp-post" data-tap="1"><img class="mp-post-img" src="'+esc(p.img||'')+'" loading="lazy" onerror="this.style.background=\'#d8cdbf\'"></div>';
     }).join(''):'<div style="font-size:14px;color:'+C.mute+';padding:4px 16px">まだ投稿がありません</div>';
     return '<div class="mp-sec"><div class="mp-sh"><div class="mp-h">最近の投稿</div><div class="mp-more" data-tap="1">すべて見る'+ic('cr',C.purple,14,2)+'</div></div><div class="mp-hs">'+body+'</div></div>';
   }
   function secGoshuin(p){
-    return '<div class="mp-sec"><div class="mp-sh"><div class="mp-h">御朱印帳</div><div class="mp-more" data-tap="1">すべて見る'+ic('cr',C.purple,14,2)+'</div></div><div class="mp-hs">'
+    return '<div class="mp-sec"><div class="mp-sh"><div class="mp-h">投稿した御朱印</div><div class="mp-more" data-tap="1">すべて見る'+ic('cr',C.purple,14,2)+'</div></div><div class="mp-hs">'
       + p.goshuinBook.map(function(n){return '<div class="mp-gsh" data-tap="1"><div class="mp-gsh-img" data-gsh="'+esc(n)+'"></div><div class="mp-gsh-l">'+n+'</div></div>';}).join('')+'</div></div>';
   }
   function secBadges(p){
@@ -208,7 +208,7 @@
 
   function render(){
     var p=WABI_PROFILE;
-    page.innerHTML='<div class="mp-hd"><span class="mp-ico" id="mpBack">'+ic('back',C.text,22,2)+'</span><span class="mp-t">マイページ</span><span class="mp-ico" id="mpGear">'+ic('settings',C.text,20,1.7)+'</span></div><div class="mp-in">'+secProfile(p)+secExp(p)+secStats(p)+secQuick(p)+secAi(p)+secPosts()+secGoshuin(p)+secBadges(p)+'</div>'+secNav();
+    page.innerHTML='<div class="mp-hd"><span class="mp-ico" id="mpBack">'+ic('back',C.text,22,2)+'</span><span class="mp-t">マイページ</span><span class="mp-ico" id="mpGear">'+ic('settings',C.text,20,1.7)+'</span></div><div class="mp-in">'+secProfile(p)+secExp(p)+secStats(p)+secAi(p)+secPosts()+secGoshuin(p)+secBadges(p)+'</div>'+secNav();
     document.getElementById('mpBack').onclick=function(){page.classList.remove('show');page.style.display='none';};
     document.getElementById('mpGear').onclick=function(){toast('設定は準備中です');};
     page.querySelectorAll('[data-tap]').forEach(function(el){el.addEventListener('click',function(){toast('この機能は準備中です');});});

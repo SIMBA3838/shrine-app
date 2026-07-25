@@ -15,12 +15,12 @@
     name:'巡礼者 太郎', title:'巡礼者', aiTitle:'いつもおだやか',
     level:19, expToNext:340, expPercent:62, coverShrine:'厳島神社', avatar:'',
     stats:[
-      {ic:'torii', label:'参拝した神社', value:28, unit:'社'},
-      {ic:'book',  label:'御朱印',       value:36, unit:'体'},
-      {ic:'star',  label:'お気に入りの神社仏閣', value:5,  unit:''},
-      {ic:'edit',  label:'投稿した記録',  value:12, unit:'件'},
-      {ic:'users', label:'フォロー',      value:24, unit:'人'},
-      {ic:'award', label:'フォロワー',    value:37, unit:'人'}
+      {ic:'torii', label:'参拝した神社', value:28, unit:'社', bg:'伏見稲荷大社'},
+      {ic:'book',  label:'御朱印',       value:36, unit:'体', bg:'春日大社'},
+      {ic:'star',  label:'お気に入りの神社仏閣', value:5,  unit:'', bg:'厳島神社'},
+      {ic:'edit',  label:'投稿した記録',  value:12, unit:'件', bg:'清水寺'},
+      {ic:'users', label:'フォロー',      value:24, unit:'人', bg:'明治神宮'},
+      {ic:'award', label:'フォロワー',    value:37, unit:'人', bg:'出雲大社'}
     ],
     quick:[
       {ic:'clock',   label:'参拝履歴'},
@@ -73,7 +73,7 @@
     "@keyframes mpFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}",
     ".mp-in{max-width:430px;margin:0 auto;padding-bottom:92px;}",
     ".mp-hd{position:sticky;top:0;z-index:10;height:52px;background:rgba(248,246,242,.9);backdrop-filter:saturate(180%) blur(14px);display:flex;align-items:center;justify-content:space-between;padding:0 12px;}",
-    ".mp-hd .mp-t{font-size:22px;font-weight:600;letter-spacing:.02em;}",
+    ".mp-hd .mp-t{font-size:17px;font-weight:600;letter-spacing:.02em;}",
     ".mp-ico{width:38px;height:38px;display:flex;align-items:center;justify-content:center;color:"+C.text+";cursor:pointer;border-radius:12px;}",
     ".mp-ico:active{background:#efe9e0;}",
     /* Hero */
@@ -98,13 +98,14 @@
     ".mp-exp-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,"+C.purple+","+C.gold+");width:0;transition:width 1.1s cubic-bezier(.22,.61,.36,1);}",
     /* Stats 2x3 */
     ".mp-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:24px 16px 0;}",
-    ".mp-stat{background:"+C.card+";border-radius:20px;box-shadow:"+SH+";height:110px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;transition:transform .18s ease;}",
+    ".mp-stat{position:relative;overflow:hidden;background:#3a3025 center/cover;border-radius:20px;box-shadow:"+SH+";height:110px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;transition:transform .18s ease;}",
+    ".mp-stat:after{content:'';position:absolute;inset:0;background:linear-gradient(160deg,rgba(30,22,16,.5),rgba(30,22,16,.72));}",
     ".mp-stat:active{transform:scale(.97);}",
-    ".mp-stat-top{display:flex;align-items:center;gap:10px;}",
-    ".mp-stat-ic{width:40px;height:40px;border-radius:14px;background:"+C.tint+";display:flex;align-items:center;justify-content:center;color:"+C.shrine+";flex:0 0 40px;}",
-    ".mp-stat-l{font-size:14px;color:"+C.mute+";font-weight:500;}",
-    ".mp-stat-v{font-size:28px;font-weight:700;line-height:1;color:"+C.text+";}",
-    ".mp-stat-v small{font-size:13px;font-weight:500;color:"+C.mute+";margin-left:3px;}",
+    ".mp-stat-top{position:relative;z-index:1;display:flex;align-items:center;gap:10px;}",
+    ".mp-stat-ic{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#fff;flex:0 0 38px;}",
+    ".mp-stat-l{font-size:13px;color:rgba(255,255,255,.92);font-weight:500;text-shadow:0 1px 6px rgba(0,0,0,.4);}",
+    ".mp-stat-v{position:relative;z-index:1;font-size:22px;font-weight:700;line-height:1;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.45);}",
+    ".mp-stat-v small{font-size:12px;font-weight:500;color:rgba(255,255,255,.85);margin-left:3px;}",
     /* section */
     ".mp-sec{margin:32px 16px 0;}",
     ".mp-sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}",
@@ -172,7 +173,7 @@
   }
   function secStats(p){
     return '<div class="mp-stats">'+p.stats.map(function(s){
-      return '<div class="mp-stat" data-tap="1"><div class="mp-stat-top"><div class="mp-stat-ic">'+ic(s.ic,C.shrine,22,1.8)+'</div><div class="mp-stat-l">'+s.label+'</div></div>'
+      return '<div class="mp-stat" data-tap="1" data-bg="'+esc(s.bg||'')+'"><div class="mp-stat-top"><div class="mp-stat-ic">'+ic(s.ic,'#fff',20,1.8)+'</div><div class="mp-stat-l">'+s.label+'</div></div>'
         + '<div class="mp-stat-v" data-count="'+s.value+'">0'+(s.unit?'<small>'+s.unit+'</small>':'')+'</div></div>';
     }).join('')+'</div>';
   }
@@ -213,10 +214,12 @@
     document.getElementById('mpGear').onclick=function(){toast('設定は準備中です');};
     page.querySelectorAll('[data-tap]').forEach(function(el){el.addEventListener('click',function(){toast('この機能は準備中です');});});
     setTimeout(function(){var f=document.getElementById('mpExpFill');if(f)f.style.width=p.expPercent+'%';page.querySelectorAll('.mp-stat-v[data-count]').forEach(function(el){countUp(el,+el.getAttribute('data-count'));});},140);
-    wikiImg([p.coverShrine,p.aiRec.shrine].concat(p.goshuinBook),function(map){
+    var statBgs=p.stats.map(function(s){return s.bg;}).filter(Boolean);
+    wikiImg([p.coverShrine,p.aiRec.shrine].concat(p.goshuinBook).concat(statBgs),function(map){
       var cv=document.getElementById('mpCover');if(cv&&map[p.coverShrine])cv.style.background='#3a3025 url('+map[p.coverShrine]+') center/cover';
       var ai=document.getElementById('mpAiImg');if(ai&&map[p.aiRec.shrine])ai.style.background='url('+map[p.aiRec.shrine]+') center/cover';
       page.querySelectorAll('[data-gsh]').forEach(function(el){var u=map[el.getAttribute('data-gsh')];if(u)el.style.background='url('+u+') center/cover';});
+      page.querySelectorAll('.mp-stat[data-bg]').forEach(function(el){var u=map[el.getAttribute('data-bg')];if(u)el.style.background='#3a3025 url('+u+') center/cover';});
     });
   }
   function toast(m){if(typeof showToast==='function')showToast(m);}

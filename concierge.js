@@ -1552,14 +1552,91 @@
   fixTours();
   setInterval(fixTours, 2000);
 
-  // ─── 「もっと見る」ページをTOPと同じ内容に統一（index側の古い関数を上書き） ───
+  // ─── 「もっと見る」各ページをツアー特集と同じ横型カードデザインに統一 ───
+  // 準備中の項目タップ時のフィードバック
+  window.wabiSoon = function(){
+    if (typeof showToast==='function') showToast('準備中です'); else alert('準備中です');
+  };
+  // ツアー特集と同じ tour-card 横型カードを生成する共通関数
+  function wabiTourCard(o){
+    var badge = o.badge ? '<div class="tour-img-badge">'+o.badge+'</div>' : '';
+    var pr    = o.pr ? '<span class="wabi-pr">PR</span>' : '';
+    var bg    = o.img ? ' style="background:url('+o.img+') center/cover"' : '';
+    if (o.link){
+      var partnerL = o.partner ? '<span style="font-size:9px;color:#a89a80;margin-left:6px">'+o.partner+'</span>' : '';
+      return '<div class="tour-card" style="position:relative">'+pr
+        + '<a href="'+o.link+'" target="_blank" rel="nofollow sponsored noopener" style="display:flex;text-decoration:none;color:inherit;width:100%">'
+        + '<div class="tour-img"'+bg+'>'+badge+'</div>'
+        + '<div class="tour-body"><div><div class="tour-title">'+o.title+'</div><div class="tour-route">'+o.sub+'</div></div>'
+        + '<div class="tour-bottom"><span class="wabi-rk-btn" style="padding:6px 14px">'+(o.btn||'見る')+'</span>'+partnerL+'</div>'
+        + '</div></a></div>';
+    }
+    var partnerR = o.partner ? '<span class="tour-partner">'+o.partner+'</span>' : '';
+    var onc = o.onclick ? ' onclick="'+o.onclick+'"' : '';
+    return '<div class="tour-card" style="position:relative"'+onc+'>'+pr
+      + '<div class="tour-img"'+bg+'>'+badge+'</div>'
+      + '<div class="tour-body"><div><div class="tour-title">'+o.title+'</div><div class="tour-route">'+o.sub+'</div></div>'
+      + '<div class="tour-bottom">'+(o.metaLeft||'<span></span>')+partnerR+'</div>'
+      + '</div></div>';
+  }
+
+  // ① 参拝のお供（楽天アフィリエイト・実リンク）
   window.openOsupplyList = function(){
     try{
-      var full = document.getElementById('osupplyGridFull');
-      if (full){ full.className='osupply-list'; full.setAttribute('data-wabi','1'); full.innerHTML = WABI_OSUPPLY.map(osupplyCardHtml).join(''); }
+      var el = document.getElementById('osupplyGridFull');
+      if (el){
+        el.style.cssText=''; el.className='tour-list'; el.setAttribute('data-wabi','1');
+        el.innerHTML = WABI_OSUPPLY.map(function(p){
+          return wabiTourCard({ img:p.img, badge:p.tag, title:p.name, sub:p.price, link:p.link, btn:'楽天で見る', partner:'楽天市場', pr:true });
+        }).join('');
+      }
     }catch(e){}
     if (typeof openOverlay==='function') openOverlay('pgOsupplyList');
   };
+
+  // ② 季節の行事・ライトアップ
+  window.openSeasonList = function(){
+    try{
+      var el = document.getElementById('seasonListFull');
+      if (el && typeof SEASONS!=='undefined'){
+        el.style.cssText=''; el.className='tour-list';
+        el.innerHTML = SEASONS.map(function(s){
+          return wabiTourCard({ img:s.img, badge:s.tag, title:s.title, sub:s.area+' ・ '+s.period, partner:'開催情報', onclick:'wabiSoon()' });
+        }).join('');
+      }
+    }catch(e){}
+    if (typeof openOverlay==='function') openOverlay('pgSeasonList');
+  };
+
+  // ④ 御朱印グッズ
+  window.openEcList = function(){
+    try{
+      var el = document.getElementById('ecGridFull');
+      if (el && typeof EC_ITEMS!=='undefined'){
+        el.style.cssText=''; el.className='tour-list';
+        el.innerHTML = EC_ITEMS.map(function(e){
+          return wabiTourCard({ img:e.img, badge:e.tag||'', title:e.title, sub:'御朱印グッズ',
+            metaLeft:'<span class="tour-price"><b>¥'+e.price+'</b></span>', onclick:'wabiSoon()' });
+        }).join('');
+      }
+    }catch(e){}
+    if (typeof openOverlay==='function') openOverlay('pgEcList');
+  };
+
+  // ⑥ 終活・供養のご相談
+  window.openShukatsuList = function(){
+    try{
+      var el = document.getElementById('shukatsuListFull');
+      if (el && typeof SHUKATSU!=='undefined'){
+        el.style.cssText=''; el.className='tour-list';
+        el.innerHTML = SHUKATSU.map(function(s){
+          return wabiTourCard({ img:s.img, badge:s.cat, title:s.title, sub:s.cta, partner:'無料資料請求', onclick:'wabiSoon()' });
+        }).join('');
+      }
+    }catch(e){}
+    if (typeof openOverlay==='function') openOverlay('pgShukatsuList');
+  };
+
   window.openTourList = function(){
     try{
       var full = document.getElementById('tourListFull');

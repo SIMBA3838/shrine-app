@@ -1552,6 +1552,11 @@
   fixTours();
   setInterval(fixTours, 2000);
 
+  // ─── 神社詳細：メイン画像下の2枚（別アングル写真＋御朱印）を本文幅に合わせて均等配置 ───
+  var cssSdDuo = document.createElement('style');
+  cssSdDuo.textContent = '#wabiSdDuo{margin-left:auto !important;margin-right:auto !important;max-width:500px !important;}';
+  document.head.appendChild(cssSdDuo);
+
   // ─── 「もっと見る」各ページをツアー特集と同じ横型カードデザインに統一 ───
   // 準備中の項目タップ時のフィードバック
   window.wabiSoon = function(){

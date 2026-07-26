@@ -1552,6 +1552,32 @@
   fixTours();
   setInterval(fixTours, 2000);
 
+  // ─── 「もっと見る」ページをTOPと同じ内容に統一（index側の古い関数を上書き） ───
+  window.openOsupplyList = function(){
+    try{
+      var full = document.getElementById('osupplyGridFull');
+      if (full){ full.className='osupply-list'; full.setAttribute('data-wabi','1'); full.innerHTML = WABI_OSUPPLY.map(osupplyCardHtml).join(''); }
+    }catch(e){}
+    if (typeof openOverlay==='function') openOverlay('pgOsupplyList');
+  };
+  window.openTourList = function(){
+    try{
+      var full = document.getElementById('tourListFull');
+      if (full){
+        full.setAttribute('data-wabi','1');
+        full.innerHTML = WABI_TOURS.map(tourCardHtml).join('');
+        var shrines = WABI_TOURS.map(function(t){ return t.shrine; });
+        wikiPhotosFor(shrines, function(map){
+          document.querySelectorAll('#tourListFull .tour-img[data-tourshrine]').forEach(function(el){
+            var u = map[el.getAttribute('data-tourshrine')];
+            if (u){ el.style.background = 'url('+u+') center/cover'; }
+          });
+        });
+      }
+    }catch(e){}
+    if (typeof openOverlay==='function') openOverlay('pgTourList');
+  };
+
 
 
   renderTopSection('テーマで巡るベスト', 'data/themes.json');

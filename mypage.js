@@ -97,8 +97,8 @@
     ".mp-exp-bar{height:8px;border-radius:6px;background:#e9e2d7;overflow:hidden;}",
     ".mp-exp-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,"+C.purple+","+C.gold+");width:0;transition:width 1.1s cubic-bezier(.22,.61,.36,1);}",
     /* Stats 2x3 */
-    ".mp-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:24px 16px 0;}",
-    ".mp-stat{position:relative;overflow:hidden;background:#3a3025 center/cover;border-radius:20px;box-shadow:"+SH+";height:150px;padding:16px;display:flex;flex-direction:column;cursor:pointer;transition:transform .18s ease;}",
+    ".mp-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:22px 10px 0;}",
+    ".mp-stat{position:relative;overflow:hidden;background:#3a3025 center/cover;border-radius:20px;box-shadow:"+SH+";height:178px;padding:16px;display:flex;flex-direction:column;cursor:pointer;transition:transform .18s ease;}",
     ".mp-stat:after{content:'';position:absolute;inset:0;background:linear-gradient(120deg,rgba(24,18,12,.72),rgba(24,18,12,.34) 55%,rgba(24,18,12,.6));}",
     ".mp-stat:active{transform:scale(.97);}",
     ".mp-stat-top{position:relative;z-index:1;display:flex;align-items:center;gap:10px;}",
@@ -188,7 +188,7 @@
     }).join('')+'</div></div>';
   }
   function secAi(p){
-    return '<div class="mp-ai" data-tap="1"><div class="mp-ai-l"><div class="mp-ai-h"><span class="t">'+ic('sparkle',C.purple,16,1.8)+'AIおすすめ</span><span class="mp-new">NEW</span></div><div class="mp-ai-txt">今日は <b>'+p.aiRec.shrine+'</b> がおすすめです</div><div class="mp-ai-tags">'+p.aiRec.tags.map(function(t){return '<span class="mp-ai-tag">'+t+'</span>';}).join('')+'</div></div><div class="mp-ai-img" id="mpAiImg"></div></div>';
+    return '<div class="mp-ai" id="mpAiCard"><div class="mp-ai-l"><div class="mp-ai-h"><span class="t">'+ic('sparkle',C.purple,16,1.8)+'AIおすすめ</span><span class="mp-new">NEW</span></div><div class="mp-ai-txt">今日は <b>'+p.aiRec.shrine+'</b> がおすすめです</div><div class="mp-ai-tags">'+p.aiRec.tags.map(function(t){return '<span class="mp-ai-tag">'+t+'</span>';}).join('')+'</div></div><div class="mp-ai-img" id="mpAiImg"></div></div>';
   }
   function secPosts(){
     var posts=(typeof USER_POSTS!=='undefined'&&USER_POSTS.length)?USER_POSTS.slice(0,8):[];
@@ -212,12 +212,17 @@
   var page=document.createElement('div'); page.id='wcMypage'; document.body.appendChild(page);
   function countUp(el,to){var t0=null,dur=850;function step(ts){if(!t0)t0=ts;var k=Math.min(1,(ts-t0)/dur),e=1-Math.pow(1-k,3);el.firstChild.nodeValue=Math.round(e*to);if(k<1)requestAnimationFrame(step);}requestAnimationFrame(step);}
 
+  function getFavs(){ try{ return JSON.parse(localStorage.getItem('wabiFavorites')||'[]'); }catch(e){ return []; } }
   function render(){
     var p=WABI_PROFILE;
-    page.innerHTML='<div class="mp-hd"><span class="mp-ico" id="mpBack">'+ic('back',C.text,22,2)+'</span><span class="mp-t">マイページ</span><span class="mp-ico" id="mpGear">'+ic('settings',C.text,20,1.7)+'</span></div><div class="mp-in">'+secProfile(p)+secExp(p)+secStats(p)+secAi(p)+secPosts()+secGoshuin(p)+secBadges(p)+'</div>';
+    // お気に入り件数をlocalStorageから反映
+    try{ var favs=getFavs(); var fs=p.stats.filter(function(s){return s.label==='お気に入りの神社仏閣';})[0]; if(fs) fs.value=favs.length; }catch(e){}
+    page.innerHTML='<div class="mp-hd"><span class="mp-ico" id="mpBack">'+ic('back',C.text,22,2)+'</span><span class="mp-t">マイページ</span><span class="mp-ico"></span></div><div class="mp-in">'+secProfile(p)+secExp(p)+secStats(p)+secAi(p)+secPosts()+secGoshuin(p)+secBadges(p)+'</div>';
     document.getElementById('mpBack').onclick=function(){page.classList.remove('show');page.style.display='none';};
-    document.getElementById('mpGear').onclick=function(){toast('設定は準備中です');};
     page.querySelectorAll('[data-tap]').forEach(function(el){el.addEventListener('click',function(){toast('この機能は準備中です');});});
+    // AIおすすめ神社をタップ → 神社詳細ページを開く
+    var aiCard=document.getElementById('mpAiCard');
+    if(aiCard) aiCard.addEventListener('click',function(){ openAiShrine(p.aiRec.shrine); });
     setTimeout(function(){var f=document.getElementById('mpExpFill');if(f)f.style.width=p.expPercent+'%';page.querySelectorAll('.mp-stat-v[data-count]').forEach(function(el){countUp(el,+el.getAttribute('data-count'));});},140);
     var statBgs=p.stats.map(function(s){return s.bg;}).filter(Boolean);
     wikiImg([p.coverShrine,p.aiRec.shrine].concat(p.goshuinBook).concat(statBgs),function(map){
@@ -228,6 +233,16 @@
     });
   }
   function toast(m){if(typeof showToast==='function')showToast(m);}
+  // AIおすすめの神社の詳細ページを開く（マイページを閉じてから遷移）
+  function openAiShrine(name){
+    var db=(typeof SHRINES!=='undefined'&&SHRINES)?SHRINES:[];
+    var s=db.filter(function(x){return x.name===name;})[0]
+        || db.filter(function(x){return x.name&&(x.name.indexOf(name)>=0||name.indexOf(x.name)>=0);})[0]
+        || {name:name, deity:'—'};
+    page.classList.remove('show'); page.style.display='none';
+    if(typeof window.openShrineDetail==='function') window.openShrineDetail(s);
+    else toast('詳細ページを開けませんでした');
+  }
   window.openWabiMypage=function(){render();page.style.display='block';requestAnimationFrame(function(){page.classList.add('show');});page.scrollTop=0;};
 
   function hookMenu(){

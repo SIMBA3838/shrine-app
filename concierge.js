@@ -2338,9 +2338,9 @@
       trivia:'東国三社は、江戸時代に「お伊勢参りの禊参り」として広く親しまれました。三社を巡って授かる「東国三社守」は、三角柱に各社の御神紋をおさめる形で知られています。',
       area:'鹿島神宮',
       eats:[
-        {cat:'和食', name:'亀甲堂', note:'香取神宮 表参道／名物 厄落としだんご', loc:'千葉県香取市'},
-        {cat:'そば', name:'栄亀庵', note:'香取神宮の門前で親しまれるそば処', loc:'千葉県香取市'},
-        {cat:'地ビール', name:'パラダイスビール', note:'鹿島神宮の御神水で仕込む鹿嶋の地ビール', loc:'茨城県鹿嶋市'}
+        {cat:'地ビール', name:'パラダイスビール', note:'鹿島神宮の御神水で仕込む鹿嶋の地ビール', loc:'茨城県鹿嶋市'},
+        {cat:'寿司', name:'鮨 治ろうや', note:'鹿島灘の地魚を握る鹿嶋の鮨処', loc:'茨城県鹿嶋市'},
+        {cat:'和食', name:'いなえ', note:'佐原の古民家を生かした food & cafe', loc:'千葉県香取市'}
       ],
       stays:[
         {cat:'ホテル', name:'鹿島セントラルホテル', note:'天然温泉施設を併設', loc:'茨城県神栖市'},
@@ -2354,12 +2354,14 @@
       trivia:'出雲大社だけを参拝して美保神社を訪れないことは、古くから「片参り」と呼ばれてきました。大国主大神と御子神・事代主神の両方をお参りして、はじめて満願とされます。',
       area:'出雲大社',
       eats:[
-        {cat:'そば', name:'出雲の國麺家 出雲大社神門通店', note:'神門通りの割子そば', loc:'島根県出雲市'},
+        {cat:'そば', name:'出雲そば 荒木屋', note:'出雲大社ちかくの老舗割子そば', loc:'島根県出雲市'},
+        {cat:'そば', name:'そば処 田中屋', note:'神門通りの出雲そば', loc:'島根県出雲市'},
         {cat:'そば', name:'奥出雲そば処 一福 出雲大社・神門通り店', note:'神門通り沿いの人気そば店', loc:'島根県出雲市'}
       ],
       stays:[
         {cat:'旅館', name:'いにしえの宿 佳雲', note:'出雲大社まで徒歩8分／天然温泉', loc:'島根県出雲市'},
-        {cat:'旅館', name:'日の出館', note:'出雲大社 正門前／国登録有形文化財', loc:'島根県出雲市'}
+        {cat:'旅館', name:'日の出館', note:'出雲大社 正門前／国登録有形文化財', loc:'島根県出雲市'},
+        {cat:'旅館', name:'旅館 美保館', note:'美保神社ちかく／本館は国登録有形文化財', loc:'島根県松江市美保関町'}
       ]
     },
     r3: {
@@ -2383,7 +2385,8 @@
       trivia:'熊野は古くから「甦りの地」と呼ばれ、身分を問わず人々が参詣したことから「蟻の熊野詣」と称されました。三山を結ぶ熊野古道は世界遺産に登録されています。',
       area:'熊野本宮大社',
       eats:[
-        {cat:'海鮮', name:'まぐろ三昧 那智', note:'勝浦名産の生まぐろ・熊野牛・くじら', loc:'和歌山県新宮市'}
+        {cat:'海鮮', name:'まぐろ三昧 那智', note:'勝浦名産の生まぐろ・熊野牛・くじら', loc:'和歌山県新宮市'},
+        {cat:'海鮮', name:'桂城', note:'那智勝浦の生まぐろ料理', loc:'和歌山県那智勝浦町'}
       ],
       stays:[
         {cat:'旅館', name:'あづまや', note:'日本最古の湯とされる湯の峰温泉', loc:'和歌山県田辺市本宮町'},
@@ -2425,9 +2428,9 @@
       trivia:'秩父神社・宝登山神社・三峯神社をあわせて「秩父三社」と呼びます。三峯神社は標高約1,100mの山中に鎮座し、狼を神使とする信仰で知られます。',
       area:'秩父神社',
       eats:[
-        {cat:'わらじかつ丼', name:'大島屋', note:'三峯神社 正参道の茶店／創業約140年', loc:'埼玉県秩父市'},
-        {cat:'わらじかつ丼', name:'安田屋 小鹿野店', note:'わらじカツ丼発祥の店', loc:'埼玉県小鹿野町'},
-        {cat:'そば', name:'そば処 大むら', note:'明治30年創業／秩父神社ちかく', loc:'埼玉県秩父市'}
+        {cat:'豚みそ丼', name:'豚みそ丼本舗 野さか', note:'秩父名物の豚みそ丼', loc:'埼玉県秩父市'},
+        {cat:'かき氷', name:'阿左美冷蔵 寶登山道店', note:'明治23年創業／宝登山神社の参道で天然氷', loc:'埼玉県長瀞町'},
+        {cat:'食堂', name:'秩父パリー食堂', note:'昭和2年築／国の登録有形文化財の食堂', loc:'埼玉県秩父市'}
       ],
       stays:[
         {cat:'旅館', name:'秩父温泉 ゆの宿 和どう', note:'秩父七湯のひとつ和銅鉱泉', loc:'埼玉県秩父市'},
@@ -2611,9 +2614,10 @@
       + '<button class="wpc-add" type="button">＋ ルートに追加</button></div>';
   }
 
-  function scrollSec(icon, title, items){
+  function scrollSec(icon, title, items, minRating){
     if (!items || !items.length) return '';
-    var h = '<div class="wrp-sec"><div class="wrp-h3"><span class="em">' + icon + '</span>' + title + '</div><div class="wrp-scroll">';
+    var h = '<div class="wrp-sec"><div class="wrp-h3"><span class="em">' + icon + '</span>' + title + '</div>'
+          + '<div class="wrp-scroll"' + (minRating ? ' data-min="' + minRating + '"' : '') + '>';
     h += items.map(placeCard).join('');
     h += '</div></div>';
     return h;
@@ -2633,8 +2637,12 @@
       svc.findPlaceFromQuery({ query: card.getAttribute('data-q'), fields: ['photos', 'rating', 'user_ratings_total'] }, function(res, stt){
         var ok = (stt === google.maps.places.PlacesServiceStatus.OK && res && res[0]);
         var rating = ok && res[0].rating ? res[0].rating : 0;
-        if (rating < 4) { card.style.display = 'none'; hideEmptySections(root); return; }
+        var sc = card.parentNode;
+        var min = sc && sc.getAttribute ? parseFloat(sc.getAttribute('data-min') || '0') : 0;
+        // 評価が取得できて、基準を下回るスポットは表示しない
+        if (min && rating && rating < min) { card.style.display = 'none'; hideEmptySections(root); return; }
         card.style.display = '';
+        if (!ok) { hideEmptySections(root); return; }
         if (res[0].photos && res[0].photos.length) {
           var im = card.querySelector('.im');
           if (im) { im.style.backgroundImage = 'url(' + res[0].photos[0].getUrl({ maxWidth: 400 }) + ')'; im.textContent = ''; }
@@ -2743,7 +2751,7 @@
     }
 
     // ⑦⑧ 周辺スポット・宿泊施設
-    h += scrollSec('📍', 'この近くのおすすめスポット', x.eats || []);
+    h += scrollSec('📍', 'この近くのおすすめスポット', x.eats || [], 4);
     h += scrollSec('🛏', 'この近くのおすすめ宿泊施設', x.stays || []);
 
     // ⑨ ページ最下部：このルートを作成

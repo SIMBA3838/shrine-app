@@ -2343,9 +2343,9 @@
         {cat:'和食', name:'いなえ', note:'佐原の古民家を生かした food & cafe', loc:'千葉県香取市'}
       ],
       stays:[
-        {cat:'ホテル', name:'鹿島セントラルホテル', note:'天然温泉施設を併設', loc:'茨城県神栖市'},
-        {cat:'ホテル', name:'亀の井ホテル 潮来', note:'水郷・潮来の宿', loc:'茨城県潮来市'},
-        {cat:'ホテル', name:'潮来ステーションホテル', note:'潮来駅ちかくの宿', loc:'茨城県潮来市'}
+        {cat:'ホテル', name:'佐原商家町ホテル NIPPONIA', note:'佐原の商家を生かした分散型ホテル', loc:'千葉県香取市'},
+        {cat:'宿', name:'和風の宿 ホステルコエド佐原', note:'小江戸・佐原の町家の宿', loc:'千葉県香取市'},
+        {cat:'ホテル', name:'ホテルルートイン鹿嶋', note:'鹿島神宮めぐりの拠点に', loc:'茨城県鹿嶋市'}
       ]
     },
     r2: {
@@ -2403,7 +2403,9 @@
         {cat:'和菓子', name:'新鶴本店', note:'明治6年創業／秋宮前の塩羊羹', loc:'長野県下諏訪町'}
       ],
       stays:[
-        {cat:'旅館', name:'ぬのはん', note:'上諏訪温泉／諏訪湖畔の創作会席の宿', loc:'長野県諏訪市'}
+        {cat:'旅館', name:'ぬのはん', note:'上諏訪温泉／諏訪湖畔の創作会席の宿', loc:'長野県諏訪市'},
+        {cat:'旅館', name:'上諏訪温泉しんゆ', note:'諏訪湖を望む上諏訪温泉の宿', loc:'長野県諏訪市'},
+        {cat:'旅館', name:'上諏訪温泉 浜の湯', note:'諏訪湖畔の露天風呂', loc:'長野県諏訪市'}
       ]
     },
     r6: {
@@ -2449,7 +2451,9 @@
         {cat:'和菓子', name:'葵家やきもち総本舗 上賀茂本店', note:'上賀茂神社 鳥居前のやきもち', loc:'京都府京都市北区'}
       ],
       stays:[
-        {cat:'旅館', name:'柚子屋旅館', note:'八坂神社前の京旅館', loc:'京都府京都市東山区'}
+        {cat:'旅館', name:'柚子屋旅館', note:'八坂神社前の京旅館', loc:'京都府京都市東山区'},
+        {cat:'旅館', name:'SOWAKA', note:'祇園・八坂の元料亭を生かした宿', loc:'京都府京都市東山区'},
+        {cat:'ホテル', name:'THE JUNEI HOTEL Kyoto', note:'京の設えでもてなす小規模ホテル', loc:'京都府京都市'}
       ]
     },
     r9: {
@@ -2477,9 +2481,7 @@
         {cat:'うどん', name:'あんだ堂', note:'4代続く製麺工場が営むうどん・そば', loc:'茨城県つくば市'}
       ],
       stays:[
-        {cat:'旅館', name:'筑波山温泉 双神の湯 筑波山江戸屋', note:'筑波山神社まで徒歩8分', loc:'茨城県つくば市'},
-        {cat:'ホテル', name:'筑波山京成ホテル', note:'最上階の露天風呂から関東平野を望む', loc:'茨城県つくば市'},
-        {cat:'ホテル', name:'筑波山ホテル青木屋', note:'180度のパノラマ温泉', loc:'茨城県つくば市'}
+        {cat:'ホテル', name:'ホテル一望', note:'筑波山中腹／関東平野を見晴らす宿', loc:'茨城県つくば市'}
       ]
     }
   };
@@ -2491,7 +2493,7 @@
   st.textContent = [
     "#wabiRoutePg{position:fixed;inset:0;z-index:310;background:"+C.bg+";display:none;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:'Shippori Mincho','Noto Serif JP',serif;color:"+C.text+";}",
     '#wabiRoutePg .wrp-in{max-width:500px;margin:0 auto;padding-bottom:48px;}',
-    '#wabiRoutePg .wrp-hero{position:relative;height:240px;background:#3a3025;background-size:cover;background-position:center top;background-repeat:no-repeat;}',
+    '#wabiRoutePg .wrp-hero{position:relative;width:100%;aspect-ratio:3/2;min-height:240px;background:#3a3025;background-size:cover;background-position:center center;background-repeat:no-repeat;}',
     '#wabiRoutePg .wrp-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.35) 0%,rgba(0,0,0,0) 38%,rgba(0,0,0,.62) 100%);}',
     '#wabiRoutePg .wrp-top{position:absolute;top:14px;left:16px;right:16px;display:flex;align-items:center;justify-content:space-between;z-index:2;}',
     '#wabiRoutePg .wrp-ic{width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.34);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;cursor:pointer;}',
@@ -2550,6 +2552,7 @@
     '#wabiRoutePg .wrp-added{margin-bottom:10px;}',
     '#wabiRoutePg .wrp-added .tt{font-size:12px;font-weight:700;color:'+C.sub+';margin-bottom:7px;}',
     "#wabiRoutePg .wrp-added .chip{display:inline-block;background:#EFEAF8;color:"+C.main+";font-size:12px;font-weight:600;padding:5px 11px;border-radius:12px;margin:0 6px 6px 0;}",
+    "#wabiRoutePg .wrp-h3 .wk{margin-left:auto;font-size:10.5px;font-weight:600;color:"+C.main+";background:#EFEAF8;padding:3px 9px;border-radius:10px;}",
     '#wabiRoutePg .wrp-note{font-size:11px;color:#9a9a9a;line-height:1.6;margin-top:10px;}'
   ].join('');
   document.head.appendChild(st);
@@ -2614,9 +2617,24 @@
       + '<button class="wpc-add" type="button">＋ ルートに追加</button></div>';
   }
 
+  // ── 毎週更新：週番号でリストを回転させ、その週の分を表示する ──
+  var SHOW = 3;   // 1週あたりに出す件数
+  function weekIndex(){
+    // 1970-01-05(月)を起点にした通し週番号
+    return Math.floor((Date.now() - 4 * 864e5) / (7 * 864e5));
+  }
+  function weeklyPick(arr){
+    if (!arr || !arr.length) return [];
+    var w = weekIndex(), n = arr.length;
+    var k = ((w % n) + n) % n;
+    return arr.slice(k).concat(arr.slice(0, k)).slice(0, SHOW);
+  }
+
   function scrollSec(icon, title, items, minRating){
-    if (!items || !items.length) return '';
-    var h = '<div class="wrp-sec"><div class="wrp-h3"><span class="em">' + icon + '</span>' + title + '</div>'
+    items = weeklyPick(items);
+    if (!items.length) return '';
+    var h = '<div class="wrp-sec"><div class="wrp-h3"><span class="em">' + icon + '</span>' + title
+          + '<span class="wk">毎週更新</span></div>'
           + '<div class="wrp-scroll"' + (minRating ? ' data-min="' + minRating + '"' : '') + '>';
     h += items.map(placeCard).join('');
     h += '</div></div>';
@@ -2752,7 +2770,7 @@
 
     // ⑦⑧ 周辺スポット・宿泊施設
     h += scrollSec('📍', 'この近くのおすすめスポット', x.eats || [], 4);
-    h += scrollSec('🛏', 'この近くのおすすめ宿泊施設', x.stays || []);
+    h += scrollSec('🛏', 'この近くのおすすめ宿泊施設', x.stays || [], 4);
 
     // ⑨ ページ最下部：このルートを作成
     h += '<div class="wrp-sec"><div class="wrp-added" id="wrpAdded"></div>'

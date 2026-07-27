@@ -2161,9 +2161,43 @@
   if (window.__wabiRankTop10) return;
   window.__wabiRankTop10 = true;
 
-  var TOP = 10;
+  var TOP = 10;       // トップページに出す件数
+  var MAX = 30;       // ランキング全体の件数（1位〜30位）
   var rest = [];      // 11位以降のカードHTML
   var restLabel = '';
+
+  // index.html 側の filter() は10件で切ってしまうため、30件まで出すよう差し替える
+  var _origFilter = window.filter;
+  window.filter = function(){
+    try {
+      var areaSel = document.getElementById('areaSel');
+      var sortSel = document.getElementById('sortSel');
+      if (!areaSel || !sortSel || typeof SHRINES === 'undefined' || typeof renderCard !== 'function') {
+        return _origFilter && _origFilter.apply(this, arguments);
+      }
+      var area = areaSel.value, sort = sortSel.value;
+      if (area === 'nearby') { if (typeof searchNearby === 'function') searchNearby(); return; }
+
+      var f = SHRINES.slice();
+      if (typeof currentType !== 'undefined' && currentType) f = f.filter(function(s){ return (s.type || 'shrine') === currentType; });
+      if (area !== 'all') f = f.filter(function(s){ return s.area === area; });
+      if (typeof currentTag !== 'undefined' && currentTag !== 'all') f = f.filter(function(s){ return s.tags && s.tags.indexOf(currentTag) >= 0; });
+      if (sort === 'visited') f = f.filter(function(s){ return s.visited; });
+      if (sort === 'rating') f.sort(function(a, b){ return b.rating - a.rating; });
+      if (sort === 'rank')   f.sort(function(a, b){ return a.rank - b.rank; });
+
+      var lbl = areaSel.options[areaSel.selectedIndex].text;
+      var top = f.slice(0, MAX);
+      var shown = Math.min(top.length, TOP);
+      document.getElementById('resCount').textContent = lbl + ' ' + shown + '件';
+      document.getElementById('rmeta').innerHTML = lbl + ' <span>' + shown + '件</span> のおすすめ神社';
+      document.getElementById('list').innerHTML = top.length
+        ? top.map(function(s, i){ return renderCard(s, i + 1); }).join('')
+        : '<div style="text-align:center;color:#aaa;padding:2rem 0;font-size:13px">このエリアの神社はまだありません</div>';
+    } catch(e) {
+      if (_origFilter) _origFilter.apply(this, arguments);
+    }
+  };
 
   var css = document.createElement('style');
   css.textContent = [
@@ -2246,7 +2280,7 @@
 
     rest = [];
     for (var j = TOP; j < cards.length; j++) {
-      rest.push(cards[j].outerHTML);
+      if (j < MAX) rest.push(cards[j].outerHTML);   // 11位〜30位だけ別ページへ
       cards[j].parentNode.removeChild(cards[j]);
     }
     restLabel = (TOP + 1) + '位〜' + (TOP + rest.length) + '位 のおすすめ神社';
@@ -2342,9 +2376,12 @@
       whoFor:['人生を仕切り直したい人','自然の力にふれたい人','世界遺産の道を歩きたい人','心身を癒したい人','静かに自分と向き合いたい人'],
       trivia:'熊野は古くから「甦りの地」と呼ばれ、身分を問わず人々が参詣したことから「蟻の熊野詣」と称されました。三山を結ぶ熊野古道は世界遺産に登録されています。',
       area:'熊野本宮大社',
-      eats:[],
+      eats:[
+        {cat:'海鮮', name:'まぐろ三昧 那智', note:'勝浦名産の生まぐろ・熊野牛・くじら', loc:'和歌山県新宮市'}
+      ],
       stays:[
-        {cat:'旅館', name:'あづまや', note:'日本最古の湯とされる湯の峰温泉', loc:'和歌山県田辺市本宮町'}
+        {cat:'旅館', name:'あづまや', note:'日本最古の湯とされる湯の峰温泉', loc:'和歌山県田辺市本宮町'},
+        {cat:'民宿', name:'民宿 瀧よし', note:'湯の峰温泉のかけ流し／地の食材の夕食', loc:'和歌山県田辺市本宮町'}
       ]
     },
     r5: {
@@ -2353,7 +2390,8 @@
       trivia:'諏訪大社には本殿がなく、山や樹木そのものを御神体とする古い信仰の形が残ります。四社すべてを参拝する「四社まいり」の習わしが今も受け継がれています。',
       area:'諏訪大社 上社本宮',
       eats:[
-        {cat:'うなぎ', name:'うなぎ 林屋', note:'1893年創業／諏訪のうなぎの名店', loc:'長野県下諏訪町'}
+        {cat:'うなぎ', name:'うなぎ 林屋', note:'1893年創業／諏訪のうなぎの名店', loc:'長野県下諏訪町'},
+        {cat:'和菓子', name:'新鶴本店', note:'明治6年創業／秋宮前の塩羊羹', loc:'長野県下諏訪町'}
       ],
       stays:[
         {cat:'旅館', name:'ぬのはん', note:'上諏訪温泉／諏訪湖畔の創作会席の宿', loc:'長野県諏訪市'}
@@ -2386,6 +2424,8 @@
         {cat:'そば', name:'そば処 大むら', note:'明治30年創業／秩父神社ちかく', loc:'埼玉県秩父市'}
       ],
       stays:[
+        {cat:'旅館', name:'秩父温泉 ゆの宿 和どう', note:'秩父七湯のひとつ和銅鉱泉', loc:'埼玉県秩父市'},
+        {cat:'旅館', name:'長生館', note:'長瀞・荒川沿いの温泉宿', loc:'埼玉県長瀞町'},
         {cat:'旅館', name:'須崎旅館', note:'秩父・小鹿野町の旅館', loc:'埼玉県小鹿野町'}
       ]
     },
@@ -2396,7 +2436,8 @@
       area:'八坂神社',
       eats:[
         {cat:'京料理', name:'二軒茶屋 中村楼', note:'八坂神社 境内の老舗', loc:'京都府京都市東山区'},
-        {cat:'京料理', name:'柚子屋旅館 一心居', note:'八坂神社ちかくの食事処', loc:'京都府京都市東山区'}
+        {cat:'和菓子', name:'神馬堂', note:'明治5年創業／上賀茂神社門前のやきもち', loc:'京都府京都市北区'},
+        {cat:'和菓子', name:'葵家やきもち総本舗 上賀茂本店', note:'上賀茂神社 鳥居前のやきもち', loc:'京都府京都市北区'}
       ],
       stays:[
         {cat:'旅館', name:'柚子屋旅館', note:'八坂神社前の京旅館', loc:'京都府京都市東山区'}
@@ -2412,14 +2453,20 @@
         {cat:'吉田のうどん', name:'麺許皆伝', note:'富士吉田を代表するうどん店', loc:'山梨県富士吉田市'},
         {cat:'吉田のうどん', name:'ふもとや', note:'ごぼうのきんぴらが名物', loc:'山梨県富士吉田市'}
       ],
-      stays:[]
+      stays:[
+        {cat:'ホテル', name:'富士山ステーションホテル', note:'富士山駅から徒歩2分', loc:'山梨県富士吉田市'},
+        {cat:'ホテル', name:'ハイランドリゾート ホテル&スパ', note:'ふじやま温泉に隣接', loc:'山梨県富士吉田市'}
+      ]
     },
     r10: {
       lead:'男体・女体、<br>ふたつの峰にのぼる',
       whoFor:['夫婦・カップルで訪れたい人','山歩きを楽しみたい人','縁結びを願う人','関東平野の眺めを見たい人','温泉もあわせて楽しみたい人'],
       trivia:'筑波山は男体山に伊弉諾尊、女体山に伊弉冉尊をお祀りし、ふたつの峰そのものが御神体です。『万葉集』にも詠まれ、「西の富士、東の筑波」と並び称されました。',
       area:'筑波山神社',
-      eats:[],
+      eats:[
+        {cat:'そば', name:'筑膳', note:'築100年の古民家／手打ち蕎麦と旬の山の幸', loc:'茨城県つくば市'},
+        {cat:'うどん', name:'あんだ堂', note:'4代続く製麺工場が営むうどん・そば', loc:'茨城県つくば市'}
+      ],
       stays:[
         {cat:'旅館', name:'筑波山温泉 双神の湯 筑波山江戸屋', note:'筑波山神社まで徒歩8分', loc:'茨城県つくば市'},
         {cat:'ホテル', name:'筑波山京成ホテル', note:'最上階の露天風呂から関東平野を望む', loc:'茨城県つくば市'},
@@ -2433,9 +2480,9 @@
   var C = { bg:'#FAF8F4', main:'#6E4BA8', gold:'#C8A14A', text:'#2D2D2D', sub:'#6F6F6F', card:'#FFF' };
   var st = document.createElement('style');
   st.textContent = [
-    "#wabiRoutePg{position:fixed;inset:0;z-index:310;background:"+C.bg+";display:none;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:'Noto Sans JP','Hiragino Sans',sans-serif;color:"+C.text+";}",
+    "#wabiRoutePg{position:fixed;inset:0;z-index:310;background:"+C.bg+";display:none;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:'Shippori Mincho','Noto Serif JP',serif;color:"+C.text+";}",
     '#wabiRoutePg .wrp-in{max-width:500px;margin:0 auto;padding-bottom:48px;}',
-    '#wabiRoutePg .wrp-hero{position:relative;height:240px;background:#3a3025 center/cover;}',
+    '#wabiRoutePg .wrp-hero{position:relative;height:240px;background:#3a3025;background-size:cover;background-position:center top;background-repeat:no-repeat;}',
     '#wabiRoutePg .wrp-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.35) 0%,rgba(0,0,0,0) 38%,rgba(0,0,0,.62) 100%);}',
     '#wabiRoutePg .wrp-top{position:absolute;top:14px;left:16px;right:16px;display:flex;align-items:center;justify-content:space-between;z-index:2;}',
     '#wabiRoutePg .wrp-ic{width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.34);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;cursor:pointer;}',
@@ -2448,7 +2495,7 @@
     '#wabiRoutePg .wrp-sec{margin-top:24px;}',
     '#wabiRoutePg .wrp-time{margin-top:-26px;position:relative;z-index:3;background:'+C.card+';border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.06);padding:16px 18px;display:flex;align-items:center;gap:10px;}',
     '#wabiRoutePg .wrp-time .lb{font-size:13px;color:'+C.sub+';font-weight:500;flex:1;}',
-    '#wabiRoutePg .wrp-time .vl{font-size:20px;font-weight:700;color:'+C.text+';}',
+    '#wabiRoutePg .wrp-time .vl{font-size:19px;font-weight:400;color:'+C.text+';}',
     '#wabiRoutePg .wrp-eyebrow{font-size:12px;font-weight:600;color:'+C.main+';letter-spacing:.06em;margin-bottom:8px;}',
     "#wabiRoutePg .wrp-h2{font-family:'Shippori Mincho','Noto Serif JP',serif;font-size:22px;font-weight:700;line-height:1.45;margin-bottom:14px;}",
     '#wabiRoutePg .wrp-p{font-size:15px;font-weight:400;line-height:1.7;color:'+C.text+';margin-bottom:14px;}',
@@ -2469,11 +2516,12 @@
     '#wabiRoutePg .wrp-tri .tx{font-size:13px;line-height:1.75;color:#4A4458;}',
     '#wabiRoutePg .wrp-cta{width:100%;background:'+C.main+';color:#fff;border:none;border-radius:16px;padding:16px;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;font-family:inherit;box-shadow:0 8px 24px rgba(110,75,168,.28);}',
     '#wabiRoutePg .wrp-cta:active{transform:scale(.99);}',
-    '#wabiRoutePg .wrp-gmap{display:block;text-align:center;margin-top:12px;font-size:13px;color:'+C.main+';font-weight:600;text-decoration:none;cursor:pointer;}',
+    "#wabiRoutePg .wrp-cta2{width:100%;margin-top:12px;height:56px;border-radius:28px;background:#5E3A8A;color:#fff;border:none;font-family:'Shippori Mincho',serif;font-size:16px;font-weight:700;letter-spacing:.06em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(94,58,138,.3);}",
+    "#wabiRoutePg .wrp-cta2:active{transform:scale(.99);}",
     '#wabiRoutePg .wrp-scroll{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;margin:0 -16px;padding-left:16px;padding-right:16px;-webkit-overflow-scrolling:touch;}',
     '#wabiRoutePg .wrp-scroll::-webkit-scrollbar{display:none;}',
     '#wabiRoutePg .wpc{flex:0 0 152px;width:152px;background:'+C.card+';border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.06);overflow:hidden;cursor:pointer;text-decoration:none;color:inherit;display:block;}',
-    '#wabiRoutePg .wpc .im{height:92px;display:flex;align-items:center;justify-content:center;font-size:26px;}',
+    '#wabiRoutePg .wpc .im{height:92px;display:flex;align-items:center;justify-content:center;font-size:26px;background-size:cover;background-position:center;}',
     '#wabiRoutePg .wpc .bd{padding:10px 11px 12px;}',
     '#wabiRoutePg .wpc .ct{font-size:11px;font-weight:600;color:'+C.sub+';}',
     '#wabiRoutePg .wpc .nm{font-size:13px;font-weight:700;line-height:1.4;margin:3px 0 5px;}',
@@ -2516,28 +2564,40 @@
   }
 
   function placeCard(p, i){
-    return '<a class="wpc" href="' + gmap(p.name + ' ' + (p.loc || '')) + '" target="_blank" rel="noopener">'
-      + '<div class="im" style="background:' + TINT[i % TINT.length] + '">' + catIcon(p.cat) + '</div>'
+    return '<a class="wpc" data-q="' + esc(p.name + ' ' + (p.loc || '')) + '" href="' + gmap(p.name + ' ' + (p.loc || '')) + '" target="_blank" rel="noopener">'
+      + '<div class="im" style="background-color:' + TINT[i % TINT.length] + '">' + catIcon(p.cat) + '</div>'
       + '<div class="bd"><div class="ct">' + esc(p.cat) + '</div>'
       + '<div class="nm">' + esc(p.name) + '</div>'
       + '<div class="nt">' + esc(p.note) + '</div>'
       + '<div class="lc">' + esc(p.loc) + '</div></div></a>';
   }
 
-  function moreCard(q, label){
-    return '<a class="wpc more" href="' + gmap(q) + '" target="_blank" rel="noopener">'
-      + '<div class="im">🔎</div>'
-      + '<div class="bd"><div class="ct">Googleマップ</div>'
-      + '<div class="nm">' + esc(label) + '</div>'
-      + '<div class="nt">この周辺をもっと探す</div></div></a>';
-  }
-
-  function scrollSec(icon, title, items, moreQ, moreLabel){
+  function scrollSec(icon, title, items){
+    if (!items || !items.length) return '';
     var h = '<div class="wrp-sec"><div class="wrp-h3"><span class="em">' + icon + '</span>' + title + '</div><div class="wrp-scroll">';
     h += items.map(placeCard).join('');
-    h += moreCard(moreQ, moreLabel);
     h += '</div></div>';
     return h;
+  }
+
+  // 店舗・宿の写真をGoogle Placesから読み込む
+  function fillPlacePhotos(root){
+    try {
+      if (!window.google || !google.maps || !google.maps.places) return;
+      var svc = new google.maps.places.PlacesService(document.createElement('div'));
+      root.querySelectorAll('.wpc[data-q]').forEach(function(card){
+        if (card.getAttribute('data-done')) return;
+        card.setAttribute('data-done', '1');
+        svc.findPlaceFromQuery({ query: card.getAttribute('data-q'), fields: ['photos'] }, function(res, stt){
+          if (stt === google.maps.places.PlacesServiceStatus.OK && res && res[0] && res[0].photos && res[0].photos.length) {
+            var im = card.querySelector('.im');
+            if (im) { im.style.backgroundImage = 'url(' + res[0].photos[0].getUrl({ maxWidth: 400 }) + ')'; im.textContent = ''; }
+          } else {
+            card.removeAttribute('data-done');
+          }
+        });
+      });
+    } catch(e){}
   }
 
   function render(r){
@@ -2590,13 +2650,13 @@
          +   '<div class="tx">' + esc(x.trivia) + '</div></div></div>';
     }
 
-    // ⑦ カスタムしたルートを作成
+    // ⑦ カスタムしたルートを作成 ／ このルートを選ぶ
     h += '<div class="wrp-sec"><button class="wrp-cta" id="wrpCta"><span>🗺</span>カスタムしたルートを作成</button>'
-       +   '<a class="wrp-gmap" id="wrpGmap">Googleマップでこのルート全体を開く ›</a></div>';
+       +   '<button class="wrp-cta2" id="wrpSelect">このルートを選ぶ →</button></div>';
 
     // ⑧⑨ 周辺スポット・宿泊施設
-    h += scrollSec('📍', 'この近くのおすすめスポット', x.eats || [], area + ' 周辺 グルメ', '周辺のグルメ');
-    h += scrollSec('🛏', 'この近くのおすすめ宿泊施設', x.stays || [], area + ' 周辺 宿泊', '周辺の宿');
+    h += scrollSec('📍', 'この近くのおすすめスポット', x.eats || []);
+    h += scrollSec('🛏', 'この近くのおすすめ宿泊施設', x.stays || []);
 
     h += '<div class="wrp-note">※ 掲載している店舗・宿泊施設はすべて実在の施設です。営業時間・定休日・料金は変わることがあるため、お出かけ前に公式情報をご確認ください。</div>';
     h += '</div>';
@@ -2611,9 +2671,12 @@
         else { var p = document.getElementById('pgAiRoute'); if (p) p.style.display = 'flex'; }
       } catch(e){}
     };
-    document.getElementById('wrpGmap').onclick = function(){
+    document.getElementById('wrpSelect').onclick = function(){
       if (typeof selectRoute === 'function') selectRoute(r.id);
     };
+    var inEl = document.getElementById('wrpIn');
+    fillPlacePhotos(inEl);
+    setTimeout(function(){ fillPlacePhotos(inEl); }, 1500);
     document.getElementById('wrpShare').onclick = function(){
       if (navigator.share) navigator.share({ title: r.name + ' - わびなび', url: location.href }).catch(function(){});
       else if (typeof showToast === 'function') showToast('このページのURLを共有できます');

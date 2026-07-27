@@ -2310,6 +2310,10 @@
     mo = new MutationObserver(trim);
     mo.observe(list, { childList: true });
   }
+  // 差し替えたfilterで一度描き直す（初期表示は10件で切られているため）
+  function refresh(){ try { if (typeof window.filter === 'function') window.filter(); } catch(e){} }
+  setTimeout(refresh, 200);
+  setTimeout(refresh, 1200);
   setTimeout(trim, 300);
   setTimeout(trim, 1500);
 })();

@@ -1964,3 +1964,105 @@
 
 // マイページを読み込む
 (function(){var s=document.createElement("script");s.src="mypage.js?v="+(window._wv||Date.now());document.body.appendChild(s);})();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：地図の初期表示範囲を「現在地から車で約30分圏」に
+   （2026-07-26 追加 / 従来は日本全体＝ズーム6で開いていた）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiMapScope) return;
+  window.__wabiMapScope = true;
+
+  var RADIUS_KM = 15;                               // 車で約30分 ≒ 半径15km
+  var FALLBACK  = { lat: 35.6812, lng: 139.7671 };  // 東京駅（位置情報が使えない時）
+  var LS_KEY    = 'wabiLastLoc';
+
+  function saveLoc(lat, lng){
+    try { localStorage.setItem(LS_KEY, lat + ',' + lng); } catch(e){}
+  }
+  function loadLoc(){
+    try {
+      var p  = (localStorage.getItem(LS_KEY) || '').split(',');
+      var la = parseFloat(p[0]), ln = parseFloat(p[1]);
+      if (isFinite(la) && isFinite(ln)) return { lat: la, lng: ln };
+    } catch(e){}
+    return null;
+  }
+
+  // 半径 km が画面に収まるズーム値を計算（端末の画面幅に自動対応）
+  function zoomForRadius(lat, km){
+    var cv = document.getElementById('mapCanvas');
+    var w  = (cv && cv.clientWidth)  || 390;
+    var h  = (cv && cv.clientHeight) || 480;
+    var px = Math.min(w, h);
+    var mppNeeded = (km * 2000) / px;                          // 直径(m) ÷ 画面(px)
+    var mppZero   = 156543.03392 * Math.cos(lat * Math.PI / 180);
+    var z = Math.log(mppZero / mppNeeded) / Math.LN2;           // 小数ズーム
+    if (!isFinite(z)) z = 11;
+    return Math.max(9, Math.min(14, Math.round(z * 10) / 10));
+  }
+
+  function setScope(c){
+    var m = window.mapInstance;
+    if (!m || !m.setZoom) return false;
+    try {
+      // 小数ズームを許可（端末幅ちょうどに合わせるため）
+      try { m.setOptions({ isFractionalZoomEnabled: true }); } catch(e){}
+      m.setCenter({ lat: c.lat, lng: c.lng });
+      m.setZoom(zoomForRadius(c.lat, RADIUS_KM));
+    } catch(e){ return false; }
+    return true;
+  }
+
+  // 地図生成直後は initMap 側のリサイズ処理で戻されるため、時間差で複数回打つ
+  function applyScope(c){
+    var tries = 0;
+    (function loop(){
+      if (setScope(c)) {
+        setTimeout(function(){ setScope(c); }, 600);
+        setTimeout(function(){ setScope(c); }, 1400);
+        return;
+      }
+      if (++tries < 30) setTimeout(loop, 200);
+    })();
+  }
+
+  // 表示範囲に合わせてDB神社のピンも広げる（従来は半径3kmのみ）
+  function repinAround(lat, lng){
+    try {
+      if (typeof SHRINES === 'undefined' || typeof placePins !== 'function') return;
+      if (typeof haversineDistance !== 'function') return;
+      var list = SHRINES.filter(function(s){
+        return s.lat && s.lng && haversineDistance(lat, lng, s.lat, s.lng) <= RADIUS_KM;
+      });
+      if (typeof clearMarkers === 'function') clearMarkers();
+      placePins(list);
+    } catch(e){}
+  }
+
+  // ① 現在地が取得できたとき（従来ズーム14＝半径約3km）
+  var _near = window.showShrinesNearLocation;
+  if (typeof _near === 'function') {
+    window.showShrinesNearLocation = function(lat, lng){
+      var r = _near.apply(this, arguments);
+      saveLoc(lat, lng);
+      repinAround(lat, lng);
+      applyScope({ lat: lat, lng: lng });
+      return r;
+    };
+  }
+
+  // ② 現在地が取れなかったとき（従来ズーム6＝日本全体）
+  var _all = window.showAllShrinesOnMap;
+  if (typeof _all === 'function') {
+    window.showAllShrinesOnMap = function(){
+      var r = _all.apply(this, arguments);
+      var c = (window.myLatLng && window.myLatLng.lat) ? window.myLatLng
+            : (loadLoc() || FALLBACK);
+      repinAround(c.lat, c.lng);
+      applyScope(c);
+      return r;
+    };
+  }
+})();

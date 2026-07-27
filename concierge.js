@@ -2066,3 +2066,86 @@
     };
   }
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：神社詳細の「いつか訪れたい」→「お気に入りに登録」
+   押すと localStorage('wabiFavorites') に保存／再度押すと解除。
+   マイページの「お気に入りの神社仏閣」件数に自動反映される。
+   （2026-07-27 追加 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiFav) return;
+  window.__wabiFav = true;
+
+  var LS   = 'wabiFavorites';
+  var GOLD = '#C9A24A';
+
+  function load(){
+    try { var a = JSON.parse(localStorage.getItem(LS) || '[]'); return Array.isArray(a) ? a : []; }
+    catch(e){ return []; }
+  }
+  function save(a){ try { localStorage.setItem(LS, JSON.stringify(a)); } catch(e){} }
+  function nameOf(x){ return (x && typeof x === 'object') ? (x.name || '') : String(x || ''); }
+  function indexOfName(a, n){
+    for (var i = 0; i < a.length; i++) if (nameOf(a[i]) === n) return i;
+    return -1;
+  }
+
+  var STAR_OFF = '<svg viewBox="0 0 14 14" fill="none"><path d="M7 1.2l1.8 3.7 4.1.6-3 2.9.7 4-3.6-1.9L3.4 12.4l.7-4-3-2.9 4.1-.6z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>';
+  var STAR_ON  = '<svg viewBox="0 0 14 14"><path d="M7 1.2l1.8 3.7 4.1.6-3 2.9.7 4-3.6-1.9L3.4 12.4l.7-4-3-2.9 4.1-.6z" fill="currentColor"/></svg>';
+
+  function favBtn(){
+    return document.querySelector('#pgShrineDetail button.sd-act-btn[onclick^="sdBookmark"]')
+        || document.querySelector('button.sd-act-btn[onclick^="sdBookmark"]');
+  }
+
+  // ボタンの見た目を現在の登録状態に合わせる
+  function paint(){
+    var b = favBtn(); if (!b) return;
+    var s  = window.currentSdShrine;
+    var on = !!(s && s.name && indexOfName(load(), s.name) >= 0);
+    b.innerHTML = (on ? STAR_ON : STAR_OFF) + (on ? 'お気に入り登録済み' : 'お気に入りに登録');
+    b.style.background  = on ? GOLD  : '#fff';
+    b.style.color       = on ? '#fff' : '';
+    b.style.borderColor = GOLD;
+  }
+  window.__wabiFavPaint = paint;
+
+  // ボタン本体（index.html の onclick="sdBookmark()" から呼ばれる）
+  window.sdBookmark = function(){
+    var s = window.currentSdShrine;
+    if (!s || !s.name) {
+      if (typeof showToast === 'function') showToast('神社情報を取得できませんでした');
+      return;
+    }
+    var a = load(), i = indexOfName(a, s.name);
+    if (i >= 0) {
+      a.splice(i, 1); save(a); paint();
+      if (typeof showToast === 'function') showToast('お気に入りを解除しました');
+    } else {
+      a.push({
+        name: s.name, addr: s.addr || '', area: s.area || '',
+        lat: s.lat || null, lng: s.lng || null, ts: Date.now()
+      });
+      save(a); paint();
+      if (typeof showToast === 'function') showToast('★「' + s.name + '」をお気に入りに登録しました');
+    }
+  };
+
+  // 詳細ページを開くたびにボタン表示を更新
+  function hook(fnName){
+    var orig = window[fnName];
+    if (typeof orig !== 'function') return;
+    window[fnName] = function(){
+      var r = orig.apply(this, arguments);
+      setTimeout(paint, 0);
+      setTimeout(paint, 300);
+      return r;
+    };
+  }
+  hook('populateShrineDetail');
+  hook('openShrineDetail');
+
+  setTimeout(paint, 1200);
+})();

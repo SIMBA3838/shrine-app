@@ -2534,6 +2534,19 @@
     '#wabiRoutePg .wpc .nt{font-size:11px;font-weight:400;line-height:1.5;color:'+C.sub+';}',
     '#wabiRoutePg .wpc .lc{font-size:11px;color:'+C.gold+';font-weight:600;margin-top:6px;}',
     '#wabiRoutePg .wpc.more .im{background:#EFEAF8;color:'+C.main+';}',
+    '#wabiRoutePg .wrp-spot{cursor:pointer;align-items:center;}',
+    '#wabiRoutePg .wrp-spot:active{transform:scale(.995);}',
+    '#wabiRoutePg .wrp-spot .ar{flex:0 0 14px;color:#bbb;font-size:20px;line-height:1;}',
+    '#wabiRoutePg .wpc{position:relative;display:flex;flex-direction:column;}',
+    '#wabiRoutePg .wpc .im,#wabiRoutePg .wpc .bd{cursor:pointer;}',
+    '#wabiRoutePg .wpc .bd{flex:1;}',
+    '#wabiRoutePg .wpc .rt{font-size:11px;font-weight:600;color:'+C.gold+';margin-bottom:4px;}',
+    '#wabiRoutePg .wpc .rt span{color:#9a9a9a;font-weight:400;}',
+    "#wabiRoutePg .wpc-add{margin:0 11px 12px;padding:8px 0;border-radius:12px;border:1px solid "+C.main+";background:#fff;color:"+C.main+";font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer;}",
+    "#wabiRoutePg .wpc-add.on{background:"+C.main+";color:#fff;}",
+    '#wabiRoutePg .wrp-added{margin-bottom:10px;}',
+    '#wabiRoutePg .wrp-added .tt{font-size:12px;font-weight:700;color:'+C.sub+';margin-bottom:7px;}',
+    "#wabiRoutePg .wrp-added .chip{display:inline-block;background:#EFEAF8;color:"+C.main+";font-size:12px;font-weight:600;padding:5px 11px;border-radius:12px;margin:0 6px 6px 0;}",
     '#wabiRoutePg .wrp-note{font-size:11px;color:#9a9a9a;line-height:1.6;margin-top:10px;}'
   ].join('');
   document.head.appendChild(st);
@@ -2560,22 +2573,42 @@
   function spotCard(s, i){
     var ph = s.photo ? ' style="background-image:url(\'' + esc(s.photo) + '\')"' : '';
     var tx = (s.deity ? esc(s.deity) + 'をお祀りするお社。' : '') + (s.benefit ? esc(s.benefit) + 'のご利益で知られます。' : '');
-    return '<div class="wrp-spot">'
+    return '<div class="wrp-spot" data-spot="' + i + '">'
       + '<div class="ph"' + ph + '><div class="no">' + (i + 1) + '</div></div>'
       + '<div style="flex:1;min-width:0">'
         + '<div class="nm">' + esc(s.name) + '</div>'
         + (s.benefit ? '<div class="bn">' + esc(s.benefit) + '</div>' : '')
         + '<div class="tx">' + tx + '</div>'
-      + '</div></div>';
+      + '</div><div class="ar">›</div></div>';
+  }
+
+  // ── ルートに追加したスポットの保存 ──────────────────────
+  var LS_ADD = 'wabiRouteExtras';
+  function loadAdd(){
+    try { var o = JSON.parse(localStorage.getItem(LS_ADD) || '{}'); return (o && typeof o === 'object') ? o : {}; }
+    catch(e){ return {}; }
+  }
+  function saveAdd(o){ try { localStorage.setItem(LS_ADD, JSON.stringify(o)); } catch(e){} }
+  function addedList(rid){ var o = loadAdd(); return o[rid] || []; }
+  function isAdded(rid, name){ return addedList(rid).some(function(p){ return p.name === name; }); }
+  function toggleAdd(rid, p){
+    var o = loadAdd(), a = o[rid] || [];
+    var i = -1; a.forEach(function(x, k){ if (x.name === p.name) i = k; });
+    if (i >= 0) a.splice(i, 1); else a.push({ name: p.name, loc: p.loc || '' });
+    o[rid] = a; saveAdd(o);
+    return i < 0;
   }
 
   function placeCard(p, i){
-    return '<a class="wpc" data-q="' + esc(p.name + ' ' + (p.loc || '')) + '" href="' + gmap(p.name + ' ' + (p.loc || '')) + '" target="_blank" rel="noopener">'
-      + '<div class="im" style="background-color:' + TINT[i % TINT.length] + '">' + catIcon(p.cat) + '</div>'
-      + '<div class="bd"><div class="ct">' + esc(p.cat) + '</div>'
+    var q = p.name + ' ' + (p.loc || '');
+    return '<div class="wpc" data-q="' + esc(q) + '" data-name="' + esc(p.name) + '" data-loc="' + esc(p.loc || '') + '">'
+      + '<div class="im" data-gmap="' + esc(q) + '" style="background-color:' + TINT[i % TINT.length] + '">' + catIcon(p.cat) + '</div>'
+      + '<div class="bd" data-gmap="' + esc(q) + '"><div class="ct">' + esc(p.cat) + '</div>'
       + '<div class="nm">' + esc(p.name) + '</div>'
+      + '<div class="rt"></div>'
       + '<div class="nt">' + esc(p.note) + '</div>'
-      + '<div class="lc">' + esc(p.loc) + '</div></div></a>';
+      + '<div class="lc">' + esc(p.loc) + '</div></div>'
+      + '<button class="wpc-add" type="button">＋ ルートに追加</button></div>';
   }
 
   function scrollSec(icon, title, items){
@@ -2586,24 +2619,75 @@
     return h;
   }
 
-  // 店舗・宿の写真をGoogle Placesから読み込む
-  function fillPlacePhotos(root){
-    try {
-      if (!window.google || !google.maps || !google.maps.places) return;
-      var svc = new google.maps.places.PlacesService(document.createElement('div'));
-      root.querySelectorAll('.wpc[data-q]').forEach(function(card){
-        if (card.getAttribute('data-done')) return;
-        card.setAttribute('data-done', '1');
-        svc.findPlaceFromQuery({ query: card.getAttribute('data-q'), fields: ['photos'] }, function(res, stt){
-          if (stt === google.maps.places.PlacesServiceStatus.OK && res && res[0] && res[0].photos && res[0].photos.length) {
-            var im = card.querySelector('.im');
-            if (im) { im.style.backgroundImage = 'url(' + res[0].photos[0].getUrl({ maxWidth: 400 }) + ')'; im.textContent = ''; }
-          } else {
-            card.removeAttribute('data-done');
-          }
-        });
+  // Google Placesから写真と評価を取得し、★4.0未満のスポットは非表示にする
+  function fillPlacePhotos(root, rid){
+    var cards = root.querySelectorAll('.wpc[data-q]');
+    if (!window.google || !google.maps || !google.maps.places) {
+      cards.forEach(function(c){ c.style.display = ''; });   // 取得できない環境では全件表示
+      return;
+    }
+    var svc = new google.maps.places.PlacesService(document.createElement('div'));
+    cards.forEach(function(card){
+      if (card.getAttribute('data-done')) return;
+      card.setAttribute('data-done', '1');
+      svc.findPlaceFromQuery({ query: card.getAttribute('data-q'), fields: ['photos', 'rating', 'user_ratings_total'] }, function(res, stt){
+        var ok = (stt === google.maps.places.PlacesServiceStatus.OK && res && res[0]);
+        var rating = ok && res[0].rating ? res[0].rating : 0;
+        if (rating < 4) { card.style.display = 'none'; hideEmptySections(root); return; }
+        card.style.display = '';
+        if (res[0].photos && res[0].photos.length) {
+          var im = card.querySelector('.im');
+          if (im) { im.style.backgroundImage = 'url(' + res[0].photos[0].getUrl({ maxWidth: 400 }) + ')'; im.textContent = ''; }
+        }
+        var rt = card.querySelector('.rt');
+        if (rt) rt.innerHTML = '★ ' + rating.toFixed(1) + (res[0].user_ratings_total ? ' <span>(' + res[0].user_ratings_total.toLocaleString() + ')</span>' : '');
+        hideEmptySections(root);
       });
+    });
+  }
+
+  // 中身が全部消えたセクションは見出しごと隠す
+  function hideEmptySections(root){
+    root.querySelectorAll('.wrp-scroll').forEach(function(sc){
+      var vis = [].filter.call(sc.querySelectorAll('.wpc'), function(c){ return c.style.display !== 'none'; }).length;
+      var sec = sc.closest('.wrp-sec');
+      if (sec) sec.style.display = vis ? '' : 'none';
+    });
+  }
+
+  // Googleマップのルートを組み立てる（追加スポットも経由地に含める）
+  function buildRouteUrl(r){
+    var names = (r.spots || []).map(function(s){ return String(s.name).replace(/[（(].*$/, '').trim(); });
+    var extras = addedList(r.id).map(function(p){ return p.name + ' ' + (p.loc || ''); });
+    var all = names.concat(extras);
+    if (!all.length) return null;
+    if (all.length === 1) return gmap(all[0]);
+    var mode = r.transport === '徒歩' ? 'walking' : 'driving';
+    var u = 'https://www.google.com/maps/dir/?api=1'
+          + '&origin=' + encodeURIComponent(all[0])
+          + '&destination=' + encodeURIComponent(all[all.length - 1])
+          + '&travelmode=' + mode;
+    var way = all.slice(1, -1);
+    if (way.length) u += '&waypoints=' + way.slice(0, 9).map(encodeURIComponent).join('%7C');
+    return u;
+  }
+
+  // 神社カード → 既存の神社詳細ページを開く
+  function openSpotDetail(s){
+    var t = null;
+    try {
+      if (typeof SHRINES !== 'undefined') {
+        t = SHRINES.filter(function(x){ return x.name === s.name; })[0]
+         || SHRINES.filter(function(x){ return s.name.indexOf(x.name) >= 0 || x.name.indexOf(s.name) >= 0; })[0];
+      }
     } catch(e){}
+    if (!t) {
+      t = { rank: 0, name: s.name, deity: s.deity || '—', addr: s.addr || '',
+            map: gmap(s.name), area: '', rating: 0, rev: 0, visited: false,
+            tags: ['goshuin'], lat: s.lat || null, lng: s.lng || null };
+    }
+    closePage();
+    if (typeof openShrineDetail === 'function') openShrineDetail(t);
   }
 
   function render(r){
@@ -2612,9 +2696,11 @@
     var sub = String(r.cardDesc || '').replace(/<br\s*\/?>/g, ' ');
     var area = x.area || (r.spots && r.spots[0] ? r.spots[0].name : r.name);
 
+    var hero = (r.spots && r.spots[0] && r.spots[0].photo) ? r.spots[0].photo : r.cardImg;
+
     var h = '';
-    // ① ヒーロー
-    h += '<div class="wrp-hero" style="background-image:url(\'' + esc(r.cardImg) + '\')">'
+    // ① ヒーロー（1社目の実写を使う）
+    h += '<div class="wrp-hero" style="background-image:url(\'' + esc(hero) + '\')">'
        +   '<div class="wrp-top"><div class="wrp-ic" id="wrpBack">‹</div>'
        +     '<div class="wrp-ics"><div class="wrp-ic" id="wrpShare">↗</div><div class="wrp-ic" id="wrpFav">♡</div></div></div>'
        +   '<div class="wrp-hcap"><span class="wrp-label">おすすめ巡礼ルート</span>'
@@ -2656,33 +2742,67 @@
          +   '<div class="tx">' + esc(x.trivia) + '</div></div></div>';
     }
 
-    // ⑦ カスタムしたルートを作成 ／ このルートを選ぶ
-    h += '<div class="wrp-sec"><button class="wrp-cta" id="wrpCta"><span>🗺</span>カスタムしたルートを作成</button>'
-       +   '<button class="wrp-cta2" id="wrpSelect">このルートを選ぶ →</button></div>';
-
-    // ⑧⑨ 周辺スポット・宿泊施設
+    // ⑦⑧ 周辺スポット・宿泊施設
     h += scrollSec('📍', 'この近くのおすすめスポット', x.eats || []);
     h += scrollSec('🛏', 'この近くのおすすめ宿泊施設', x.stays || []);
 
-    h += '<div class="wrp-note">※ 掲載している店舗・宿泊施設はすべて実在の施設です。営業時間・定休日・料金は変わることがあるため、お出かけ前に公式情報をご確認ください。</div>';
+    // ⑨ ページ最下部：このルートを作成
+    h += '<div class="wrp-sec"><div class="wrp-added" id="wrpAdded"></div>'
+       +   '<button class="wrp-cta2" id="wrpSelect">このルートを作成 →</button></div>';
+
+    h += '<div class="wrp-note">※ 掲載している店舗・宿泊施設はすべて実在の施設です。Google の評価が★4.0以上のスポットのみ表示しています。営業時間・定休日・料金は変わることがあるため、お出かけ前に公式情報をご確認ください。</div>';
     h += '</div>';
 
     document.getElementById('wrpIn').innerHTML = h;
 
-    document.getElementById('wrpBack').onclick = closePage;
-    document.getElementById('wrpCta').onclick = function(){
-      closePage();
-      try {
-        if (typeof openOverlay === 'function') openOverlay('pgAiRoute');
-        else { var p = document.getElementById('pgAiRoute'); if (p) p.style.display = 'flex'; }
-      } catch(e){}
-    };
-    document.getElementById('wrpSelect').onclick = function(){
-      if (typeof selectRoute === 'function') selectRoute(r.id);
-    };
     var inEl = document.getElementById('wrpIn');
-    fillPlacePhotos(inEl);
-    setTimeout(function(){ fillPlacePhotos(inEl); }, 1500);
+    document.getElementById('wrpBack').onclick = closePage;
+
+    // 神社カード → 神社詳細ページ
+    inEl.querySelectorAll('.wrp-spot').forEach(function(el){
+      el.onclick = function(){ openSpotDetail((r.spots || [])[+el.getAttribute('data-spot')]); };
+    });
+
+    // 追加済みスポットの表示更新
+    function paintAdded(){
+      var a = addedList(r.id);
+      var box = document.getElementById('wrpAdded');
+      if (box) {
+        box.innerHTML = a.length
+          ? '<div class="tt">ルートに追加したスポット</div>' + a.map(function(p){ return '<span class="chip">' + esc(p.name) + '</span>'; }).join('')
+          : '';
+      }
+      inEl.querySelectorAll('.wpc').forEach(function(c){
+        var on = isAdded(r.id, c.getAttribute('data-name'));
+        var b = c.querySelector('.wpc-add');
+        if (b) { b.textContent = on ? '✓ 追加済み' : '＋ ルートに追加'; b.className = 'wpc-add' + (on ? ' on' : ''); }
+      });
+    }
+
+    // スポットカード：本体タップでGoogleマップ、ボタンでルートに追加
+    inEl.querySelectorAll('.wpc').forEach(function(c){
+      c.querySelectorAll('[data-gmap]').forEach(function(t){
+        t.onclick = function(){ window.open(gmap(t.getAttribute('data-gmap')), '_blank', 'noopener'); };
+      });
+      var btn = c.querySelector('.wpc-add');
+      if (btn) btn.onclick = function(ev){
+        ev.stopPropagation();
+        var on = toggleAdd(r.id, { name: c.getAttribute('data-name'), loc: c.getAttribute('data-loc') });
+        paintAdded();
+        if (typeof showToast === 'function') showToast(on ? 'ルートに追加しました' : 'ルートから外しました');
+      };
+    });
+
+    // ページ最下部：このルートを作成 → Googleマップで表示
+    document.getElementById('wrpSelect').onclick = function(){
+      var u = buildRouteUrl(r);
+      if (u) window.open(u, '_blank', 'noopener');
+      else if (typeof showToast === 'function') showToast('ルートを組み立てられませんでした');
+    };
+
+    paintAdded();
+    fillPlacePhotos(inEl, r.id);
+    setTimeout(function(){ fillPlacePhotos(inEl, r.id); paintAdded(); }, 1500);
     document.getElementById('wrpShare').onclick = function(){
       if (navigator.share) navigator.share({ title: r.name + ' - わびなび', url: location.href }).catch(function(){});
       else if (typeof showToast === 'function') showToast('このページのURLを共有できます');

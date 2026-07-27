@@ -2270,12 +2270,14 @@
   function doTrim(){
     if (!list) return;
     var old = list.querySelector('.wabi-more-rank');
-    if (old) old.parentNode.removeChild(old);
 
     var cards = [];
     for (var i = 0; i < list.children.length; i++) {
       if (list.children[i].className && String(list.children[i].className).indexOf('rcard') >= 0) cards.push(list.children[i]);
     }
+    // すでに10件に絞り込み済み（＝リンクも設置済み）なら何もしない
+    if (cards.length <= TOP && old && rest.length) return;
+    if (old) old.parentNode.removeChild(old);
     if (cards.length <= TOP) { rest = []; return; }
 
     rest = [];

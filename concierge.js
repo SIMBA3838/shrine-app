@@ -2191,13 +2191,43 @@
     if (typeof updateFabVisibility === 'function') updateFabVisibility();
   };
 
+  // 別ページのカードにも写真を読み込む（トップと同じPlaces取得）
+  function fillPhotos(root){
+    try {
+      if (!window.google || !google.maps || !google.maps.places) return;
+      var svc = new google.maps.places.PlacesService(document.createElement('div'));
+      root.querySelectorAll('.rcard').forEach(function(c){
+        if (c.getAttribute('data-wcphoto')) return;
+        var nm = c.querySelector('.rname'), gal = c.querySelector('.pgallery');
+        if (!nm || !gal) return;
+        c.setAttribute('data-wcphoto', '1');
+        svc.findPlaceFromQuery({ query: nm.textContent.trim() + ' 神社', fields: ['photos'] }, function(res, stt){
+          if (stt === google.maps.places.PlacesServiceStatus.OK && res && res[0] && res[0].photos && res[0].photos.length) {
+            var urls = res[0].photos.slice(0, 4).map(function(p){ return p.getUrl({ maxWidth: 500 }); });
+            var strip = urls.slice(0, 4);
+            while (strip.length < 4) strip.push(urls[0]);
+            gal.innerHTML = '<div class="pgallery-main"><img src="' + urls[0] + '" loading="lazy"><div class="photo-count">📷 ' + urls.length + '枚</div></div>';
+            var se = c.querySelector('.pstrip');
+            if (se) se.innerHTML = strip.map(function(u){ return '<div class="pstrip-item"><img src="' + u + '" loading="lazy"></div>'; }).join('');
+          } else {
+            c.removeAttribute('data-wcphoto');
+          }
+        });
+      });
+    } catch(e){}
+  }
+
   window.wabiOpenRankMore = function(){
     document.getElementById('wrmMeta').textContent = restLabel;
-    document.getElementById('wrmGrid').innerHTML = rest.join('');
+    var grid = document.getElementById('wrmGrid');
+    grid.innerHTML = rest.join('');
+    grid.querySelectorAll('.rcard').forEach(function(c){ c.removeAttribute('data-wcphoto'); });
     pg.style.display = 'block';
     pg.scrollTop = 0;
     var fab = document.getElementById('fabMap');
     if (fab) fab.style.display = 'none';
+    fillPhotos(grid);
+    setTimeout(function(){ fillPhotos(grid); }, 1200);
   };
 
   var list = document.getElementById('list');
@@ -2410,7 +2440,7 @@
     '#wabiRoutePg .wrp-top{position:absolute;top:14px;left:16px;right:16px;display:flex;align-items:center;justify-content:space-between;z-index:2;}',
     '#wabiRoutePg .wrp-ic{width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.34);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;cursor:pointer;}',
     '#wabiRoutePg .wrp-ics{display:flex;gap:8px;}',
-    '#wabiRoutePg .wrp-hcap{position:absolute;left:16px;right:16px;bottom:16px;z-index:2;}',
+    '#wabiRoutePg .wrp-hcap{position:absolute;left:16px;right:16px;bottom:52px;z-index:2;}',
     '#wabiRoutePg .wrp-label{display:inline-block;background:'+C.main+';color:#fff;font-size:11px;font-weight:600;letter-spacing:.06em;padding:4px 11px;border-radius:12px;margin-bottom:9px;}',
     '#wabiRoutePg .wrp-title{color:#fff;font-size:24px;font-weight:700;line-height:1.3;text-shadow:0 2px 10px rgba(0,0,0,.4);}',
     '#wabiRoutePg .wrp-sub{color:rgba(255,255,255,.9);font-size:14px;font-weight:500;margin-top:6px;text-shadow:0 2px 8px rgba(0,0,0,.4);}',

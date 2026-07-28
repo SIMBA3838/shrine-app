@@ -2144,10 +2144,28 @@
       return r;
     };
   }
-  hook('populateShrineDetail');
-  hook('openShrineDetail');
+  // 神社詳細の最下部「AI御朱印巡りルートに追加」ボタンを隠す
+  var hideCss = document.createElement('style');
+  hideCss.textContent = '#pgShrineDetail button[onclick^="sdAddToAiRoute"]{display:none !important;}';
+  document.head.appendChild(hideCss);
+  function hideAiBtn(){
+    var b = document.querySelector('#pgShrineDetail button[onclick^="sdAddToAiRoute"]');
+    if (b) { b.style.display = 'none'; if (b.parentElement) b.parentElement.style.display = 'none'; }
+  }
 
-  setTimeout(paint, 1200);
+  // populate / open のたびに、お気に入りボタンの再描画とAIボタン非表示を行う
+  ['populateShrineDetail', 'openShrineDetail'].forEach(function(fnName){
+    var orig = window[fnName];
+    if (typeof orig !== 'function') return;
+    window[fnName] = function(){
+      var r = orig.apply(this, arguments);
+      setTimeout(function(){ paint(); hideAiBtn(); }, 0);
+      setTimeout(function(){ paint(); hideAiBtn(); }, 300);
+      return r;
+    };
+  });
+
+  setTimeout(function(){ paint(); hideAiBtn(); }, 1200);
 })();
 
 
@@ -2795,8 +2813,7 @@
     var h = '';
     // ① ヒーロー（1社目の実写を使う）
     h += '<div class="wrp-hero" style="background-image:url(\'' + esc(hero) + '\')">'
-       +   '<div class="wrp-top"><div class="wrp-ic" id="wrpBack">‹</div>'
-       +     '<div class="wrp-ics"><div class="wrp-ic" id="wrpShare">↗</div><div class="wrp-ic" id="wrpFav">♡</div></div></div>'
+       +   '<div class="wrp-top"><div class="wrp-ic" id="wrpBack">‹</div></div>'
        +   '<div class="wrp-hcap"><span class="wrp-label">おすすめ巡礼ルート</span>'
        +     '<div class="wrp-title">' + esc(r.name) + '</div>'
        +     '<div class="wrp-sub">' + esc(sub) + '</div></div>'
@@ -2897,13 +2914,6 @@
     paintAdded();
     fillPlacePhotos(inEl, r.id);
     setTimeout(function(){ fillPlacePhotos(inEl, r.id); paintAdded(); }, 1500);
-    document.getElementById('wrpShare').onclick = function(){
-      if (navigator.share) navigator.share({ title: r.name + ' - わびなび', url: location.href }).catch(function(){});
-      else if (typeof showToast === 'function') showToast('このページのURLを共有できます');
-    };
-    document.getElementById('wrpFav').onclick = function(){
-      if (typeof showToast === 'function') showToast('ルートのお気に入り登録は準備中です');
-    };
   }
 
   function closePage(){

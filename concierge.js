@@ -2934,3 +2934,489 @@
     if (fab) fab.style.display = 'none';
   };
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：巡礼レベル ＆ EXPシステム
+   ・レベル計算／EXP付与関数／履歴／管理用のEXP値変更に対応
+   ・データはすべて localStorage。将来Supabaseへ移すときは
+     store()/persist() の2か所を差し替えれば済む構造にしてある。
+   （2026-07-27 追加 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.WabiExp) return;
+
+  var C = { purple:'#6E4BA8', gold:'#C9A24A', text:'#2D2D2D', mute:'#7A7A7A', bg:'#F8F6F2', card:'#FFF' };
+
+  // ── ① レベル計算 ───────────────────────────────────────────
+  // 指定のアンカーを必ず通る、なめらかな右肩上がりカーブ
+  // 必要EXP（累計） = A * exp(b*u + c*u^2)  ／ u = ln(L-1)
+  // 指定のめやす（Lv2:100, Lv3:250, Lv5:700, Lv10:2500, Lv20:9000,
+  // Lv30:20000, Lv50:60000, Lv100:250000）に最小二乗で合わせた、なめらかな曲線。
+  // 1レベルごとの必要EXPが常に増えていく（途中で軽くならない）。
+  var LV_A = 4.614750, LV_B = 1.237153, LV_C = 0.101172;
+  var MAXLV = 100;
+
+  function totalForLevel(L){
+    if (L <= 1) return 0;
+    if (L > MAXLV) L = MAXLV;
+    var u = Math.log(L - 1);
+    return Math.round(Math.exp(LV_A + LV_B * u + LV_C * u * u) / 10) * 10;
+  }
+  function levelOf(exp){
+    var L = 1;
+    for (var i = 2; i <= MAXLV; i++){ if (exp >= totalForLevel(i)) L = i; else break; }
+    return L;
+  }
+  function progressOf(exp){
+    var L = levelOf(exp);
+    if (L >= MAXLV) return { level: MAXLV, cur: 0, need: 0, toNext: 0, pct: 100, total: exp };
+    var base = totalForLevel(L), next = totalForLevel(L + 1);
+    return {
+      level: L, cur: exp - base, need: next - base, toNext: next - exp,
+      pct: Math.max(0, Math.min(100, Math.round((exp - base) / (next - base) * 100))),
+      total: exp
+    };
+  }
+
+  // ── ② EXP取得ルール（管理側から値を変更できる） ─────────────
+  var GROUPS = {
+    daily:     '毎日・閲覧',
+    post:      '投稿',
+    visit:     '神社巡り',
+    community: 'コミュニティ',
+    affiliate: '予約・お買い物',
+    invite:    '友達紹介'
+  };
+  var DEFAULT_RULES = {
+    login:            { exp:5,    label:'ログイン',                 group:'daily',     icon:'⛩',  limit:1  },
+    view_top:         { exp:2,    label:'トップページ閲覧',           group:'daily',     icon:'🏠', limit:1  },
+    ai_route:         { exp:15,   label:'AIルート検索',              group:'daily',     icon:'✦',  limit:3  },
+    read_article:     { exp:5,    label:'記事を読む',                group:'daily',     icon:'📖', limit:5  },
+    read_article_end: { exp:5,    label:'記事を最後まで読む',          group:'daily',     icon:'📗', limit:5  },
+    view_spot:        { exp:3,    label:'おすすめスポットを見る',      group:'daily',     icon:'📍', limit:10 },
+    view_shrine:      { exp:3,    label:'神社詳細を見る',             group:'daily',     icon:'⛩',  limit:10 },
+    bookmark:         { exp:8,    label:'お気に入りに保存',            group:'daily',     icon:'★'            },
+    save_route:       { exp:15,   label:'ルート保存',                group:'daily',     icon:'🗺'           },
+    post_photo:       { exp:50,   label:'神社仏閣の写真投稿',          group:'post',      icon:'📷'           },
+    post_goshuin:     { exp:80,   label:'御朱印の写真投稿',            group:'post',      icon:'🖌'           },
+    got_like:         { exp:3,    label:'投稿にいいねされる',          group:'post',      icon:'♡'            },
+    got_comment:      { exp:5,    label:'コメントされる',             group:'post',      icon:'💬'           },
+    do_comment:       { exp:5,    label:'自分がコメントする',          group:'post',      icon:'✎'            },
+    post_popular:     { exp:100,  label:'投稿が人気になる（100いいね）', group:'post',    icon:'🔥'           },
+    visit_record:     { exp:80,   label:'参拝記録を追加',             group:'visit',     icon:'🙏'           },
+    goshuin_record:   { exp:100,  label:'御朱印を登録',               group:'visit',     icon:'📕'           },
+    route_complete:   { exp:150,  label:'AIルートで巡拝完了',          group:'visit',     icon:'🏁'           },
+    new_pref:         { exp:100,  label:'初めての都道府県を訪れる',     group:'visit',     icon:'🗾'           },
+    all_pref:         { exp:3000, label:'全国都道府県 巡礼コンプリート', group:'visit',    icon:'👑'           },
+    follow:           { exp:10,   label:'ユーザーをフォロー',          group:'community', icon:'＋', limit:10 },
+    gain_follower:    { exp:15,   label:'フォロワー獲得',             group:'community', icon:'👥'           },
+    profile_100:      { exp:100,  label:'プロフィール設定100%',        group:'community', icon:'✓', once:true },
+    buy_rakuten:      { exp:20,   label:'楽天で商品購入',             group:'affiliate', icon:'🛍', note:'成果確定後' },
+    book_rakuten:     { exp:80,   label:'楽天トラベルで予約',          group:'affiliate', icon:'♨️', note:'成果確定後' },
+    book_tour:        { exp:120,  label:'ツアー予約',                group:'affiliate', icon:'🚌', note:'成果確定後' },
+    referral_buy:     { exp:30,   label:'紹介リンクから購入',          group:'affiliate', icon:'🔗', note:'成果確定後' },
+    invite_sender:    { exp:300,  label:'友達を紹介した',             group:'invite',    icon:'🎁', note:'紹介成立時' },
+    invite_receiver:  { exp:100,  label:'紹介されて登録した',          group:'invite',    icon:'🎉', note:'紹介成立時' }
+  };
+
+  // ── ③ 保存（将来Supabaseに差し替える場所はここだけ）─────────
+  var LS_STATE = 'wabiExpState';
+  var LS_RULES = 'wabiExpRules';   // 管理画面からの上書き値
+
+  function store(){
+    try {
+      var o = JSON.parse(localStorage.getItem(LS_STATE) || '{}');
+      if (!o || typeof o !== 'object') o = {};
+      o.total   = o.total   || 0;
+      o.history = o.history || [];
+      o.daily   = o.daily   || {};
+      o.once    = o.once    || {};
+      o.invites = o.invites || 0;
+      return o;
+    } catch(e){ return { total:0, history:[], daily:{}, once:{}, invites:0 }; }
+  }
+  function persist(o){ try { localStorage.setItem(LS_STATE, JSON.stringify(o)); } catch(e){} }
+
+  function rules(){
+    var r = {}, k;
+    for (k in DEFAULT_RULES) r[k] = JSON.parse(JSON.stringify(DEFAULT_RULES[k]));
+    try {
+      var ov = JSON.parse(localStorage.getItem(LS_RULES) || '{}');
+      for (k in ov){
+        if (!r[k]) r[k] = { label:k, group:'daily', icon:'✦' };
+        if (typeof ov[k] === 'number') r[k].exp = ov[k];
+        else for (var f in ov[k]) r[k][f] = ov[k][f];
+      }
+    } catch(e){}
+    return r;
+  }
+  function today(){
+    var d = new Date();
+    return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  }
+
+  // ── ④ EXP付与（すべてここを通す）─────────────────────────
+  function addExp(key, opts){
+    opts = opts || {};
+    var R = rules(), rule = R[key];
+    if (!rule) return null;
+    var st = store(), day = today();
+
+    if (rule.once && st.once[key]) return null;
+    if (rule.limit){
+      st.daily[day] = st.daily[day] || {};
+      if ((st.daily[day][key] || 0) >= rule.limit) return null;
+      st.daily[day][key] = (st.daily[day][key] || 0) + 1;
+      // 古い日付は7日分だけ残す
+      var days = Object.keys(st.daily).sort();
+      while (days.length > 7) { delete st.daily[days.shift()]; }
+    }
+    if (rule.once) st.once[key] = 1;
+
+    var gained = (typeof opts.exp === 'number') ? opts.exp : rule.exp;
+    var before = progressOf(st.total);
+    st.total += gained;
+    var after = progressOf(st.total);
+
+    st.history.unshift({ t: Date.now(), k: key, e: gained, l: rule.label, i: rule.icon || '✦' });
+    if (st.history.length > 200) st.history.length = 200;
+    persist(st);
+
+    if (opts.silent !== true && typeof showToast === 'function') showToast('＋' + gained + ' EXP　' + rule.label);
+    if (after.level > before.level && typeof showToast === 'function'){
+      setTimeout(function(){ showToast('🎉 巡礼レベル ' + after.level + ' になりました'); }, 1200);
+    }
+    refreshMypageExp();
+    return { gained: gained, total: st.total, level: after.level, levelUp: after.level > before.level };
+  }
+
+  // ── 公開API ───────────────────────────────────────────────
+  window.WabiExp = {
+    add: addExp,
+    total: function(){ return store().total; },
+    level: function(){ return levelOf(store().total); },
+    progress: function(){ return progressOf(store().total); },
+    history: function(n){ return store().history.slice(0, n || 50); },
+    rules: rules,
+    groups: GROUPS,
+    totalForLevel: totalForLevel,
+    // 管理画面用：EXP値の変更／新しいイベントの追加
+    setExp: function(key, exp){
+      var ov = {}; try { ov = JSON.parse(localStorage.getItem(LS_RULES) || '{}'); } catch(e){}
+      ov[key] = ov[key] || {}; ov[key].exp = exp;
+      localStorage.setItem(LS_RULES, JSON.stringify(ov)); return rules()[key];
+    },
+    addRule: function(key, def){
+      var ov = {}; try { ov = JSON.parse(localStorage.getItem(LS_RULES) || '{}'); } catch(e){}
+      ov[key] = def; localStorage.setItem(LS_RULES, JSON.stringify(ov)); return rules()[key];
+    },
+    invites: function(){ return store().invites; },
+    addInvite: function(){ var st = store(); st.invites++; persist(st); addExp('invite_sender'); return st.invites; },
+    reset: function(){ localStorage.removeItem(LS_STATE); refreshMypageExp(); }
+  };
+
+  // ── ⑤ 自動付与（既存の機能にひっかける）────────────────────
+  function hookFn(name, key){
+    var orig = window[name];
+    if (typeof orig !== 'function') return;
+    window[name] = function(){
+      var r = orig.apply(this, arguments);
+      try { addExp(key, { silent:true }); } catch(e){}
+      return r;
+    };
+  }
+  setTimeout(function(){
+    addExp('login',    { silent:true });
+    addExp('view_top', { silent:true });
+    hookFn('openShrineDetail', 'view_shrine');
+    hookFn('generateRoute',    'ai_route');
+    hookFn('saveRoute',        'save_route');
+    hookFn('saveVisit',        'visit_record');
+    hookFn('sdVisited',        'visit_record');
+    // お気に入り登録（登録時のみ）
+    var _bm = window.sdBookmark;
+    if (typeof _bm === 'function'){
+      window.sdBookmark = function(){
+        var beforeN = 0;
+        try { beforeN = JSON.parse(localStorage.getItem('wabiFavorites') || '[]').length; } catch(e){}
+        var r = _bm.apply(this, arguments);
+        try {
+          var afterN = JSON.parse(localStorage.getItem('wabiFavorites') || '[]').length;
+          if (afterN > beforeN) addExp('bookmark', { silent:true });
+        } catch(e){}
+        return r;
+      };
+    }
+    // おすすめスポットのタップ
+    document.addEventListener('click', function(ev){
+      var t = ev.target;
+      while (t && t !== document.body){
+        if (t.classList && t.classList.contains('wpc')) { addExp('view_spot', { silent:true }); return; }
+        t = t.parentElement;
+      }
+    }, true);
+    // このルートを作成
+    document.addEventListener('click', function(ev){
+      if (ev.target && ev.target.id === 'wrpSelect') addExp('save_route', { silent:true });
+    }, true);
+  }, 1500);
+
+  // 「PILGRIM LEVEL」の表記を「巡礼レベル」に
+  function fixLevelLabel(){
+    document.querySelectorAll('div,span,p').forEach(function(el){
+      if (el.children.length === 0 && /PILGRIM LEVEL/.test(el.textContent)){
+        el.textContent = el.textContent.replace('PILGRIM LEVEL', '巡礼レベル');
+        el.style.letterSpacing = '.12em';
+      }
+    });
+  }
+  setTimeout(fixLevelLabel, 1200);
+  setTimeout(fixLevelLabel, 3000);
+
+  // ── ⑥ 画面まわり ──────────────────────────────────────────
+  var css = document.createElement('style');
+  css.textContent = [
+    // マイページのレベル欄
+    '.mp-exp-head{font-family:\'Shippori Mincho\',serif;font-size:13px;font-weight:700;color:' + C.text + ';letter-spacing:.12em;margin-bottom:9px;}',
+    '.mp-exp-links{display:flex;gap:10px;margin-top:12px;}',
+    '.mp-exp-links a{flex:1;text-align:center;padding:10px 6px;border-radius:14px;border:1px solid #e6dcc6;background:#fff;',
+      'font-family:\'Noto Serif JP\',serif;font-size:12px;font-weight:700;color:' + C.purple + ';cursor:pointer;text-decoration:none;}',
+    '.mp-exp-links a.gold{border-color:' + C.gold + ';color:#8a6d3b;background:#fffdf7;}',
+    // 共通ページ
+    '.wx-pg{position:fixed;inset:0;z-index:320;background:' + C.bg + ';display:none;overflow-y:auto;-webkit-overflow-scrolling:touch;',
+      'font-family:\'Shippori Mincho\',\'Noto Serif JP\',serif;color:' + C.text + ';}',
+    '.wx-hd{position:sticky;top:0;z-index:5;background:' + C.bg + ';display:flex;align-items:center;gap:10px;padding:16px;border-bottom:1px solid #ece4d3;}',
+    '.wx-hd .b{font-size:22px;cursor:pointer;line-height:1;color:' + C.text + ';}',
+    '.wx-hd .t{font-size:15px;font-weight:800;letter-spacing:.1em;}',
+    '.wx-in{max-width:500px;margin:0 auto;padding:18px 16px 48px;}',
+    '.wx-sec{margin-bottom:26px;}',
+    '.wx-h{font-size:16px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:7px;}',
+    '.wx-p{font-size:13.5px;line-height:1.85;color:#4a4a4a;font-family:\'Noto Serif JP\',serif;}',
+    '.wx-card{background:' + C.card + ';border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.06);padding:18px;}',
+    // レベルカード
+    '.wx-lvcard{background:linear-gradient(135deg,#fff,#fbf7ef);border:1px solid #ece4d3;border-radius:20px;padding:18px;box-shadow:0 8px 24px rgba(0,0,0,.06);}',
+    '.wx-lvtop{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:9px;}',
+    '.wx-lv{font-size:22px;font-weight:700;color:' + C.purple + ';}',
+    '.wx-next{font-size:12px;color:' + C.mute + ';font-family:\'Noto Serif JP\',serif;}',
+    '.wx-next b{color:' + C.gold + ';}',
+    '.wx-bar{height:8px;border-radius:6px;background:#e9e2d7;overflow:hidden;}',
+    '.wx-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,' + C.purple + ',' + C.gold + ');width:0;transition:width 1.1s cubic-bezier(.22,.61,.36,1);}',
+    '.wx-tot{font-size:11.5px;color:' + C.mute + ';margin-top:8px;font-family:\'Noto Serif JP\',serif;}',
+    // EXP一覧カード
+    '.wx-gname{font-size:12px;font-weight:700;color:' + C.purple + ';letter-spacing:.08em;margin:16px 0 9px;}',
+    '.wx-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}',
+    '.wx-item{background:' + C.card + ';border-radius:16px;box-shadow:0 4px 14px rgba(0,0,0,.05);padding:12px 12px 11px;}',
+    '.wx-item .ic{font-size:17px;}',
+    '.wx-item .lb{font-size:12px;font-weight:600;line-height:1.45;margin:5px 0 4px;font-family:\'Noto Serif JP\',serif;}',
+    '.wx-item .ex{font-size:14px;font-weight:700;color:' + C.gold + ';}',
+    '.wx-item .nt{font-size:10px;color:#a09a90;margin-top:3px;font-family:\'Noto Serif JP\',serif;}',
+    // 履歴
+    '.wx-hrow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #f0ebe1;}',
+    '.wx-hrow:last-child{border-bottom:none;}',
+    '.wx-hrow .ic{width:30px;height:30px;border-radius:50%;background:#f4efe4;display:flex;align-items:center;justify-content:center;font-size:14px;flex:0 0 30px;}',
+    '.wx-hrow .lb{flex:1;font-size:13px;font-family:\'Noto Serif JP\',serif;}',
+    '.wx-hrow .ex{font-size:13px;font-weight:700;color:' + C.gold + ';}',
+    '.wx-day{font-size:11.5px;color:' + C.mute + ';font-weight:700;margin:14px 0 4px;font-family:\'Noto Serif JP\',serif;}',
+    '.wx-empty{font-size:12.5px;color:#a8a29a;text-align:center;padding:18px 0;font-family:\'Noto Serif JP\',serif;}',
+    // 紹介ページ
+    '.wx-giftbox{background:linear-gradient(135deg,#6E4BA8,#8a63c9);border-radius:22px;padding:24px 18px;color:#fff;text-align:center;box-shadow:0 10px 28px rgba(110,75,168,.28);}',
+    '.wx-giftbox .s{font-size:12.5px;opacity:.9;font-family:\'Noto Serif JP\',serif;}',
+    '.wx-giftbox .n{font-size:34px;font-weight:700;margin:2px 0 10px;letter-spacing:.02em;}',
+    '.wx-giftbox .d{height:1px;background:rgba(255,255,255,.3);margin:14px 24px;}',
+    '.wx-giftbox .n2{font-size:24px;font-weight:700;margin-top:2px;}',
+    '.wx-line{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:15px;border:none;border-radius:16px;',
+      'background:#06C755;color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 6px 18px rgba(6,199,85,.28);}',
+    '.wx-copy{display:flex;gap:8px;margin-top:12px;}',
+    '.wx-copy input{flex:1;min-width:0;padding:12px;border:1px solid #e6dcc6;border-radius:14px;background:#fff;font-size:12px;color:#555;font-family:\'Noto Serif JP\',serif;}',
+    '.wx-copy button{padding:12px 16px;border:1px solid ' + C.purple + ';border-radius:14px;background:#fff;color:' + C.purple + ';font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;}',
+    '.wx-qr{text-align:center;padding:18px;}',
+    '.wx-qr img{width:170px;height:170px;border-radius:14px;background:#fff;}',
+    '.wx-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}',
+    '.wx-kpi{background:' + C.card + ';border-radius:18px;box-shadow:0 4px 14px rgba(0,0,0,.05);padding:16px;text-align:center;}',
+    '.wx-kpi .l{font-size:11.5px;color:' + C.mute + ';font-family:\'Noto Serif JP\',serif;}',
+    '.wx-kpi .v{font-size:24px;font-weight:700;color:' + C.purple + ';margin-top:4px;}',
+    '.wx-note{font-size:11px;color:#a09a90;line-height:1.7;margin-top:12px;font-family:\'Noto Serif JP\',serif;}'
+  ].join('');
+  document.head.appendChild(css);
+
+  function mkPage(id, title){
+    var el = document.createElement('div');
+    el.className = 'wx-pg'; el.id = id;
+    el.innerHTML = '<div class="wx-hd"><span class="b">‹</span><span class="t">' + title + '</span></div><div class="wx-in"></div>';
+    document.body.appendChild(el);
+    el.querySelector('.b').onclick = function(){ el.style.display = 'none'; };
+    return el;
+  }
+  var guidePg  = mkPage('wxGuide',  'EXPについて');
+  var invitePg = mkPage('wxInvite', '友達を紹介');
+
+  function esc2(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  // ── EXPガイドページ ───────────────────────────────────────
+  function renderGuide(){
+    var pr = progressOf(store().total), R = rules(), st = store();
+    var h = '';
+
+    h += '<div class="wx-sec"><div class="wx-lvcard">'
+       +   '<div class="wx-lvtop"><span class="wx-lv">LV.' + pr.level + '</span>'
+       +     '<span class="wx-next">' + (pr.level >= MAXLV ? '最高位に到達しました' : 'あと <b>' + pr.toNext + '</b> EXP で Lv.' + (pr.level + 1)) + '</span></div>'
+       +   '<div class="wx-bar"><div class="wx-fill" id="wxFill"></div></div>'
+       +   '<div class="wx-tot">累計 ' + pr.total.toLocaleString() + ' EXP　／　次のレベルまで ' + pr.need.toLocaleString() + ' EXP</div>'
+       + '</div></div>';
+
+    h += '<div class="wx-sec"><div class="wx-h">巡礼レベルとは？</div><div class="wx-card"><div class="wx-p">'
+       +   '神社やお寺を巡ったり、参拝の記録や御朱印を投稿したりすると経験値（EXP）が貯まります。<br>'
+       +   'EXPが一定に達すると巡礼レベルが上がります。急ぐものではありません。'
+       +   'ご自身の歩みが少しずつ形になっていく——そんな道しるべとしてお使いください。'
+       + '</div></div></div>';
+
+    h += '<div class="wx-sec"><div class="wx-h">EXPの獲得方法</div>';
+    for (var g in GROUPS){
+      var items = [];
+      for (var k in R) if (R[k].group === g) items.push(R[k]);
+      if (!items.length) continue;
+      h += '<div class="wx-gname">' + GROUPS[g] + '</div><div class="wx-grid">';
+      items.forEach(function(it){
+        h += '<div class="wx-item"><div class="ic">' + (it.icon || '✦') + '</div>'
+           +   '<div class="lb">' + esc2(it.label) + '</div>'
+           +   '<div class="ex">＋' + it.exp + ' EXP</div>'
+           +   (it.note ? '<div class="nt">' + esc2(it.note) + '</div>'
+                        : (it.limit ? '<div class="nt">1日' + it.limit + '回まで</div>'
+                                    : (it.once ? '<div class="nt">初回のみ</div>' : '')))
+           + '</div>';
+      });
+      h += '</div>';
+    }
+    h += '</div>';
+
+    h += '<div class="wx-sec"><div class="wx-h">レベルが上がると？</div><div class="wx-card"><div class="wx-p">'
+       +   '現在準備中です。<br>'
+       +   'レベルが高い巡拝者には、今後 限定イベントや限定御朱印、特別企画など'
+       +   'さまざまな特典をご用意する予定です。<br>ぜひ今のうちから経験値を集めてください。'
+       + '</div></div></div>';
+
+    // EXP履歴
+    h += '<div class="wx-sec"><div class="wx-h">EXP履歴</div><div class="wx-card" style="padding:6px 16px">';
+    var hist = st.history.slice(0, 40);
+    if (!hist.length){
+      h += '<div class="wx-empty">まだEXPの記録がありません</div>';
+    } else {
+      var lastDay = '';
+      hist.forEach(function(x){
+        var d = new Date(x.t);
+        var key = d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate();
+        var lbl = (key === (new Date().getFullYear() + '/' + (new Date().getMonth() + 1) + '/' + new Date().getDate())) ? '今日' : key;
+        if (lbl !== lastDay){ h += '<div class="wx-day">' + lbl + '</div>'; lastDay = lbl; }
+        h += '<div class="wx-hrow"><div class="ic">' + (x.i || '✦') + '</div>'
+           +   '<div class="lb">' + esc2(x.l || x.k) + '</div>'
+           +   '<div class="ex">＋' + x.e + '</div></div>';
+      });
+    }
+    h += '</div></div>';
+
+    guidePg.querySelector('.wx-in').innerHTML = h;
+    setTimeout(function(){ var f = document.getElementById('wxFill'); if (f) f.style.width = pr.pct + '%'; }, 120);
+  }
+
+  // ── 友達紹介ページ（UIのみ・LINE連携は後日）────────────────
+  function inviteUrl(){
+    var code = 'WABI' + String(Math.abs(hashCode(navigator.userAgent + '|' + (localStorage.getItem('wabiInviteSeed') || setSeed()))) % 1000000).padStart(6, '0');
+    return 'https://wabinavi.jp/?invite=' + code;
+  }
+  function setSeed(){ var s = String(Date.now()); try { localStorage.setItem('wabiInviteSeed', s); } catch(e){} return s; }
+  function hashCode(s){ var h = 0; for (var i = 0; i < s.length; i++){ h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; } return h; }
+
+  function renderInvite(){
+    var st = store(), url = inviteUrl();
+    var earned = st.invites * (rules().invite_sender.exp || 300);
+    var h = '';
+    h += '<div class="wx-sec"><div class="wx-giftbox">'
+       +   '<div class="s">紹介すると、あなたに</div><div class="n">＋300 EXP</div>'
+       +   '<div class="d"></div>'
+       +   '<div class="s">紹介されたお友達にも</div><div class="n2">＋100 EXP</div>'
+       + '</div></div>';
+
+    h += '<div class="wx-sec"><button class="wx-line" id="wxLine"><span>LINE</span>LINEで友達に送る</button>'
+       +   '<div class="wx-copy"><input id="wxUrl" readonly value="' + esc2(url) + '"><button id="wxCopy">コピー</button></div>'
+       + '</div>';
+
+    h += '<div class="wx-sec"><div class="wx-h">QRコード</div><div class="wx-card"><div class="wx-qr">'
+       +   '<img id="wxQr" alt="紹介用QRコード" src="https://api.qrserver.com/v1/create-qr-code/?size=340x340&margin=8&data=' + encodeURIComponent(url) + '">'
+       +   '<div class="wx-note" id="wxQrNote">お友達に読み取ってもらってください</div>'
+       + '</div></div></div>';
+
+    h += '<div class="wx-sec"><div class="wx-2">'
+       +   '<div class="wx-kpi"><div class="l">紹介した人数</div><div class="v">' + st.invites + '<span style="font-size:13px">人</span></div></div>'
+       +   '<div class="wx-kpi"><div class="l">紹介で獲得したEXP</div><div class="v">' + earned + '</div></div>'
+       + '</div>'
+       + '<div class="wx-note">※ EXPはお友達の登録が完了した時点で付与されます。<br>'
+       +   '※ LINEでの会員登録機能は現在準備中です。いまはリンクとQRコードの発行のみご利用いただけます。</div></div>';
+
+    var box = invitePg.querySelector('.wx-in');
+    box.innerHTML = h;
+
+    document.getElementById('wxLine').onclick = function(){
+      var text = 'わびなびで一緒に神社めぐりしませんか？\n' + url;
+      window.open('https://line.me/R/msg/text/?' + encodeURIComponent(text), '_blank', 'noopener');
+    };
+    document.getElementById('wxCopy').onclick = function(){
+      var inp = document.getElementById('wxUrl');
+      inp.select(); inp.setSelectionRange(0, 99999);
+      try { document.execCommand('copy'); } catch(e){}
+      if (navigator.clipboard) navigator.clipboard.writeText(url).catch(function(){});
+      if (typeof showToast === 'function') showToast('紹介リンクをコピーしました');
+    };
+    var qr = document.getElementById('wxQr');
+    qr.onerror = function(){
+      qr.style.display = 'none';
+      document.getElementById('wxQrNote').textContent = 'QRコードを読み込めませんでした。上のリンクをコピーしてお使いください。';
+    };
+  }
+
+  window.wabiOpenExpGuide = function(){ renderGuide(); guidePg.style.display = 'block'; guidePg.scrollTop = 0; };
+  window.wabiOpenInvite   = function(){ renderInvite(); invitePg.style.display = 'block'; invitePg.scrollTop = 0; };
+
+  // ── ⑦ マイページのレベル欄を差し替える ──────────────────────
+  function paintMypageExp(){
+    var box = document.querySelector('#wcMypage .mp-exp');
+    if (!box) return;
+    var pr = progressOf(store().total);
+    box.innerHTML =
+        '<div class="mp-exp-head">巡礼レベル</div>'
+      + '<div class="mp-exp-top"><span class="mp-lv">LV.<b>' + pr.level + '</b></span>'
+      +   '<span class="mp-exp-next">' + (pr.level >= MAXLV ? '最高位に到達しました'
+            : 'あと <b>' + pr.toNext + '</b> EXP で Lv.' + (pr.level + 1)) + '</span></div>'
+      + '<div class="mp-exp-bar"><div class="mp-exp-fill" id="mpExpFill"></div></div>'
+      + '<div class="mp-exp-links"><a id="wxGuideLink">EXPについて ›</a>'
+      +   '<a class="gold" id="wxInviteLink">友達を紹介 ›</a></div>';
+    document.getElementById('wxGuideLink').onclick  = function(){ window.wabiOpenExpGuide(); };
+    document.getElementById('wxInviteLink').onclick = function(){ window.wabiOpenInvite(); };
+    // mypage.js 側があとからバーを書き換えるので、時間差で上書きする
+    [0, 250, 700].forEach(function(ms){
+      setTimeout(function(){
+        var f = document.getElementById('mpExpFill');
+        if (f) f.style.width = pr.pct + '%';
+      }, ms);
+    });
+  }
+  function refreshMypageExp(){ try { paintMypageExp(); } catch(e){} }
+
+  var _openMp = window.openWabiMypage;
+  function bindMypage(){
+    if (typeof window.openWabiMypage !== 'function' || window.openWabiMypage.__wx) return;
+    var orig = window.openWabiMypage;
+    var wrapped = function(){
+      var r = orig.apply(this, arguments);
+      setTimeout(paintMypageExp, 0);
+      setTimeout(paintMypageExp, 200);
+      setTimeout(fixLevelLabel, 250);
+      return r;
+    };
+    wrapped.__wx = true;
+    window.openWabiMypage = wrapped;
+  }
+  bindMypage();
+  var tries = 0;
+  var iv = setInterval(function(){ bindMypage(); if (++tries > 40 || (window.openWabiMypage && window.openWabiMypage.__wx)) clearInterval(iv); }, 300);
+})();

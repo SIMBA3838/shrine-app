@@ -3433,20 +3433,60 @@
   window.__wabiLoginBtn = true;
 
   // ── LINEログインの設定（チャネル発行後にここへ入れる）──────
+  // チャネルIDは公開情報（OAuthのclient_id相当）。チャネルシークレットは絶対にここに置かない。
   var LINE_CFG = {
-    channelId: '',                                  // LINEログイン チャネルID
+    channelId: '2010884035',                        // LINEログイン チャネルID
+    liffId: '',                                     // LIFF ID（例 2010884035-xxxxxxxx）
     redirectUri: location.origin + location.pathname,
     scope: 'profile openid'
   };
-  try { LINE_CFG.channelId = localStorage.getItem('wabiLineChannelId') || ''; } catch(e){}
+  try {
+    LINE_CFG.channelId = localStorage.getItem('wabiLineChannelId') || LINE_CFG.channelId;
+    LINE_CFG.liffId    = localStorage.getItem('wabiLiffId') || LINE_CFG.liffId;
+  } catch(e){}
+
+  var LS_USER = 'wabiUser';
+  function getUser(){
+    try { var u = JSON.parse(localStorage.getItem(LS_USER) || 'null'); return (u && u.id) ? u : null; }
+    catch(e){ return null; }
+  }
+  function setUser(u){
+    try { u ? localStorage.setItem(LS_USER, JSON.stringify(u)) : localStorage.removeItem(LS_USER); } catch(e){}
+    paintButton();
+  }
+
+  // LIFF SDK を必要になったときだけ読み込む
+  function loadLiff(){
+    return new Promise(function(res, rej){
+      if (window.liff) { res(window.liff); return; }
+      var s = document.createElement('script');
+      s.src = 'https://static.line-scdn.net/liff/edge/2/sdk.js';
+      s.onload = function(){ res(window.liff); };
+      s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
 
   window.WabiLine = {
     config: LINE_CFG,
+    user: getUser,
     setChannelId: function(id){
       LINE_CFG.channelId = id || '';
       try { localStorage.setItem('wabiLineChannelId', LINE_CFG.channelId); } catch(e){}
       return LINE_CFG.channelId;
     },
+    setLiffId: function(id){
+      LINE_CFG.liffId = id || '';
+      try { localStorage.setItem('wabiLiffId', LINE_CFG.liffId); } catch(e){}
+      if (typeof showToast === 'function') showToast('LIFF IDを設定しました');
+      return LINE_CFG.liffId;
+    },
+    logout: function(){
+      setUser(null);
+      try { if (window.liff && liff.isLoggedIn && liff.isLoggedIn()) liff.logout(); } catch(e){}
+      if (typeof showToast === 'function') showToast('ログアウトしました');
+    },
+    // サーバーを用意できたとき用（認証コードを受け取る従来フロー）
     authorizeUrl: function(){
       if (!LINE_CFG.channelId) return null;
       var state = 'wabi' + Date.now();
@@ -3458,11 +3498,41 @@
         + '&scope=' + encodeURIComponent(LINE_CFG.scope)
         + '&bot_prompt=aggressive';
     },
+    // LIFFでログイン（サーバー不要）
     start: function(){
-      var u = window.WabiLine.authorizeUrl();
-      if (u) { location.href = u; return true; }
-      if (typeof showToast === 'function') showToast('LINE登録は現在準備中です（チャネル設定待ち）');
-      return false;
+      if (!LINE_CFG.liffId){
+        if (typeof showToast === 'function') showToast('LINE登録は現在準備中です（LIFF ID未設定）');
+        return false;
+      }
+      if (typeof showToast === 'function') showToast('LINEに接続しています…');
+      loadLiff().then(function(liff){
+        return liff.init({ liffId: LINE_CFG.liffId }).then(function(){
+          if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return null; }
+          return liff.getProfile();
+        });
+      }).then(function(p){
+        if (!p) return;
+        setUser({ id: p.userId, name: p.displayName || '巡礼者', pic: p.pictureUrl || '' });
+        var sp = document.getElementById('wxSignup'); if (sp) sp.style.display = 'none';
+        if (typeof showToast === 'function') showToast('ようこそ、' + (p.displayName || '巡礼者') + 'さん');
+        if (window.WabiExp) window.WabiExp.add('login', { silent:true });
+      }).catch(function(e){
+        if (typeof showToast === 'function') showToast('LINEに接続できませんでした');
+        console.warn('[WabiLine]', e);
+      });
+      return true;
+    },
+    // すでにLINEでログイン済みなら黙って情報を取り直す
+    restore: function(){
+      if (!LINE_CFG.liffId || getUser()) return;
+      loadLiff().then(function(liff){
+        return liff.init({ liffId: LINE_CFG.liffId }).then(function(){
+          if (!liff.isLoggedIn()) return null;
+          return liff.getProfile();
+        });
+      }).then(function(p){
+        if (p) setUser({ id: p.userId, name: p.displayName || '巡礼者', pic: p.pictureUrl || '' });
+      }).catch(function(){});
     }
   };
 
@@ -3577,12 +3647,38 @@
       ev.stopPropagation();
       menu.classList.toggle('on');
     };
-    document.getElementById('wlMenuLogin').onclick  = function(){ menu.classList.remove('on'); openLogin(); };
-    document.getElementById('wlMenuSignup').onclick = function(){ menu.classList.remove('on'); window.wabiOpenSignup(); };
     document.addEventListener('click', function(){ menu.classList.remove('on'); });
+    paintButton();
+  }
+
+  // ログイン状態に合わせてボタンとメニューを描き分ける
+  function paintButton(){
+    var btn = document.getElementById('wlBtn'), menu = document.getElementById('wlMenu');
+    if (!btn || !menu) return;
+    var u = getUser();
+    var person = '<svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="6.5" r="3.2" stroke="currentColor" stroke-width="1.6"/>'
+               + '<path d="M3.5 17c0-3.6 13-3.6 13 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+    if (u){
+      btn.innerHTML = (u.pic ? '<img src="' + u.pic + '" style="width:20px;height:20px;border-radius:50%;object-fit:cover">' : person)
+                    + (u.name.length > 6 ? u.name.slice(0, 6) + '…' : u.name);
+      menu.innerHTML = '<a id="wlMenuMypage">マイページ</a><div class="sep"></div><a id="wlMenuLogout">ログアウト</a>';
+      document.getElementById('wlMenuMypage').onclick = function(){
+        menu.classList.remove('on');
+        if (typeof openWabiMypage === 'function') openWabiMypage();
+      };
+      document.getElementById('wlMenuLogout').onclick = function(){
+        menu.classList.remove('on'); window.WabiLine.logout();
+      };
+    } else {
+      btn.innerHTML = person + 'ログイン';
+      menu.innerHTML = '<a id="wlMenuLogin">ログイン</a><div class="sep"></div><a id="wlMenuSignup">新規登録</a>';
+      document.getElementById('wlMenuLogin').onclick  = function(){ menu.classList.remove('on'); openLogin(); };
+      document.getElementById('wlMenuSignup').onclick = function(){ menu.classList.remove('on'); window.wabiOpenSignup(); };
+    }
   }
 
   buildButton();
   var n = 0;
   var iv = setInterval(function(){ buildButton(); if (++n > 30) clearInterval(iv); }, 400);
+  setTimeout(function(){ try { window.WabiLine.restore(); } catch(e){} }, 2000);
 })();

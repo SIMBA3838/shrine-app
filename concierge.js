@@ -3704,3 +3704,167 @@
   var m = 0;
   var iv2 = setInterval(function(){ hookRegister(); if (++m > 30) clearInterval(iv2); }, 400);
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：マイページのプロフィール写真・カバー写真を変更できるようにする
+   タップ → シートから「写真を選ぶ／LINEの写真に戻す／削除」
+   選んだ画像は端末内で縮小して localStorage に保存する。
+   （2026-07-27 追加 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiPhoto) return;
+  window.__wabiPhoto = true;
+
+  var LS_AV = 'wabiAvatar', LS_CV = 'wabiCover';
+  function get(k){ try { return localStorage.getItem(k) || ''; } catch(e){ return ''; } }
+  function set(k, v){ try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch(e){} }
+
+  var css = document.createElement('style');
+  css.textContent = [
+    // 「変更できます」と分かるカメラバッジ
+    '#wcMypage .mp-av{position:relative;cursor:pointer;}',
+    '#wcMypage .mp-hero{cursor:pointer;}',
+    '.wp-cam{position:absolute;right:-2px;bottom:-2px;width:26px;height:26px;border-radius:50%;background:#fff;',
+      'border:1px solid #e6dcc6;display:flex;align-items:center;justify-content:center;font-size:12px;',
+      'box-shadow:0 2px 8px rgba(0,0,0,.18);z-index:3;}',
+    '.wp-cam-cover{position:absolute;right:14px;bottom:14px;width:34px;height:34px;border-radius:50%;',
+      'background:rgba(0,0,0,.45);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;',
+      'font-size:15px;color:#fff;z-index:3;cursor:pointer;}',
+    // 選択シート
+    '.wp-mask{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:400;display:none;}',
+    '.wp-mask.on{display:block;}',
+    ".wp-sheet{position:fixed;left:0;right:0;bottom:0;z-index:401;background:#fff;border-radius:22px 22px 0 0;",
+      "padding:10px 16px calc(18px + env(safe-area-inset-bottom));max-width:500px;margin:0 auto;",
+      "font-family:'Shippori Mincho','Noto Serif JP',serif;transform:translateY(100%);transition:transform .22s cubic-bezier(.22,.61,.36,1);}",
+    '.wp-sheet.on{transform:translateY(0);}',
+    '.wp-sheet .bar{width:38px;height:4px;border-radius:2px;background:#e2dbcd;margin:6px auto 14px;}',
+    '.wp-sheet .ttl{font-size:14px;font-weight:700;text-align:center;margin-bottom:10px;color:#2D2D2D;}',
+    '.wp-sheet button{display:block;width:100%;padding:16px;border:none;background:transparent;border-top:1px solid #f0ebe1;',
+      "font-family:inherit;font-size:15px;color:#2D2D2D;cursor:pointer;}",
+    '.wp-sheet button.warn{color:#b23a2c;}',
+    '.wp-sheet button.cancel{margin-top:8px;border-top:none;background:#f6f2ea;border-radius:14px;font-weight:700;}'
+  ].join('');
+  document.head.appendChild(css);
+
+  var mask = document.createElement('div'); mask.className = 'wp-mask';
+  var sheet = document.createElement('div'); sheet.className = 'wp-sheet';
+  document.body.appendChild(mask); document.body.appendChild(sheet);
+  mask.onclick = closeSheet;
+  function closeSheet(){ mask.classList.remove('on'); sheet.classList.remove('on'); }
+  function openSheet(title, items){
+    sheet.innerHTML = '<div class="bar"></div><div class="ttl">' + title + '</div>'
+      + items.map(function(it, i){ return '<button data-i="' + i + '" class="' + (it.cls || '') + '">' + it.label + '</button>'; }).join('')
+      + '<button class="cancel" data-i="-1">キャンセル</button>';
+    sheet.querySelectorAll('button').forEach(function(b){
+      b.onclick = function(){
+        var i = +b.getAttribute('data-i');
+        closeSheet();
+        if (i >= 0 && items[i].run) setTimeout(items[i].run, 120);
+      };
+    });
+    mask.classList.add('on');
+    requestAnimationFrame(function(){ sheet.classList.add('on'); });
+  }
+
+  // ファイル選択 → 縮小 → dataURL
+  var input = document.createElement('input');
+  input.type = 'file'; input.accept = 'image/*'; input.style.display = 'none';
+  document.body.appendChild(input);
+
+  function pickImage(maxW, maxH, cb){
+    input.value = '';
+    input.onchange = function(){
+      var f = input.files && input.files[0];
+      if (!f) return;
+      if (!/^image\//.test(f.type)) { if (typeof showToast === 'function') showToast('画像ファイルを選んでください'); return; }
+      var fr = new FileReader();
+      fr.onload = function(){
+        var img = new Image();
+        img.onload = function(){
+          var cw = maxW, ch = maxH;
+          var cv = document.createElement('canvas');
+          cv.width = cw; cv.height = ch;
+          var ctx = cv.getContext('2d');
+          // 中央でトリミング（cover）
+          var s = Math.max(cw / img.width, ch / img.height);
+          var dw = img.width * s, dh = img.height * s;
+          ctx.drawImage(img, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
+          try { cb(cv.toDataURL('image/jpeg', 0.82)); }
+          catch(e){ if (typeof showToast === 'function') showToast('画像を保存できませんでした'); }
+        };
+        img.onerror = function(){ if (typeof showToast === 'function') showToast('画像を読み込めませんでした'); };
+        img.src = fr.result;
+      };
+      fr.readAsDataURL(f);
+    };
+    input.click();
+  }
+
+  function lineUser(){ try { return (window.WabiLine && WabiLine.user && WabiLine.user()) || null; } catch(e){ return null; } }
+
+  function saveImg(key, dataUrl){
+    try {
+      set(key, dataUrl);
+      apply();
+      if (typeof showToast === 'function') showToast('写真を変更しました');
+    } catch(e){
+      if (typeof showToast === 'function') showToast('保存できませんでした（容量が不足しています）');
+    }
+  }
+
+  // 保存済みの写真をマイページに反映する
+  function apply(){
+    var av = document.querySelector('#wcMypage .mp-av');
+    var cv = document.getElementById('mpCover');
+    var myAv = get(LS_AV), myCv = get(LS_CV), u = lineUser();
+
+    if (av){
+      var src = myAv || (u && u.pic) || '';
+      if (src) av.innerHTML = '<img src="' + src + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+      if (!av.querySelector('.wp-cam')){
+        var b = document.createElement('div'); b.className = 'wp-cam'; b.textContent = '📷';
+        av.appendChild(b);
+      }
+      av.onclick = function(ev){
+        ev.stopPropagation();
+        var items = [{ label:'写真を選ぶ', run: function(){ pickImage(400, 400, function(d){ saveImg(LS_AV, d); }); } }];
+        if (u && u.pic) items.push({ label:'LINEの写真に戻す', run: function(){ set(LS_AV, ''); apply(); } });
+        if (myAv) items.push({ label:'写真を削除', cls:'warn', run: function(){ set(LS_AV, ''); apply(); } });
+        openSheet('プロフィール写真', items);
+      };
+    }
+
+    if (cv){
+      if (myCv) cv.style.background = '#3a3025 url(' + myCv + ') center/cover';
+      if (!cv.querySelector('.wp-cam-cover')){
+        var b2 = document.createElement('div'); b2.className = 'wp-cam-cover'; b2.textContent = '📷';
+        cv.appendChild(b2);
+        b2.onclick = function(ev){ ev.stopPropagation(); openCover(); };
+      }
+      cv.onclick = openCover;
+    }
+    function openCover(){
+      var items = [{ label:'写真を選ぶ', run: function(){ pickImage(1200, 700, function(d){ saveImg(LS_CV, d); }); } }];
+      if (get(LS_CV)) items.push({ label:'元の写真に戻す', cls:'warn', run: function(){ set(LS_CV, ''); if (typeof openWabiMypage === 'function') openWabiMypage(); } });
+      openSheet('カバー写真', items);
+    }
+  }
+  window.wabiApplyProfilePhotos = apply;
+
+  // マイページを開くたびに反映（mypage.js が毎回作り直すため）
+  function bind(){
+    if (typeof window.openWabiMypage !== 'function' || window.openWabiMypage.__wp) return;
+    var orig = window.openWabiMypage;
+    var wrapped = function(){
+      var r = orig.apply(this, arguments);
+      setTimeout(apply, 0); setTimeout(apply, 250); setTimeout(apply, 900);
+      return r;
+    };
+    wrapped.__wp = true;
+    window.openWabiMypage = wrapped;
+  }
+  bind();
+  var n = 0;
+  var iv = setInterval(function(){ bind(); if (++n > 40) clearInterval(iv); }, 300);
+})();

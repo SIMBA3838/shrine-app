@@ -3436,7 +3436,7 @@
   // チャネルIDは公開情報（OAuthのclient_id相当）。チャネルシークレットは絶対にここに置かない。
   var LINE_CFG = {
     channelId: '2010884035',                        // LINEログイン チャネルID
-    liffId: '',                                     // LIFF ID（例 2010884035-xxxxxxxx）
+    liffId: '2010884035-qTXvJFEi',                   // LIFF ID
     redirectUri: location.origin + location.pathname,
     scope: 'profile openid'
   };

@@ -3943,10 +3943,18 @@
   // 同期する localStorage のキー
   var KEYS = ['wabiExpState', 'wabiFavorites', 'wabiAvatar', 'wabiCover', 'wabiRouteExtras', 'wabiExpRules'];
 
-  var CFG = { url: '', key: '' };
+  // Supabaseの接続先。どちらも公開前提の値（publishableキーはanonキーの後継）。
+  // ※ secretキー（sb_secret_...）は絶対にここへ置かないこと。
+  var CFG = {
+    url: 'https://rqkqjrzhvhsogwhtfbqh.supabase.co',
+    key: 'sb_publishable_cqf_45micn3pe7PtMq1seQ_2UEAxlCv'
+  };
+  function normUrl(u){
+    return String(u || '').trim().replace(/\/+$/, '').replace(/\/rest\/v1$/, '');
+  }
   try {
-    CFG.url = localStorage.getItem('wabiSbUrl') || '';
-    CFG.key = localStorage.getItem('wabiSbKey') || '';
+    CFG.url = normUrl(localStorage.getItem('wabiSbUrl') || CFG.url);
+    CFG.key = (localStorage.getItem('wabiSbKey') || CFG.key).trim();
   } catch(e){}
 
   function lineId(){
@@ -3957,14 +3965,22 @@
   }
   function enabled(){ return !!(CFG.url && CFG.key && lineId()); }
 
-  function headers(extra){
-    var h = {
-      'apikey': CFG.key,
-      'Authorization': 'Bearer ' + CFG.key,
-      'Content-Type': 'application/json'
-    };
+  // 旧anonキー（eyJ...）と新publishableキー（sb_publishable_...）の両方に対応
+  function headers(extra, withAuth){
+    var h = { 'apikey': CFG.key, 'Content-Type': 'application/json' };
+    if (withAuth !== false) h['Authorization'] = 'Bearer ' + CFG.key;
     for (var k in (extra || {})) h[k] = extra[k];
     return h;
+  }
+  // 401のときは Authorization を外してもう一度だけ試す
+  function call(url, opts, extra){
+    opts = opts || {};
+    opts.headers = headers(extra, true);
+    return fetch(url, opts).then(function(r){
+      if (r.status !== 401 && r.status !== 403) return r;
+      var o2 = { method: opts.method, body: opts.body, headers: headers(extra, false) };
+      return fetch(url, o2);
+    });
   }
 
   function snapshot(){
@@ -3995,7 +4011,7 @@
     if (!enabled()) return Promise.resolve(null);
     var url = CFG.url.replace(/\/+$/, '') + '/rest/v1/' + TABLE
             + '?line_id=eq.' + encodeURIComponent(lineId()) + '&select=data,updated_at';
-    return fetch(url, { headers: headers() })
+    return call(url, {})
       .then(function(r){ return r.ok ? r.json() : null; })
       .then(function(rows){
         if (!rows || !rows.length) return null;
@@ -4017,11 +4033,9 @@
     if (!enabled()) return Promise.resolve(false);
     var url = CFG.url.replace(/\/+$/, '') + '/rest/v1/' + TABLE + '?on_conflict=line_id';
     var body = [{ line_id: lineId(), data: snapshot(), updated_at: new Date().toISOString() }];
-    return fetch(url, {
-      method: 'POST',
-      headers: headers({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
-      body: JSON.stringify(body)
-    }).then(function(r){
+    return call(url, { method: 'POST', body: JSON.stringify(body) },
+                { 'Prefer': 'resolution=merge-duplicates,return=minimal' }
+    ).then(function(r){
       if (r.ok) { touch(); return true; }
       return false;
     }).catch(function(){ return false; });
@@ -4065,7 +4079,7 @@
     keys: KEYS,
     enabled: enabled,
     setup: function(url, key){
-      CFG.url = (url || '').trim();
+      CFG.url = normUrl(url);
       CFG.key = (key || '').trim();
       try {
         localStorage.setItem('wabiSbUrl', CFG.url);
@@ -4078,6 +4092,14 @@
     push: push,
     status: function(){
       return { hasUrl: !!CFG.url, hasKey: !!CFG.key, loggedIn: !!lineId(), enabled: enabled(), lastSync: localStamp() };
+    },
+    // 接続確認（テーブルが見えるかどうかだけを試す）
+    test: function(){
+      if (!CFG.url || !CFG.key) return Promise.resolve({ ok:false, reason:'URLかキーが未設定です' });
+      var url = CFG.url.replace(/\/+$/, '') + '/rest/v1/' + TABLE + '?select=line_id&limit=1';
+      return call(url, {}).then(function(r){
+        return r.text().then(function(t){ return { ok: r.ok, status: r.status, body: t.slice(0, 200) }; });
+      }).catch(function(e){ return { ok:false, reason: String(e && e.message || e) }; });
     }
   };
 

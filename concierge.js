@@ -3681,4 +3681,24 @@
   var n = 0;
   var iv = setInterval(function(){ buildButton(); if (++n > 30) clearInterval(iv); }, 400);
   setTimeout(function(){ try { window.WabiLine.restore(); } catch(e){} }, 2000);
+
+  // 既存の会員ページ（#pgRegister）の「LINEで登録・ログイン」を実際に動かす
+  function hookRegister(){
+    var orig = window.regWithProvider;
+    if (typeof orig !== 'function' || orig.__wl) return;
+    var wrapped = function(provider){
+      if (provider === 'LINE'){
+        var pr = document.getElementById('pgRegister');
+        if (pr) pr.style.display = 'none';
+        window.WabiLine.start();
+        return;
+      }
+      return orig.apply(this, arguments);
+    };
+    wrapped.__wl = true;
+    window.regWithProvider = wrapped;
+  }
+  hookRegister();
+  var m = 0;
+  var iv2 = setInterval(function(){ hookRegister(); if (++m > 30) clearInterval(iv2); }, 400);
 })();

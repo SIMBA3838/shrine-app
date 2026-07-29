@@ -3868,3 +3868,163 @@
   var n = 0;
   var iv = setInterval(function(){ bind(); if (++n > 40) clearInterval(iv); }, 300);
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：Supabase同期（機種変更しても引き継げるようにする）
+   ・LINEでログインしている間だけ動く
+   ・保存するのは EXP／お気に入り／写真／ルート追加スポット
+   ・URLとanonキーを設定するまでは何もしない（今までどおり端末内保存）
+     設定：WabiSync.setup('https://xxxx.supabase.co', 'anonキー')
+   （2026-07-27 追加 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.WabiSync) return;
+
+  var TABLE = 'wabi_profiles';
+  // 同期する localStorage のキー
+  var KEYS = ['wabiExpState', 'wabiFavorites', 'wabiAvatar', 'wabiCover', 'wabiRouteExtras', 'wabiExpRules'];
+
+  var CFG = { url: '', key: '' };
+  try {
+    CFG.url = localStorage.getItem('wabiSbUrl') || '';
+    CFG.key = localStorage.getItem('wabiSbKey') || '';
+  } catch(e){}
+
+  function lineId(){
+    try {
+      var u = window.WabiLine && WabiLine.user && WabiLine.user();
+      return (u && u.id) ? u.id : '';
+    } catch(e){ return ''; }
+  }
+  function enabled(){ return !!(CFG.url && CFG.key && lineId()); }
+
+  function headers(extra){
+    var h = {
+      'apikey': CFG.key,
+      'Authorization': 'Bearer ' + CFG.key,
+      'Content-Type': 'application/json'
+    };
+    for (var k in (extra || {})) h[k] = extra[k];
+    return h;
+  }
+
+  function snapshot(){
+    var o = {};
+    KEYS.forEach(function(k){
+      try { var v = localStorage.getItem(k); if (v != null) o[k] = v; } catch(e){}
+    });
+    return o;
+  }
+  function restore(data){
+    if (!data || typeof data !== 'object') return 0;
+    var n = 0;
+    KEYS.forEach(function(k){
+      if (typeof data[k] === 'string'){
+        try { localStorage.setItem(k, data[k]); n++; } catch(e){}
+      }
+    });
+    return n;
+  }
+  function localStamp(){
+    try { return +(localStorage.getItem('wabiSyncAt') || 0); } catch(e){ return 0; }
+  }
+  function touch(){
+    try { localStorage.setItem('wabiSyncAt', String(Date.now())); } catch(e){}
+  }
+
+  function pull(){
+    if (!enabled()) return Promise.resolve(null);
+    var url = CFG.url.replace(/\/+$/, '') + '/rest/v1/' + TABLE
+            + '?line_id=eq.' + encodeURIComponent(lineId()) + '&select=data,updated_at';
+    return fetch(url, { headers: headers() })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(rows){
+        if (!rows || !rows.length) return null;
+        var row = rows[0];
+        var remote = row.updated_at ? Date.parse(row.updated_at) : 0;
+        // サーバー側が新しいときだけ端末に取り込む
+        if (remote > localStamp()){
+          var n = restore(row.data);
+          touch();
+          repaint();
+          return { restored: n, at: remote };
+        }
+        return { restored: 0, at: remote };
+      })
+      .catch(function(){ return null; });
+  }
+
+  function push(){
+    if (!enabled()) return Promise.resolve(false);
+    var url = CFG.url.replace(/\/+$/, '') + '/rest/v1/' + TABLE + '?on_conflict=line_id';
+    var body = [{ line_id: lineId(), data: snapshot(), updated_at: new Date().toISOString() }];
+    return fetch(url, {
+      method: 'POST',
+      headers: headers({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
+      body: JSON.stringify(body)
+    }).then(function(r){
+      if (r.ok) { touch(); return true; }
+      return false;
+    }).catch(function(){ return false; });
+  }
+
+  // 画面の再描画（EXPバー・写真・お気に入り件数）
+  function repaint(){
+    try { if (window.WabiExp) { /* 値はlocalStorage直読みなので描き直すだけでよい */ } } catch(e){}
+    try { if (typeof wabiApplyProfilePhotos === 'function') wabiApplyProfilePhotos(); } catch(e){}
+    try {
+      var mp = document.getElementById('wcMypage');
+      if (mp && mp.style.display === 'block' && typeof openWabiMypage === 'function') openWabiMypage();
+    } catch(e){}
+  }
+
+  // 変更をまとめて送る（連続操作で叩きすぎないように）
+  var timer = null;
+  function schedulePush(){
+    if (!enabled()) return;
+    clearTimeout(timer);
+    timer = setTimeout(function(){ push(); }, 2500);
+  }
+
+  // localStorage への書き込みを検知して自動保存
+  var _set = localStorage.setItem.bind(localStorage);
+  var _rm  = localStorage.removeItem.bind(localStorage);
+  localStorage.setItem = function(k, v){
+    var r = _set(k, v);
+    if (KEYS.indexOf(k) >= 0) schedulePush();
+    return r;
+  };
+  localStorage.removeItem = function(k){
+    var r = _rm(k);
+    if (KEYS.indexOf(k) >= 0) schedulePush();
+    return r;
+  };
+
+  window.WabiSync = {
+    config: CFG,
+    table: TABLE,
+    keys: KEYS,
+    enabled: enabled,
+    setup: function(url, key){
+      CFG.url = (url || '').trim();
+      CFG.key = (key || '').trim();
+      try {
+        localStorage.setItem('wabiSbUrl', CFG.url);
+        localStorage.setItem('wabiSbKey', CFG.key);
+      } catch(e){}
+      if (typeof showToast === 'function') showToast('Supabaseの接続先を設定しました');
+      return pull().then(function(){ return push(); });
+    },
+    pull: pull,
+    push: push,
+    status: function(){
+      return { hasUrl: !!CFG.url, hasKey: !!CFG.key, loggedIn: !!lineId(), enabled: enabled(), lastSync: localStamp() };
+    }
+  };
+
+  // ログイン済みなら起動時に取り込む
+  setTimeout(function(){ if (enabled()) pull(); }, 3500);
+  // 画面を離れるときに取りこぼしを送る
+  window.addEventListener('pagehide', function(){ if (enabled()) push(); });
+})();

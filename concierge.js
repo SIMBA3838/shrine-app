@@ -4007,11 +4007,15 @@
     try { localStorage.setItem('wabiSyncAt', String(Date.now())); } catch(e){}
   }
 
+  function rpc(fn, args){
+    var url = CFG.url + '/rest/v1/rpc/' + fn;
+    return call(url, { method: 'POST', body: JSON.stringify(args) });
+  }
+
   function pull(){
     if (!enabled()) return Promise.resolve(null);
-    var url = CFG.url.replace(/\/+$/, '') + '/rest/v1/' + TABLE
-            + '?line_id=eq.' + encodeURIComponent(lineId()) + '&select=data,updated_at';
-    return call(url, {})
+    // テーブルを直接読まず、自分の行だけを返す関数を呼ぶ
+    return rpc('wabi_get', { p_line_id: lineId() })
       .then(function(r){ return r.ok ? r.json() : null; })
       .then(function(rows){
         if (!rows || !rows.length) return null;
@@ -4031,14 +4035,11 @@
 
   function push(){
     if (!enabled()) return Promise.resolve(false);
-    var url = CFG.url.replace(/\/+$/, '') + '/rest/v1/' + TABLE + '?on_conflict=line_id';
-    var body = [{ line_id: lineId(), data: snapshot(), updated_at: new Date().toISOString() }];
-    return call(url, { method: 'POST', body: JSON.stringify(body) },
-                { 'Prefer': 'resolution=merge-duplicates,return=minimal' }
-    ).then(function(r){
-      if (r.ok) { touch(); return true; }
-      return false;
-    }).catch(function(){ return false; });
+    return rpc('wabi_put', { p_line_id: lineId(), p_data: snapshot() })
+      .then(function(r){
+        if (r.ok) { touch(); return true; }
+        return false;
+      }).catch(function(){ return false; });
   }
 
   // 画面の再描画（EXPバー・写真・お気に入り件数）
@@ -4096,8 +4097,7 @@
     // 接続確認（テーブルが見えるかどうかだけを試す）
     test: function(){
       if (!CFG.url || !CFG.key) return Promise.resolve({ ok:false, reason:'URLかキーが未設定です' });
-      var url = CFG.url.replace(/\/+$/, '') + '/rest/v1/' + TABLE + '?select=line_id&limit=1';
-      return call(url, {}).then(function(r){
+      return rpc('wabi_get', { p_line_id: lineId() || 'CONNECTION_TEST' }).then(function(r){
         return r.text().then(function(t){ return { ok: r.ok, status: r.status, body: t.slice(0, 200) }; });
       }).catch(function(e){ return { ok:false, reason: String(e && e.message || e) }; });
     }

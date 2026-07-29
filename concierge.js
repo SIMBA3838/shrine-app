@@ -3219,23 +3219,54 @@
     '.wx-hrow .ex{font-size:13px;font-weight:700;color:' + C.gold + ';}',
     '.wx-day{font-size:11.5px;color:' + C.mute + ';font-weight:700;margin:14px 0 4px;font-family:\'Noto Serif JP\',serif;}',
     '.wx-empty{font-size:12.5px;color:#a8a29a;text-align:center;padding:18px 0;font-family:\'Noto Serif JP\',serif;}',
-    // 紹介ページ
-    '.wx-giftbox{background:linear-gradient(135deg,#6E4BA8,#8a63c9);border-radius:22px;padding:24px 18px;color:#fff;text-align:center;box-shadow:0 10px 28px rgba(110,75,168,.28);}',
-    '.wx-giftbox .s{font-size:12.5px;opacity:.9;font-family:\'Noto Serif JP\',serif;}',
-    '.wx-giftbox .n{font-size:34px;font-weight:700;margin:2px 0 10px;letter-spacing:.02em;}',
-    '.wx-giftbox .d{height:1px;background:rgba(255,255,255,.3);margin:14px 24px;}',
-    '.wx-giftbox .n2{font-size:24px;font-weight:700;margin-top:2px;}',
-    '.wx-line{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:15px;border:none;border-radius:16px;',
-      'background:#06C755;color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 6px 18px rgba(6,199,85,.28);}',
-    '.wx-copy{display:flex;gap:8px;margin-top:12px;}',
-    '.wx-copy input{flex:1;min-width:0;padding:12px;border:1px solid #e6dcc6;border-radius:14px;background:#fff;font-size:12px;color:#555;font-family:\'Noto Serif JP\',serif;}',
-    '.wx-copy button{padding:12px 16px;border:1px solid ' + C.purple + ';border-radius:14px;background:#fff;color:' + C.purple + ';font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;}',
-    '.wx-qr{text-align:center;padding:18px;}',
-    '.wx-qr img{width:170px;height:170px;border-radius:14px;background:#fff;}',
-    '.wx-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}',
-    '.wx-kpi{background:' + C.card + ';border-radius:18px;box-shadow:0 4px 14px rgba(0,0,0,.05);padding:16px;text-align:center;}',
-    '.wx-kpi .l{font-size:11.5px;color:' + C.mute + ';font-family:\'Noto Serif JP\',serif;}',
-    '.wx-kpi .v{font-size:24px;font-weight:700;color:' + C.purple + ';margin-top:4px;}',
+    // 紹介ページ（2026-07-27 リデザイン）
+    "#wxInvite{background:#F8F6F2;}",
+    "#wxInvite .wx-hd{justify-content:flex-start;position:relative;border-bottom:none;padding:18px 24px 6px;}",
+    "#wxInvite .wx-hd .t{position:absolute;left:0;right:0;text-align:center;font-size:20px;font-weight:700;color:#222;letter-spacing:.06em;pointer-events:none;}",
+    "#wxInvite .wx-hd .b{position:relative;z-index:2;color:#222;}",
+    "#wxInvite .wx-in{padding:10px 24px 56px;}",
+    "#wxInvite .iv-sec{margin-top:32px;}",
+    "#wxInvite .iv-lbl{font-size:13px;font-weight:700;color:#222;letter-spacing:.06em;margin-bottom:12px;}",
+    "#wxInvite .iv-card{background:#fff;border-radius:24px;box-shadow:0 10px 30px rgba(0,0,0,.08);padding:36px 24px 30px;text-align:center;",
+      "opacity:0;transform:translateY(10px);animation:ivIn .5s cubic-bezier(.22,.61,.36,1) forwards;}",
+    "@keyframes ivIn{to{opacity:1;transform:none;}}",
+    "#wxInvite .iv-d1{animation-delay:.05s;} #wxInvite .iv-d2{animation-delay:.14s;} #wxInvite .iv-d3{animation-delay:.22s;}",
+    "#wxInvite .iv-h{font-size:18px;font-weight:700;color:#222;letter-spacing:.04em;}",
+    "#wxInvite .iv-exp{font-size:54px;font-weight:800;color:#7B58C6;line-height:1.15;margin:14px 0 2px;letter-spacing:-.01em;}",
+    "#wxInvite .iv-exp small{font-size:22px;font-weight:700;margin-left:4px;}",
+    "#wxInvite .iv-cap{font-size:13.5px;color:#666;font-family:'Noto Serif JP',serif;}",
+    "#wxInvite .iv-line{height:1px;background:#EFEAE0;margin:26px 8px 22px;}",
+    "#wxInvite .iv-sub{font-size:13.5px;color:#666;font-family:'Noto Serif JP',serif;}",
+    "#wxInvite .iv-exp2{font-size:38px;font-weight:800;color:#C8A04D;line-height:1.2;margin:6px 0 12px;}",
+    "#wxInvite .iv-exp2 small{font-size:17px;font-weight:700;margin-left:3px;}",
+    "#wxInvite .iv-note{font-size:12.5px;color:#666;line-height:1.8;font-family:'Noto Serif JP',serif;}",
+    "#wxInvite .iv-linebtn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:56px;border:none;",
+      "border-radius:16px;background:#06C755;color:#fff;font-family:'Shippori Mincho',serif;font-size:16px;font-weight:700;",
+      "letter-spacing:.04em;cursor:pointer;box-shadow:0 8px 22px rgba(6,199,85,.26);transition:transform .12s;}",
+    "#wxInvite .iv-linebtn:active{transform:scale(.95);}",
+    "#wxInvite .iv-linebtn svg{width:24px;height:24px;}",
+    "#wxInvite .iv-or{display:flex;align-items:center;gap:14px;margin:26px 0 0;color:#9a948a;font-size:12px;letter-spacing:.1em;}",
+    "#wxInvite .iv-or::before,#wxInvite .iv-or::after{content:'';flex:1;height:1px;background:#E7E1D6;}",
+    "#wxInvite .iv-urlrow{display:flex;gap:10px;align-items:stretch;}",
+    "#wxInvite .iv-url{flex:1;min-width:0;height:48px;padding:0 14px;border:1px solid #E7E1D6;border-radius:14px;background:#fff;",
+      "font-family:'Noto Serif JP',serif;font-size:12.5px;color:#444;box-sizing:border-box;}",
+    "#wxInvite .iv-copy{flex:0 0 auto;height:48px;padding:0 18px;border:1px solid #7B58C6;border-radius:14px;background:#fff;",
+      "color:#7B58C6;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:transform .12s;}",
+    "#wxInvite .iv-copy:active{transform:scale(.95);}",
+    "#wxInvite .iv-qr{background:#fff;border-radius:24px;box-shadow:0 10px 30px rgba(0,0,0,.08);padding:28px 24px 22px;text-align:center;}",
+    "#wxInvite .iv-qr img{width:190px;height:190px;display:block;margin:0 auto 16px;}",
+    "#wxInvite .iv-steps{background:#fff;border-radius:24px;box-shadow:0 10px 30px rgba(0,0,0,.08);padding:22px 24px;}",
+    "#wxInvite .iv-step{display:flex;align-items:center;gap:13px;padding:11px 0;}",
+    "#wxInvite .iv-step + .iv-step{border-top:1px solid #F2EEE5;}",
+    "#wxInvite .iv-no{flex:0 0 24px;width:24px;height:24px;border-radius:50%;background:#F1ECFA;color:#7B58C6;",
+      "font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;}",
+    "#wxInvite .iv-step span{font-size:14px;color:#222;font-family:'Noto Serif JP',serif;}",
+    "#wxInvite .iv-done{font-size:12.5px;color:#666;text-align:center;margin-top:14px;font-family:'Noto Serif JP',serif;}",
+    "#wxInvite .iv-fine{font-size:11px;color:#9a948a;text-align:center;margin-top:24px;line-height:1.7;font-family:'Noto Serif JP',serif;}",
+    "#wxInvite .iv-kpi{display:grid;grid-template-columns:1fr 1fr;gap:12px;}",
+    "#wxInvite .iv-kpi > div{background:#fff;border-radius:20px;box-shadow:0 10px 30px rgba(0,0,0,.08);padding:18px;text-align:center;}",
+    "#wxInvite .iv-kpi .l{font-size:12px;color:#666;font-family:'Noto Serif JP',serif;}",
+    "#wxInvite .iv-kpi .v{font-size:26px;font-weight:800;color:#7B58C6;margin-top:5px;}",
     '.wx-note{font-size:11px;color:#a09a90;line-height:1.7;margin-top:12px;font-family:\'Noto Serif JP\',serif;}'
   ].join('');
   document.head.appendChild(css);
@@ -3327,50 +3358,77 @@
   function setSeed(){ var s = String(Date.now()); try { localStorage.setItem('wabiInviteSeed', s); } catch(e){} return s; }
   function hashCode(s){ var h = 0; for (var i = 0; i < s.length; i++){ h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; } return h; }
 
+  var LINE_ICON = '<svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12 2C6.48 2 2 5.78 2 10.43c0 4.18 3.49 7.69 8.21 8.36.32.07.75.21.86.49.1.25.06.64.03.89l-.14.84c-.04.25-.19.97.85.53 1.04-.44 5.6-3.3 7.64-5.65 1.41-1.55 2.08-3.12 2.08-4.93C21.83 5.78 17.35 2 12 2zM8.31 12.98H6.43c-.22 0-.41-.18-.41-.41V9.04c0-.22.18-.41.41-.41h.16c.22 0 .41.18.41.41v3.12h1.31c.22 0 .41.18.41.41v.16c0 .05-.19.25-.41.25zm1.6-.41c0 .22-.18.41-.41.41h-.16c-.22 0-.41-.18-.41-.41V9.04c0-.22.18-.41.41-.41h.16c.22 0 .41.18.41.41v3.53zm4.05 0c0 .18-.11.33-.28.38-.4.01-.8.02-.13.02-.13 0-.25-.07-.32-.16l-1.61-2.19v1.95c0 .22-.18.41-.41.41h-.16c-.22 0-.41-.18-.41-.41V9.04c0-.18.11-.33.28-.38.04-.1.08-.2.13-.2.13 0 .25.07.32.16l1.61 2.19V9.04c0-.22.18-.41.41-.41h.16c.22 0 .41.18.41.41v3.53zm3.15-2.53c.22 0 .41.18.41.41v.16c0 .22-.18.41-.41.41h-1.31v.84h1.31c.22 0 .41.18.41.41v.16c0 .22-.18.41-.41.41h-1.88c-.22 0-.41-.18-.41-.41V9.04c0-.22.18-.41.41-.41h1.88c.22 0 .41.18.41.41v.16c0 .22-.18.41-.41.41h-1.31v.84h1.31z"/></svg>';
+
   function renderInvite(){
     var st = store(), url = inviteUrl();
-    var earned = st.invites * (rules().invite_sender.exp || 300);
-    var h = '';
-    h += '<div class="wx-sec"><div class="wx-giftbox">'
-       +   '<div class="s">紹介すると、あなたに</div><div class="n">＋300 EXP</div>'
-       +   '<div class="d"></div>'
-       +   '<div class="s">紹介されたお友達にも</div><div class="n2">＋100 EXP</div>'
-       + '</div></div>';
+    var R = rules();
+    var expMe = (R.invite_sender && R.invite_sender.exp) || 300;
+    var expYou = (R.invite_receiver && R.invite_receiver.exp) || 100;
+    var earned = st.invites * expMe;
 
-    h += '<div class="wx-sec"><button class="wx-line" id="wxLine"><span>LINE</span>LINEで友達に送る</button>'
-       +   '<div class="wx-copy"><input id="wxUrl" readonly value="' + esc2(url) + '"><button id="wxCopy">コピー</button></div>'
+    var h = '';
+
+    // ② 紹介カード
+    h += '<div class="iv-card iv-d1">'
+       +   '<div class="iv-h">一緒に巡拝を楽しもう</div>'
+       +   '<div class="iv-exp">＋' + expMe + '<small>EXP</small></div>'
+       +   '<div class="iv-cap">あなたに授与されます</div>'
+       +   '<div class="iv-line"></div>'
+       +   '<div class="iv-sub">紹介された方にも</div>'
+       +   '<div class="iv-exp2">＋' + expYou + '<small>EXP</small></div>'
+       +   '<div class="iv-note">紹介された方も、無料会員登録の完了で<br>経験値を獲得できます。</div>'
        + '</div>';
 
-    h += '<div class="wx-sec"><div class="wx-h">QRコード</div><div class="wx-card"><div class="wx-qr">'
-       +   '<img id="wxQr" alt="紹介用QRコード" src="https://api.qrserver.com/v1/create-qr-code/?size=340x340&margin=8&data=' + encodeURIComponent(url) + '">'
-       +   '<div class="wx-note" id="wxQrNote">お友達に読み取ってもらってください</div>'
-       + '</div></div></div>';
+    // ③ LINEボタン
+    h += '<div class="iv-sec"><button class="iv-linebtn" id="ivLine">' + LINE_ICON + 'LINEで友達に送る</button>'
+       +   '<div class="iv-or">または</div></div>';
 
-    h += '<div class="wx-sec"><div class="wx-2">'
-       +   '<div class="wx-kpi"><div class="l">紹介した人数</div><div class="v">' + st.invites + '<span style="font-size:13px">人</span></div></div>'
-       +   '<div class="wx-kpi"><div class="l">紹介で獲得したEXP</div><div class="v">' + earned + '</div></div>'
-       + '</div>'
-       + '<div class="wx-note">※ EXPはお友達の登録が完了した時点で付与されます。<br>'
-       +   '※ LINEでの会員登録機能は現在準備中です。いまはリンクとQRコードの発行のみご利用いただけます。</div></div>';
+    // ④ 紹介URL
+    h += '<div class="iv-sec"><div class="iv-lbl">紹介URL</div>'
+       +   '<div class="iv-urlrow"><input class="iv-url" id="ivUrl" readonly value="' + esc2(url) + '">'
+       +   '<button class="iv-copy" id="ivCopy">コピー</button></div></div>';
 
-    var box = invitePg.querySelector('.wx-in');
-    box.innerHTML = h;
+    // ⑤ QRコード
+    h += '<div class="iv-sec"><div class="iv-lbl">QRコード</div><div class="iv-qr">'
+       +   '<img id="ivQr" alt="紹介用QRコード" src="https://api.qrserver.com/v1/create-qr-code/?size=380x380&margin=6&data='
+       +     encodeURIComponent(url) + '">'
+       +   '<div class="iv-cap" id="ivQrNote">友達に読み取ってもらうだけでOK</div>'
+       + '</div></div>';
 
-    document.getElementById('wxLine').onclick = function(){
+    // ⑥ 紹介成立条件
+    h += '<div class="iv-sec"><div class="iv-lbl">紹介成立の条件</div><div class="iv-steps">'
+       +   '<div class="iv-step"><span class="iv-no">1</span><span>お友達がLINEで登録</span></div>'
+       +   '<div class="iv-step"><span class="iv-no">2</span><span>無料会員登録が完了</span></div>'
+       +   '<div class="iv-step"><span class="iv-no">3</span><span>はじめてログイン</span></div>'
+       +   '<div class="iv-done">3つすべて完了すると紹介成立です</div>'
+       + '</div></div>';
+
+    // 実績
+    h += '<div class="iv-sec"><div class="iv-kpi">'
+       +   '<div><div class="l">紹介した人数</div><div class="v">' + st.invites + '<span style="font-size:13px">人</span></div></div>'
+       +   '<div><div class="l">紹介で得たEXP</div><div class="v">' + earned + '</div></div>'
+       + '</div></div>';
+
+    h += '<div class="iv-fine">※ 紹介成立後に経験値が付与されます。<br>'
+       +   'LINEでの会員登録機能は現在準備中です。</div>';
+
+    invitePg.querySelector('.wx-in').innerHTML = h;
+
+    document.getElementById('ivLine').onclick = function(){
       var text = 'わびなびで一緒に神社めぐりしませんか？\n' + url;
       window.open('https://line.me/R/msg/text/?' + encodeURIComponent(text), '_blank', 'noopener');
     };
-    document.getElementById('wxCopy').onclick = function(){
-      var inp = document.getElementById('wxUrl');
-      inp.select(); inp.setSelectionRange(0, 99999);
-      try { document.execCommand('copy'); } catch(e){}
+    document.getElementById('ivCopy').onclick = function(){
+      var inp = document.getElementById('ivUrl');
+      try { inp.select(); inp.setSelectionRange(0, 99999); document.execCommand('copy'); } catch(e){}
       if (navigator.clipboard) navigator.clipboard.writeText(url).catch(function(){});
-      if (typeof showToast === 'function') showToast('紹介リンクをコピーしました');
+      if (typeof showToast === 'function') showToast('コピーしました');
     };
-    var qr = document.getElementById('wxQr');
+    var qr = document.getElementById('ivQr');
     qr.onerror = function(){
       qr.style.display = 'none';
-      document.getElementById('wxQrNote').textContent = 'QRコードを読み込めませんでした。上のリンクをコピーしてお使いください。';
+      document.getElementById('ivQrNote').textContent = 'QRコードを読み込めませんでした。上の紹介URLをお使いください。';
     };
   }
 

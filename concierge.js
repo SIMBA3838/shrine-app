@@ -3600,7 +3600,7 @@
   var css = document.createElement('style');
   css.textContent = [
     '.wl-wrap{position:relative;display:flex;align-items:center;}',
-    ".wl-btn{display:flex;align-items:center;gap:7px;background:#2a2a2a;color:#fff;border:none;border-radius:999px;",
+    ".wl-btn{display:flex;align-items:center;gap:7px;background:#5D3A7A;color:#fff;border:none;border-radius:999px;",
       "padding:10px 18px;font-family:'Shippori Mincho',serif;font-size:14px;font-weight:700;letter-spacing:.06em;",
       "cursor:pointer;white-space:nowrap;transition:opacity .15s;}",
     '.wl-btn:active{opacity:.85;}',
@@ -3801,7 +3801,12 @@
     '.wp-sheet button{display:block;width:100%;padding:16px;border:none;background:transparent;border-top:1px solid #f0ebe1;',
       "font-family:inherit;font-size:15px;color:#2D2D2D;cursor:pointer;}",
     '.wp-sheet button.warn{color:#b23a2c;}',
-    '.wp-sheet button.cancel{margin-top:8px;border-top:none;background:#f6f2ea;border-radius:14px;font-weight:700;}'
+    '.wp-sheet button.cancel{margin-top:8px;border-top:none;background:#f6f2ea;border-radius:14px;font-weight:700;}',
+    '.wp-namebox{padding:4px 0 14px;}',
+    ".wp-namebox input{width:100%;box-sizing:border-box;padding:14px;border:1px solid #e6dcc6;border-radius:14px;"
+      +"font-family:'Shippori Mincho',serif;font-size:16px;color:#2D2D2D;background:#fff;outline:none;}",
+    '.wp-namebox input:focus{border-color:#5D3A7A;}',
+    '#wcMypage .mp-name .wp-pen{font-size:12px;opacity:.65;margin-left:7px;vertical-align:middle;}'
   ].join('');
   document.head.appendChild(css);
 
@@ -3871,10 +3876,42 @@
     }
   }
 
+  // ── 名前の編集 ──────────────────────────────────────────
+  var LS_NM = 'wabiName';
+  function openNameSheet(cur, hasLine){
+    sheet.innerHTML = '<div class="bar"></div><div class="ttl">表示名を変更</div>'
+      + '<div class="wp-namebox"><input id="wpName" maxlength="20" placeholder="お名前（20文字まで）" value="' + String(cur || '').replace(/"/g, '&quot;') + '"></div>'
+      + '<button data-a="save">保存する</button>'
+      + (hasLine ? '<button data-a="line">LINEの名前に戻す</button>' : '')
+      + '<button class="cancel" data-a="cancel">キャンセル</button>';
+    sheet.querySelectorAll('button').forEach(function(b){
+      b.onclick = function(){
+        var a = b.getAttribute('data-a');
+        var v = (document.getElementById('wpName') || {}).value || '';
+        closeSheet();
+        setTimeout(function(){
+          if (a === 'save'){
+            v = v.trim();
+            if (!v) { if (typeof showToast === 'function') showToast('お名前を入力してください'); return; }
+            set(LS_NM, v); apply();
+            if (typeof showToast === 'function') showToast('表示名を変更しました');
+          } else if (a === 'line'){
+            set(LS_NM, ''); apply();
+            if (typeof showToast === 'function') showToast('LINEの名前に戻しました');
+          }
+        }, 120);
+      };
+    });
+    mask.classList.add('on');
+    requestAnimationFrame(function(){ sheet.classList.add('on'); });
+    setTimeout(function(){ var i = document.getElementById('wpName'); if (i) i.focus(); }, 320);
+  }
+
   // 保存済みの写真をマイページに反映する
   function apply(){
     var av = document.querySelector('#wcMypage .mp-av');
     var cv = document.getElementById('mpCover');
+    var nmEl = document.querySelector('#wcMypage .mp-name');
     var myAv = get(LS_AV), myCv = get(LS_CV), u = lineUser();
 
     if (av){
@@ -3907,7 +3944,20 @@
       if (get(LS_CV)) items.push({ label:'元の写真に戻す', cls:'warn', run: function(){ set(LS_CV, ''); if (typeof openWabiMypage === 'function') openWabiMypage(); } });
       openSheet('カバー写真', items);
     }
+
+    // 名前（タップで変更）
+    if (nmEl){
+      var myNm = get(LS_NM);
+      var shown = myNm || (u && u.name) || nmEl.textContent.replace(/\s*✎\s*$/, '');
+      nmEl.innerHTML = esc3(shown) + '<span class="wp-pen">✎</span>';
+      nmEl.style.cursor = 'pointer';
+      nmEl.onclick = function(ev){
+        ev.stopPropagation();
+        openNameSheet(shown, !!(u && u.name));
+      };
+    }
   }
+  function esc3(t){ return String(t == null ? '' : t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   window.wabiApplyProfilePhotos = apply;
 
   // マイページを開くたびに反映（mypage.js が毎回作り直すため）
@@ -3941,7 +3991,7 @@
 
   var TABLE = 'wabi_profiles';
   // 同期する localStorage のキー
-  var KEYS = ['wabiExpState', 'wabiFavorites', 'wabiAvatar', 'wabiCover', 'wabiRouteExtras', 'wabiExpRules'];
+  var KEYS = ['wabiExpState', 'wabiFavorites', 'wabiAvatar', 'wabiCover', 'wabiRouteExtras', 'wabiExpRules', 'wabiName'];
 
   // Supabaseの接続先。どちらも公開前提の値（publishableキーはanonキーの後継）。
   // ※ secretキー（sb_secret_...）は絶対にここへ置かないこと。

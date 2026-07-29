@@ -3420,3 +3420,169 @@
   var tries = 0;
   var iv = setInterval(function(){ bindMypage(); if (++tries > 40 || (window.openWabiMypage && window.openWabiMypage.__wx)) clearInterval(iv); }, 300);
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：ヘッダー右上を「ログイン」に変更
+   タップすると ログイン ／ 新規登録 を選べるメニューを表示。
+   新規登録はLINEで登録する導線（チャネルID登録後に本稼働）。
+   （2026-07-27 追加 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiLoginBtn) return;
+  window.__wabiLoginBtn = true;
+
+  // ── LINEログインの設定（チャネル発行後にここへ入れる）──────
+  var LINE_CFG = {
+    channelId: '',                                  // LINEログイン チャネルID
+    redirectUri: location.origin + location.pathname,
+    scope: 'profile openid'
+  };
+  try { LINE_CFG.channelId = localStorage.getItem('wabiLineChannelId') || ''; } catch(e){}
+
+  window.WabiLine = {
+    config: LINE_CFG,
+    setChannelId: function(id){
+      LINE_CFG.channelId = id || '';
+      try { localStorage.setItem('wabiLineChannelId', LINE_CFG.channelId); } catch(e){}
+      return LINE_CFG.channelId;
+    },
+    authorizeUrl: function(){
+      if (!LINE_CFG.channelId) return null;
+      var state = 'wabi' + Date.now();
+      try { sessionStorage.setItem('wabiLineState', state); } catch(e){}
+      return 'https://access.line.me/oauth2/v2.1/authorize?response_type=code'
+        + '&client_id=' + encodeURIComponent(LINE_CFG.channelId)
+        + '&redirect_uri=' + encodeURIComponent(LINE_CFG.redirectUri)
+        + '&state=' + state
+        + '&scope=' + encodeURIComponent(LINE_CFG.scope)
+        + '&bot_prompt=aggressive';
+    },
+    start: function(){
+      var u = window.WabiLine.authorizeUrl();
+      if (u) { location.href = u; return true; }
+      if (typeof showToast === 'function') showToast('LINE登録は現在準備中です（チャネル設定待ち）');
+      return false;
+    }
+  };
+
+  // ── スタイル ─────────────────────────────────────────────
+  var css = document.createElement('style');
+  css.textContent = [
+    '.wl-wrap{position:relative;display:flex;align-items:center;}',
+    ".wl-btn{display:flex;align-items:center;gap:7px;background:#2a2a2a;color:#fff;border:none;border-radius:999px;",
+      "padding:10px 18px;font-family:'Shippori Mincho',serif;font-size:14px;font-weight:700;letter-spacing:.06em;",
+      "cursor:pointer;white-space:nowrap;transition:opacity .15s;}",
+    '.wl-btn:active{opacity:.85;}',
+    '.wl-btn svg{width:16px;height:16px;}',
+    '.wl-menu{position:absolute;top:calc(100% + 12px);right:0;min-width:190px;background:#fff;border:1px solid #ece4d3;',
+      'border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.13);display:none;z-index:120;overflow:hidden;}',
+    '.wl-menu.on{display:block;}',
+    '.wl-menu::before{content:"";position:absolute;top:-8px;right:26px;width:14px;height:14px;background:#fff;',
+      'border-left:1px solid #ece4d3;border-top:1px solid #ece4d3;transform:rotate(45deg);}',
+    ".wl-menu a{display:block;padding:16px 20px;font-family:'Shippori Mincho',serif;font-size:15px;color:#2a2a2a;",
+      'cursor:pointer;text-decoration:none;background:#fff;position:relative;z-index:1;}',
+    '.wl-menu a:active{background:#faf7f1;}',
+    '.wl-menu .sep{height:1px;background:#ece4d3;margin:0 20px;position:relative;z-index:1;}',
+    // 新規登録ページ
+    ".wl-pg{position:fixed;inset:0;z-index:330;background:#F8F6F2;display:none;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:'Shippori Mincho','Noto Serif JP',serif;color:#2D2D2D;}",
+    '.wl-hd{position:sticky;top:0;background:#F8F6F2;display:flex;align-items:center;gap:10px;padding:16px;border-bottom:1px solid #ece4d3;}',
+    '.wl-hd .b{font-size:22px;cursor:pointer;line-height:1;}',
+    '.wl-hd .t{font-size:15px;font-weight:800;letter-spacing:.1em;}',
+    '.wl-in{max-width:500px;margin:0 auto;padding:26px 20px 48px;}',
+    '.wl-lead{font-size:20px;font-weight:700;line-height:1.5;margin-bottom:10px;}',
+    ".wl-sub{font-size:13px;line-height:1.85;color:#6F6F6F;font-family:'Noto Serif JP',serif;margin-bottom:26px;}",
+    '.wl-line{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;padding:17px;border:none;border-radius:16px;',
+      'background:#06C755;color:#fff;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 8px 22px rgba(6,199,85,.28);}',
+    '.wl-mail{display:block;width:100%;margin-top:12px;padding:16px;border:1px solid #e6dcc6;border-radius:16px;background:#fff;',
+      'font-family:inherit;font-size:14px;font-weight:700;color:#6E4BA8;cursor:pointer;text-align:center;}',
+    '.wl-benefit{background:#fff;border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.06);padding:20px;margin-top:26px;}',
+    '.wl-benefit .h{font-size:14px;font-weight:700;margin-bottom:12px;}',
+    ".wl-benefit li{list-style:none;font-size:13.5px;line-height:1.7;color:#4a4a4a;font-family:'Noto Serif JP',serif;",
+      'display:flex;gap:9px;margin-top:9px;}',
+    '.wl-benefit li span.c{color:#C9A24A;font-weight:700;}',
+    ".wl-foot{font-size:11.5px;color:#a09a90;line-height:1.75;margin-top:22px;font-family:'Noto Serif JP',serif;text-align:center;}",
+    ".wl-login-link{display:block;text-align:center;margin-top:18px;font-size:13px;color:#6E4BA8;font-weight:700;cursor:pointer;}"
+  ].join('');
+  document.head.appendChild(css);
+
+  // ── 新規登録ページ ────────────────────────────────────────
+  var pg = document.createElement('div');
+  pg.className = 'wl-pg'; pg.id = 'wxSignup';
+  pg.innerHTML =
+      '<div class="wl-hd"><span class="b">‹</span><span class="t">新規登録</span></div>'
+    + '<div class="wl-in">'
+    +   '<div class="wl-lead">LINEではじめる<br>あなただけの巡礼帳</div>'
+    +   '<div class="wl-sub">LINEアカウントで登録すると、参拝の記録・御朱印・巡礼レベルがすべて保存され、'
+    +     '機種変更をしても引き継げます。パスワードを覚える必要はありません。</div>'
+    +   '<button class="wl-line" id="wlLineBtn"><span style="font-weight:800;letter-spacing:.05em">LINE</span>LINEで新規登録</button>'
+    +   '<button class="wl-mail" id="wlMailBtn">メールアドレスで登録する</button>'
+    +   '<div class="wl-benefit"><div class="h">会員になると</div><ul>'
+    +     '<li><span class="c">◆</span><span>参拝記録・御朱印を<b>クラウド保存</b></span></li>'
+    +     '<li><span class="c">◆</span><span>AI巡拝ルートが<b>無制限</b>に</span></li>'
+    +     '<li><span class="c">◆</span><span>お気に入りの神社仏閣を<b>複数端末</b>で共有</span></li>'
+    +     '<li><span class="c">◆</span><span>参拝や投稿で<b>巡礼レベル</b>が上がる</span></li>'
+    +     '<li><span class="c">◆</span><span>限定・特別御朱印の<b>お知らせ</b></span></li>'
+    +   '</ul></div>'
+    +   '<a class="wl-login-link" id="wlToLogin">すでにアカウントをお持ちの方はログイン ›</a>'
+    +   '<div class="wl-foot">登録することで利用規約とプライバシーポリシーに<br>同意したものとみなされます。</div>'
+    + '</div>';
+  document.body.appendChild(pg);
+  pg.querySelector('.b').onclick = function(){ pg.style.display = 'none'; };
+
+  function openLogin(){
+    pg.style.display = 'none';
+    try {
+      if (typeof openRegister === 'function') openRegister();
+      else document.getElementById('pgRegister').style.display = 'flex';
+      // ログインモードに切り替える
+      setTimeout(function(){
+        var hd = document.querySelector('#pgRegister .reg-hd-tit');
+        if (hd && hd.textContent.indexOf('ログイン') !== 0 && typeof regToggleMode === 'function') regToggleMode();
+      }, 30);
+    } catch(e){}
+  }
+  window.wabiOpenSignup = function(){ pg.style.display = 'block'; pg.scrollTop = 0; };
+  window.wabiOpenLogin  = openLogin;
+
+  document.getElementById('wlLineBtn').onclick = function(){ window.WabiLine.start(); };
+  document.getElementById('wlMailBtn').onclick = function(){
+    pg.style.display = 'none';
+    if (typeof openRegister === 'function') openRegister();
+  };
+  document.getElementById('wlToLogin').onclick = openLogin;
+
+  // ── ヘッダーのボタンを差し替える ────────────────────────────
+  function buildButton(){
+    var acts = document.querySelector('.site-hd-actions');
+    if (!acts || acts.querySelector('.wl-wrap')) return;
+    var btns = acts.querySelectorAll('.site-hd-btn');
+    if (btns.length < 2) return;
+    var target = btns[btns.length - 1];   // 右端（メニュー／マイページ）
+
+    var wrap = document.createElement('div');
+    wrap.className = 'wl-wrap';
+    wrap.innerHTML =
+        '<button class="wl-btn" id="wlBtn">'
+      +   '<svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="6.5" r="3.2" stroke="currentColor" stroke-width="1.6"/>'
+      +   '<path d="M3.5 17c0-3.6 13-3.6 13 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>'
+      +   'ログイン</button>'
+      + '<div class="wl-menu" id="wlMenu">'
+      +   '<a id="wlMenuLogin">ログイン</a><div class="sep"></div><a id="wlMenuSignup">新規登録</a>'
+      + '</div>';
+    target.parentNode.replaceChild(wrap, target);
+
+    var menu = document.getElementById('wlMenu');
+    document.getElementById('wlBtn').onclick = function(ev){
+      ev.stopPropagation();
+      menu.classList.toggle('on');
+    };
+    document.getElementById('wlMenuLogin').onclick  = function(){ menu.classList.remove('on'); openLogin(); };
+    document.getElementById('wlMenuSignup').onclick = function(){ menu.classList.remove('on'); window.wabiOpenSignup(); };
+    document.addEventListener('click', function(){ menu.classList.remove('on'); });
+  }
+
+  buildButton();
+  var n = 0;
+  var iv = setInterval(function(){ buildButton(); if (++n > 30) clearInterval(iv); }, 400);
+})();

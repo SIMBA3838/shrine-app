@@ -3507,7 +3507,9 @@
       if (typeof showToast === 'function') showToast('LINEに接続しています…');
       loadLiff().then(function(liff){
         return liff.init({ liffId: LINE_CFG.liffId }).then(function(){
-          if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return null; }
+          // redirectUri は指定しない。指定するとクエリ文字列付きURLになり、
+          // コールバックURLの完全一致に外れて 400 Bad Request になるため。
+          if (!liff.isLoggedIn()) { liff.login(); return null; }
           return liff.getProfile();
         });
       }).then(function(p){

@@ -5630,3 +5630,200 @@
   hook();
   setInterval(hook, 700);
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：投稿写真の差し替え ／ 画面のちらつき解消 ／
+             「11位〜30位」ボタンを極小に ／ 記事を25本に増やす
+   （2026-07-27 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiPolish) return;
+  window.__wabiPolish = true;
+
+  var css = document.createElement('style');
+  css.textContent = [
+    // 「11位〜30位を見る」を極小に
+    '.wabi-more-rank{padding:6px 10px !important;font-size:10.5px !important;border-radius:10px !important;',
+      'margin:2px auto 0 !important;width:max-content !important;gap:4px !important;letter-spacing:.02em !important;}',
+    // 画面の切り替えでちらつかないように
+    '#wcMypage,#pgMap,#wabiFeedPg,#wabiListPg{will-change:opacity;}',
+    '#wcMypage{transition:none !important;}'
+  ].join('');
+  document.head.appendChild(css);
+
+  // ── ① ちらつき解消：先に開いてから他を閉じる ────────────────
+  function closeOthers(keep){
+    ['pgShrineDetail','pgMap','pgRegister','pgAiRoute','pgAiResult','pgAreaSearch','pgPostDetail',
+     'pgTourList','pgSeasonList','pgEcList','pgOsupplyList','pgShukatsuList','pgArticleList',
+     'wabiRoutePg','wabiRankMore','wxGuide','wxInvite','wxSignup','wcMypage','wcPost',
+     'wabiListPg','wabiFeedPg'].forEach(function(id){
+      if (id === keep) return;
+      var el = document.getElementById(id);
+      if (el && el.style.display !== 'none') el.style.display = 'none';
+    });
+    if (keep !== 'wcMypage'){
+      var mp = document.getElementById('wcMypage');
+      if (mp) mp.classList.remove('show');
+    }
+  }
+
+  function rebindNav(){
+    var nav = document.getElementById('wabiNav');
+    if (!nav || nav.getAttribute('data-polish')) return;
+    nav.setAttribute('data-polish', '1');
+
+    function mark(k){
+      nav.querySelectorAll('.wn').forEach(function(el){
+        el.classList.toggle('on', el.getAttribute('data-k') === k);
+      });
+    }
+    nav.querySelectorAll('.wn').forEach(function(el){
+      var k = el.getAttribute('data-k');
+      el.onclick = function(){
+        mark(k);
+        if (k === 'home'){
+          closeOthers('');
+          if (typeof go === 'function') go('pgHome');
+          window.scrollTo({ top: 0, behavior: 'auto' });
+        } else if (k === 'map'){
+          // 先に地図を開いてから、あとで他を閉じる（間に白い画面を挟まない）
+          if (typeof searchNearby === 'function') searchNearby();
+          setTimeout(function(){ closeOthers('pgMap'); }, 30);
+          setTimeout(function(){
+            var m = document.getElementById('pgMap');
+            if (m && m.style.display !== 'flex' && typeof showMapArea === 'function') showMapArea();
+            closeOthers('pgMap');
+          }, 2200);
+        } else if (k === 'posts'){
+          if (typeof wabiOpenFeed === 'function') wabiOpenFeed();
+          setTimeout(function(){ closeOthers('wabiFeedPg'); }, 20);
+        } else if (k === 'my'){
+          if (typeof openWabiMypage === 'function') openWabiMypage();
+          setTimeout(function(){ closeOthers('wcMypage'); }, 20);
+        }
+      };
+    });
+  }
+  rebindNav();
+  var n0 = 0;
+  var iv0 = setInterval(function(){ rebindNav(); if (++n0 > 40) clearInterval(iv0); }, 300);
+
+  // ── ② サンプル投稿の写真を、その神社の実写に差し替える ────────
+  function fixPostPhotos(){
+    if (typeof USER_POSTS === 'undefined' || !Array.isArray(USER_POSTS)) return;
+    if (window.__wabiPostPhotoDone) return;
+    window.__wabiPostPhotoDone = true;
+    var names = USER_POSTS.map(function(p){ return p.shrine; }).filter(Boolean);
+    if (!names.length || typeof wikiPhotosFor !== 'function') return;
+    wikiPhotosFor(names, function(map){
+      var changed = false;
+      USER_POSTS.forEach(function(p){
+        if (p.shrine && map[p.shrine]) { p.img = map[p.shrine]; changed = true; }
+      });
+      if (changed){
+        try { if (typeof redesignCommunity === 'function') redesignCommunity(); } catch(e){}
+        try {
+          var f = document.getElementById('wabiFeedPg');
+          if (f && f.style.display === 'block' && typeof wabiOpenFeed === 'function') wabiOpenFeed();
+        } catch(e){}
+      }
+    });
+  }
+  setTimeout(fixPostPhotos, 2500);
+  setTimeout(fixPostPhotos, 6000);
+
+  // ── ③ 下書きのままだった記事25本をサイトに載せる ────────────
+  var ART_FILE = {
+    't12': 'articles/寺院/寺院記事12_20260617_shitamachi.html',
+    't11': 'articles/寺院/寺院記事11_20260617_botan.html',
+    't10': 'articles/寺院/寺院記事10_20260617_kinun.html',
+    'a13': 'articles/神社/記事13_20260608_京都東山.html',
+    'a12': 'articles/神社/記事12_20260608_京都嵐山.html',
+    'a11': 'articles/神社/記事11_20260608_京都洛中御朱印.html',
+    't09': 'articles/寺院/寺院記事09_20260605_shukubo.html',
+    't08': 'articles/寺院/寺院記事08_20260605_yamato.html',
+    't07': 'articles/寺院/寺院記事07_20260605_shakyou.html',
+    'a10': 'articles/神社/記事10_20260605_心身の浄化.html',
+    'a09': 'articles/神社/記事09_20260605_厄除け方位除け.html',
+    'a08': 'articles/神社/記事08_20260605_仕事運と出世.html',
+    't06': 'articles/寺院/寺院記事06_20260604_厄除け大師.html',
+    't05': 'articles/寺院/寺院記事05_20260604_切り絵御朱印.html',
+    't04': 'articles/寺院/寺院記事04_20260604_座禅体験.html',
+    'a07': 'articles/神社/記事07_20260604_縁結び神社.html',
+    'a06': 'articles/神社/記事06_20260604_金運神社.html',
+    'a05': 'articles/神社/記事05_20260604_切り絵御朱印.html',
+    't03': 'articles/寺院/寺院記事03_20260603_夜間特別拝観.html',
+    't02': 'articles/寺院/寺院記事02_20260603_あじさい寺.html',
+    't01': 'articles/寺院/寺院記事01_20260603_枯山水.html',
+    'a04': 'articles/神社/記事04_20260603_初詣縁起物.html',
+    'a03': 'articles/神社/記事03_20260603_紅葉絶景京都.html',
+    'a02': 'articles/神社/記事02_20260603_夏越の祓.html',
+    'a01': 'articles/神社/記事01_20260602_桜と御朱印.html'
+  };
+
+  function loadArticles(){
+    if (typeof ARTICLES === 'undefined' || !Array.isArray(ARTICLES)) return;
+    if (window.__wabiArtLoaded) return;
+    window.__wabiArtLoaded = true;
+    fetch('articles-data.json?v=' + Date.now()).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){
+      if (!j || !j.articles) return;
+      var have = {};
+      ARTICLES.forEach(function(a){ have[a.title] = 1; });
+      var added = 0;
+      j.articles.forEach(function(a){
+        if (!a || !a.title || have[a.title]) return;
+        ARTICLES.push({
+          id: a.id, title: a.title, date: a.date, cat: a.cat || a.type || '記事',
+          img: a.img || '', excerpt: a.excerpt || '',
+          body: '<p class="lead">' + (a.excerpt || '') + '</p><p style="color:#999">読み込んでいます…</p>',
+          _file: ART_FILE[a.id] || ''
+        });
+        added++;
+      });
+      if (!added) return;
+      // 新しい順に並べ替え
+      ARTICLES.sort(function(x, y){ return String(y.date).localeCompare(String(x.date)); });
+      try { if (typeof renderArticleList === 'function') renderArticleList('artList', 5); } catch(e){}
+      try {
+        var full = document.getElementById('artListFull');
+        if (full && typeof renderArticleList === 'function') renderArticleList('artListFull', null);
+      } catch(e){}
+    }).catch(function(){});
+  }
+  loadArticles();
+  var n1 = 0;
+  var iv1 = setInterval(function(){ loadArticles(); if (++n1 > 20) clearInterval(iv1); }, 500);
+
+  // 記事を開いたら本文ファイルを読み込む
+  function hookOpenArticle(){
+    if (typeof window.openArticle !== 'function' || window.openArticle.__wp) return;
+    var orig = window.openArticle;
+    var f = function(id){
+      var r = orig.apply(this, arguments);
+      try {
+        var a = ARTICLES.filter(function(x){ return x.id === id; })[0];
+        if (a && a._file && !a._loaded){
+          fetch(a._file + '?v=' + Date.now()).then(function(res){ return res.ok ? res.text() : ''; }).then(function(html){
+            if (!html) return;
+            // <body> の中身だけを取り出す
+            var m = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+            var bodyHtml = m ? m[1] : html;
+            bodyHtml = bodyHtml.replace(/<script[\s\S]*?<\/script>/gi, '');
+            a.body = bodyHtml;
+            a._loaded = true;
+            var el = document.querySelector('#pgArticleDetail .article-body');
+            if (el) el.innerHTML = bodyHtml;
+          }).catch(function(){});
+        }
+      } catch(e){}
+      return r;
+    };
+    f.__wp = true;
+    window.openArticle = f;
+  }
+  hookOpenArticle();
+  var n2 = 0;
+  var iv2 = setInterval(function(){ hookOpenArticle(); if (++n2 > 40) clearInterval(iv2); }, 300);
+})();
+

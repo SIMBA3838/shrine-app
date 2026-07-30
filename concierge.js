@@ -4434,3 +4434,49 @@
   setTimeout(syncHeaderName, 2500);
   setTimeout(syncHeaderName, 5000);
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：ヘッダーまわりの整理
+   ・ログインボタンを小さく
+   ・使っていない検索ボタンを削除
+   ・「APIキー設定済み」の帯を利用者から見えないように
+   （2026-07-27 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiHdTidy) return;
+  window.__wabiHdTidy = true;
+
+  var css = document.createElement('style');
+  css.textContent = [
+    // ログインボタンを一回り小さく
+    ".wl-btn{padding:8px 14px !important;font-size:12.5px !important;gap:6px !important;}",
+    ".wl-btn svg{width:14px !important;height:14px !important;}",
+    ".wl-btn img{width:17px !important;height:17px !important;}",
+    ".wl-menu{min-width:170px;}",
+    ".wl-menu a{padding:14px 18px;font-size:14px;}",
+    // 検索ボタンを非表示
+    ".site-hd-actions .site-hd-btn{display:none !important;}",
+    // APIキーの帯は管理用なので隠す
+    "#apiBanner,#apiAppliedBar{display:none !important;}"
+  ].join('');
+  document.head.appendChild(css);
+
+  // 管理用：必要なときだけ表示できるようにしておく
+  window.wabiShowApiBar = function(){
+    var st = document.createElement('style');
+    st.textContent = '#apiBanner,#apiAppliedBar{display:flex !important;}';
+    document.head.appendChild(st);
+    if (typeof showToast === 'function') showToast('APIキーの設定欄を表示しました');
+  };
+
+  // index.html 側があとから style.display を直接いじるので、そのつど閉じ直す
+  function hideApi(){
+    ['apiBanner', 'apiAppliedBar'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el && el.style.display !== 'none' && !window.__wabiApiShown) el.style.display = 'none';
+    });
+  }
+  hideApi();
+  setInterval(hideApi, 1500);
+})();

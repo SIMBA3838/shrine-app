@@ -6520,3 +6520,105 @@
     document.head.appendChild(z);
   })();
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：下部メニューの取り合いを解消
+   （マップを開いたあとの遅延処理が、次に押したタブを閉じてしまう問題）
+   （2026-07-30 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiFix6) return;
+  window.__wabiFix6 = true;
+
+  var IDS = ['pgShrineDetail','pgMap','pgRegister','pgAiRoute','pgAiResult','pgAreaSearch','pgPostDetail',
+             'pgTourList','pgSeasonList','pgEcList','pgOsupplyList','pgShukatsuList','pgArticleList',
+             'wabiRoutePg','wabiRankMore','wxGuide','wxInvite','wxSignup','wcMypage','wcPost',
+             'wabiListPg','wabiFeedPg','wabiPostPg'];
+
+  function closeAll(keep){
+    IDS.forEach(function(id){
+      if (id === keep) return;
+      var el = document.getElementById(id);
+      if (el && el.style.display !== 'none') el.style.display = 'none';
+    });
+    if (keep !== 'wcMypage'){
+      var mp = document.getElementById('wcMypage');
+      if (mp) mp.classList.remove('show');
+    }
+  }
+
+  // 今どのタブを押したか。遅延処理はこれが変わっていたら何もしない
+  var tab = 'home';
+  window.__wabiTab = tab;
+
+  function handlerFor(k, nav){
+    return function(){
+      tab = k; window.__wabiTab = k;
+      nav.querySelectorAll('.wn').forEach(function(x){
+        x.classList.toggle('on', x.getAttribute('data-k') === k);
+      });
+      // シート・投稿詳細は先に閉じる
+      try { if (typeof wabiRecClose === 'function') wabiRecClose(); } catch(e){}
+      try { if (typeof wabiClosePostPg === 'function') wabiClosePostPg(); } catch(e){}
+
+      if (k === 'home'){
+        closeAll('');
+        try { if (typeof go === 'function') go('pgHome'); } catch(e){}
+        try {
+          window.scrollTo(0, 0);
+          document.documentElement.scrollTop = 0;
+          document.body.scrollTop = 0;
+          var app = document.querySelector('.app'); if (app) app.scrollTop = 0;
+          var hm = document.getElementById('pgHome'); if (hm) hm.scrollTop = 0;
+        } catch(e){}
+
+      } else if (k === 'map'){
+        try { if (typeof searchNearby === 'function') searchNearby(); } catch(e){}
+        [30, 700, 1500, 2300].forEach(function(ms){
+          setTimeout(function(){
+            if (tab !== 'map') return;               // ← 別のタブに移っていたら何もしない
+            closeAll('pgMap');
+            var m = document.getElementById('pgMap');
+            if (ms > 1000 && m && m.style.display !== 'flex' && typeof showMapArea === 'function'){
+              try { showMapArea(); } catch(e){}
+            }
+          }, ms);
+        });
+
+      } else if (k === 'posts'){
+        try { if (typeof wabiOpenFeed === 'function') wabiOpenFeed(); } catch(e){}
+        [20, 400].forEach(function(ms){
+          setTimeout(function(){ if (tab === 'posts') closeAll('wabiFeedPg'); }, ms);
+        });
+
+      } else if (k === 'my'){
+        try { if (typeof openWabiMypage === 'function') openWabiMypage(); } catch(e){}
+        [20, 400, 900].forEach(function(ms){
+          setTimeout(function(){
+            if (tab !== 'my') return;
+            closeAll('wcMypage');
+            var mp = document.getElementById('wcMypage');
+            if (mp){ mp.style.display = ''; mp.classList.add('show'); }
+          }, ms);
+        });
+      }
+    };
+  }
+
+  function bind(){
+    var nav = document.getElementById('wabiNav');
+    if (!nav) return;
+    nav.querySelectorAll('.wn').forEach(function(el){
+      var k = el.getAttribute('data-k');
+      if (el.__fix6k === k && el.onclick === el.__fix6h) return;   // すでに自分のもの
+      var h = handlerFor(k, nav);
+      el.__fix6k = k; el.__fix6h = h;
+      el.onclick = h;
+    });
+  }
+  bind();
+  WABI_TICK(bind, 600);
+  setTimeout(bind, 1200);
+  setTimeout(bind, 3000);
+})();

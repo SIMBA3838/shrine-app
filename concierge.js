@@ -5220,11 +5220,26 @@
   // ── 参拝の記録 ────────────────────────────────────────────
   function recordVisit(shrine){
     var name = (shrine && shrine.name) || (window.currentSdShrine && currentSdShrine.name) || '';
-    if (!name) { if (typeof showToast === 'function') showToast('神社情報を取得できませんでした'); return; }
     var addr = (shrine && shrine.addr) || '';
     var state = { rating: 0, stay: '', photos: [] };
 
-    open('<div class="wrc-ttl">参拝を記録する</div><div class="wrc-sub">' + esc(name) + '</div>'
+    // どの神社か決まっていないとき（トップの「投稿する」など）は選んでもらう
+    var pick = '';
+    if (!name){
+      var opts = '';
+      try {
+        if (typeof SHRINES !== 'undefined'){
+          opts = SHRINES.map(function(s){ return '<option value="' + esc(s.name) + '">' + esc(s.addr || '') + '</option>'; }).join('');
+        }
+      } catch(e){}
+      pick = '<div class="wrc-lb">参拝した神社・お寺</div>'
+           + '<input type="text" id="wrcShrine" list="wrcShrineList" placeholder="神社名・お寺名を入力">'
+           + '<datalist id="wrcShrineList">' + opts + '</datalist>';
+    }
+
+    open('<div class="wrc-ttl">参拝を記録する</div>'
+      + (name ? '<div class="wrc-sub">' + esc(name) + '</div>' : '<div class="wrc-sub">参拝の記録を残しましょう</div>')
+      + pick
       + '<div class="wrc-lb">参拝日</div><input type="date" id="wrcDate">'
       + '<div class="wrc-lb">満足度</div><div class="wrc-stars" id="wrcStars">'
       +   [1,2,3,4,5].map(function(i){ return '<span class="s" data-i="' + i + '">★</span>'; }).join('') + '</div>'
@@ -5273,6 +5288,19 @@
     paintPhotos();
 
     document.getElementById('wrcSave').onclick = function(){
+      // 神社が未指定なら入力欄から取る
+      if (!name){
+        var inp = document.getElementById('wrcShrine');
+        var v = inp ? inp.value.trim() : '';
+        if (!v) { if (typeof showToast === 'function') showToast('参拝した神社・お寺を入力してください'); return; }
+        name = v;
+        try {
+          if (typeof SHRINES !== 'undefined'){
+            var hit = SHRINES.filter(function(s){ return s.name === v; })[0];
+            if (hit) addr = hit.addr || '';
+          }
+        } catch(e){}
+      }
       var dv = (document.getElementById('wrcDate') || {}).value || '';
       var date = dv ? dv.replace(/-/g, '.') : today();
       var memo = (document.getElementById('wrcMemo') || {}).value || '';

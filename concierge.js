@@ -2295,7 +2295,7 @@
       if (list.children[i].className && String(list.children[i].className).indexOf('rcard') >= 0) cards.push(list.children[i]);
     }
     // すでに10件に絞り込み済み（＝リンクも設置済み）なら何もしない
-    if (cards.length <= TOP && old && rest.length) return;
+    if (cards.length <= TOP && old && rest.length && old.parentNode) { /* 件数が減ったら作り直す */ }
     if (old) old.parentNode.removeChild(old);
     if (cards.length <= TOP) { rest = []; return; }
 
@@ -4669,6 +4669,10 @@
   var _rm = localStorage.removeItem.bind(localStorage);
   localStorage.removeItem = function(k){ var r = _rm(k); if (k === 'wabiCover') fixCover(); return r; };
 
+  // 初期状態は「両方」（神社中心/両方/寺院中心のUIと合わせる）
+  try { if (typeof currentType !== 'undefined' && currentType === 'shrine' && !localStorage.getItem('wabiTypeTouched')) currentType = ''; } catch(e){}
+  setTimeout(function(){ try { if (typeof filter === 'function') filter(); } catch(e){} }, 600);
+
   // ── ② 「すべて」と「御朱印」の間に 神社／お寺 を追加 ────────
   function addTypeChips(){
     var row = document.querySelector('.tagrow');
@@ -4690,6 +4694,7 @@
           if (typeof currentType !== 'undefined') currentType = '';
         } else {
           s.classList.add('on');
+          try { localStorage.setItem('wabiTypeTouched', '1'); } catch(e){}
           if (typeof setType === 'function') setType(type);
           else if (typeof currentType !== 'undefined') currentType = type;
         }
@@ -5652,7 +5657,14 @@
       'grid-column:auto !important;align-self:center !important;justify-self:center !important;}',
     // 画面の切り替えでちらつかないように
     '#wcMypage,#pgMap,#wabiFeedPg,#wabiListPg{will-change:opacity;}',
-    '#wcMypage{transition:none !important;}'
+    '#wcMypage{transition:none !important;}',
+    // 下部メニュー（約60px）に隠れないよう、スクロールする画面の下に余白
+    '#wcMypage .mp-in{padding-bottom:96px !important;}',
+    '#wabiListPg .wlp-in,#wabiFeedPg .wfd-in{padding-bottom:110px !important;}',
+    '#wabiRoutePg .wrp-in,#wxGuide .wx-in,#wxInvite .wx-in,#wxSignup .wl-in{padding-bottom:110px !important;}',
+    '#wabiRankMore .wrm-in{padding-bottom:110px !important;}',
+    '#pgShrineDetail{padding-bottom:80px;}',
+    '.app{padding-bottom:76px;}'
   ].join('');
   document.head.appendChild(css);
 
@@ -5689,7 +5701,16 @@
         if (k === 'home'){
           closeOthers('');
           if (typeof go === 'function') go('pgHome');
-          window.scrollTo({ top: 0, behavior: 'auto' });
+          // 画面内でスクロールしている要素もすべて先頭に戻す
+          try {
+            window.scrollTo(0, 0);
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+            var app = document.querySelector('.app');
+            if (app) app.scrollTop = 0;
+            var home = document.getElementById('pgHome');
+            if (home) home.scrollTop = 0;
+          } catch(e){}
         } else if (k === 'map'){
           // 先に地図を開いてから、あとで他を閉じる（間に白い画面を挟まない）
           if (typeof searchNearby === 'function') searchNearby();

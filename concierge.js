@@ -1,3 +1,28 @@
+/* ══════════════════════════════════════════════════════════════
+   わびなび：共通の定期処理ヘルパー
+   スクロール中は処理を止めて、スマホでのスクロールがつっかえないようにする。
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.WABI_TICK) return;
+  var scrolling = false, timer = null;
+  function mark(){
+    scrolling = true;
+    clearTimeout(timer);
+    timer = setTimeout(function(){ scrolling = false; }, 260);
+  }
+  ['scroll', 'touchmove', 'wheel'].forEach(function(ev){
+    window.addEventListener(ev, mark, { passive: true, capture: true });
+  });
+  window.WABI_SCROLLING = function(){ return scrolling; };
+  window.WABI_TICK = function(fn, ms){
+    return setInterval(function(){
+      if (scrolling) return;              // 指で動かしている間は何もしない
+      if (document.hidden) return;        // 画面を見ていない間も止める
+      try { fn(); } catch(e){}
+    }, ms);
+  };
+})();
+
 // ══════════════════════════════════════════════════════════════
 // わびなび AI旅行コンシェルジュ（ルート選択後の提案ページ）
 // ・「このルートを選ぶ」→ このページが開く
@@ -1192,7 +1217,7 @@
       });
     }catch(e){}
   }
-  setInterval(upgradeRankingPhotos, 1200);
+  WABI_TICK(upgradeRankingPhotos, 1200);
 
   // ─────────────────────────────────────────
   // 10. トップ「テーマで巡るベスト10」「季節の行事・ライトアップ」をJSONから表示
@@ -1343,7 +1368,7 @@
     }catch(e){}
   }
   fixCardImages();
-  setInterval(fixCardImages, 1500);
+  WABI_TICK(fixCardImages, 1500);
 
   // ─────────────────────────────────────────
   // 13. Google地図SDKの自動起動＋おすすめ神社ランキングの写真復活・2枚ぴったり
@@ -1450,7 +1475,7 @@
   fixRanking = function(){ _origFixRanking(); fixRankDots(); };
 
   fixRanking();
-  setInterval(fixRanking, 2000);
+  WABI_TICK(fixRanking, 2000);
   window.addEventListener('resize', fixRanking);
 
   // おすすめ巡拝ルート：横スクロール → 2列グリッド（テーマで巡るベスト10と同じ一覧配置）
@@ -1506,7 +1531,7 @@
     }catch(e){}
   }
   fixOsupply();
-  setInterval(fixOsupply, 2000);
+  WABI_TICK(fixOsupply, 2000);
 
   // ─────────────────────────────────────────
   // 15. ツアー特集：楽天トラベル観光体験アフィリエイト（4件）
@@ -1550,7 +1575,7 @@
     }catch(e){}
   }
   fixTours();
-  setInterval(fixTours, 2000);
+  WABI_TICK(fixTours, 2000);
 
   // ─── 神社詳細：メイン画像下の2枚（別アングル写真＋御朱印）を本文幅に合わせて均等配置 ───
   var cssSdDuo = document.createElement('style');
@@ -4480,7 +4505,7 @@
     });
   }
   hideApi();
-  setInterval(hideApi, 1500);
+  WABI_TICK(hideApi, 1500);
 })();
 
 
@@ -4638,7 +4663,7 @@
       if (d.style && /340px/.test(d.style.minHeight)) d.style.minHeight = '190px';
     });
   }
-  setInterval(trim, 900);
+  WABI_TICK(trim, 900);
 })();
 
 
@@ -5509,7 +5534,7 @@
       }, { passive: false });
     });
   }
-  setInterval(function(){ hardenNav(); hideSections(); }, 800);
+  WABI_TICK(function(){ hardenNav(); hideSections(); }, 900);
   hardenNav();
 
   // ── ③ みんなの最新投稿 ────────────────────────────────────
@@ -5635,7 +5660,7 @@
     }
   }
   hook();
-  setInterval(hook, 700);
+  WABI_TICK(hook, 700);
 })();
 
 
@@ -5951,6 +5976,126 @@
       }
     });
   }
-  setInterval(tweak, 700);
+  WABI_TICK(tweak, 700);
   tweak();
+})();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：検索タグを1つだけ選べるように ／ お気に入りの写真表示
+             ／ スクロールをなめらかに
+   （2026-07-30 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiFix4) return;
+  window.__wabiFix4 = true;
+
+  var css = document.createElement('style');
+  css.textContent = [
+    // スマホでのスクロールをなめらかに
+    '#wcMypage,#wabiListPg,#wabiFeedPg,#wabiRoutePg,#wxGuide,#wxInvite,#wxSignup,#wabiRankMore{',
+      '-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}',
+    // 半透明ぼかしはスクロールを重くするため、単色に
+    '#wabiNav{backdrop-filter:none !important;background:#fff !important;}',
+    '.wlp-hd,.wfd-hd,#wcMypage .mp-hd{backdrop-filter:none !important;}',
+    '#wcMypage .mp-hd{background:#F8F6F2 !important;}',
+    '.wlp-hd{background:#FAF8F4 !important;}',
+    '.wfd-hd{background:#FAF8F4 !important;}',
+    // 画像の描画を軽くする
+    '#wcMypage .mp-stat,#wabiListPg .wlp-card .ph,#wabiListPg .wlp-g2 .im{transform:translateZ(0);}'
+  ].join('');
+  document.head.appendChild(css);
+
+  // ── ① 赤いタグは常に1つだけ選べるようにする ────────────────
+  function singleSelect(){
+    var row = document.querySelector('.tagrow');
+    if (!row || row.getAttribute('data-single')) return;
+    row.setAttribute('data-single', '1');
+
+    row.addEventListener('click', function(ev){
+      var el = ev.target.closest ? ev.target.closest('.tag') : null;
+      if (!el) return;
+      // 押したもの以外の選択を必ず外す
+      setTimeout(function(){
+        row.querySelectorAll('.tag').forEach(function(t){ t.classList.toggle('on', t === el); });
+        var isType = el.hasAttribute('data-wtype');
+        try {
+          if (isType){
+            // 神社／お寺を選んだら、ご利益の絞り込みは解除
+            if (typeof currentTag !== 'undefined') currentTag = 'all';
+          } else {
+            // ご利益を選んだら、神社／お寺の絞り込みは解除
+            if (typeof currentType !== 'undefined') currentType = '';
+          }
+          if (typeof filter === 'function') filter();
+        } catch(e){}
+      }, 0);
+    }, true);
+  }
+  singleSelect();
+  var n = 0;
+  var iv = setInterval(function(){ singleSelect(); if (++n > 30) clearInterval(iv); }, 400);
+
+  // ── ② 一覧ページの写真を読み込む（お気に入り・参拝した神社）──
+  function fillListPhotos(){
+    var pg = document.getElementById('wabiListPg');
+    if (!pg || pg.style.display !== 'block') return;
+    var need = [];
+    pg.querySelectorAll('.wlp-card,.wlp-g2 .it').forEach(function(c){
+      var t = c.querySelector('.nm');
+      var ph = c.querySelector('.ph, .im');
+      if (!t || !ph) return;
+      if (ph.style.backgroundImage) return;
+      if (ph.getAttribute('data-try')) return;
+      ph.setAttribute('data-try', '1');
+      need.push({ name: t.textContent.trim(), el: ph });
+    });
+    if (!need.length) return;
+
+    // まずは既に取得済みのキャッシュから
+    need.forEach(function(x){
+      try {
+        if (window.photoCache && photoCache[x.name] && photoCache[x.name][0]){
+          x.el.style.backgroundImage = 'url("' + photoCache[x.name][0] + '")';
+          x.done = true;
+        }
+      } catch(e){}
+    });
+    var rest = need.filter(function(x){ return !x.done; });
+    if (!rest.length) return;
+
+    // Google Places で神社の写真を取ってくる
+    try {
+      if (window.google && google.maps && google.maps.places){
+        var svc = new google.maps.places.PlacesService(document.createElement('div'));
+        rest.forEach(function(x, i){
+          setTimeout(function(){
+            svc.findPlaceFromQuery({ query: x.name + ' 神社', fields: ['photos'] }, function(r, st){
+              if (st === google.maps.places.PlacesServiceStatus.OK && r && r[0] && r[0].photos && r[0].photos.length){
+                var u = r[0].photos[0].getUrl({ maxWidth: 600 });
+                x.el.style.backgroundImage = 'url("' + u + '")';
+                try { window.photoCache = window.photoCache || {}; photoCache[x.name] = [u]; } catch(e){}
+              } else {
+                x.el.removeAttribute('data-try');   // 次の機会に再挑戦
+              }
+            });
+          }, i * 220);
+        });
+        return;
+      }
+    } catch(e){}
+
+    // Places が使えないときは Wikipedia から
+    try {
+      if (typeof wikiPhotosFor === 'function'){
+        wikiPhotosFor(rest.map(function(x){ return x.name; }), function(map){
+          rest.forEach(function(x){
+            if (map[x.name]) x.el.style.backgroundImage = 'url("' + map[x.name] + '")';
+            else x.el.removeAttribute('data-try');
+          });
+        });
+      }
+    } catch(e){}
+  }
+  WABI_TICK(fillListPhotos, 1200);
 })();

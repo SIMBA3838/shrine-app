@@ -4480,3 +4480,151 @@
   hideApi();
   setInterval(hideApi, 1500);
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：下部メニューを4つに ／ 名前のちらつき解消 ／ 御朱印ランキングの高さ揃え
+   （2026-07-27 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiNav4) return;
+  window.__wabiNav4 = true;
+
+  var css = document.createElement('style');
+  css.textContent = [
+    // 既存のフッターナビと金色のマップボタンを隠す
+    '.fnav{display:none !important;}',
+    '#fabMap,.fab-map{display:none !important;}',
+    // 新しい下部メニュー（どのページでも出る）
+    '#wabiNav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:500px;',
+      'background:rgba(255,255,255,.97);backdrop-filter:blur(8px);border-top:1px solid #f0e8d8;',
+      'display:grid;grid-template-columns:repeat(4,1fr);z-index:400;',
+      'padding:6px 0 max(6px,env(safe-area-inset-bottom));box-shadow:0 -2px 12px rgba(0,0,0,.05);}',
+    '#wabiNav .wn{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 0;color:#b9b0a2;}',
+    '#wabiNav .wn:active{opacity:.6;}',
+    '#wabiNav .wn.on{color:#a83320;}',
+    '#wabiNav .wn svg{width:21px;height:21px;}',
+    "#wabiNav .wn span{font-size:9.5px;letter-spacing:.04em;font-family:'Noto Serif JP',serif;font-weight:600;}",
+    // 下部メニューに隠れないように下余白
+    'body{padding-bottom:0;}'
+  ].join('');
+  document.head.appendChild(css);
+
+  var IC = {
+    home:  '<svg viewBox="0 0 22 22" fill="none"><path d="M3 10l8-6.5 8 6.5v8.5a1 1 0 0 1-1 1h-4v-6H8v6H4a1 1 0 0 1-1-1V10z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+    map:   '<svg viewBox="0 0 22 22" fill="none"><path d="M11 19s6-6.1 6-10.2A6 6 0 0 0 5 8.8C5 12.9 11 19 11 19z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="11" cy="9" r="2.2" stroke="currentColor" stroke-width="1.5"/></svg>',
+    posts: '<svg viewBox="0 0 22 22" fill="none"><circle cx="8" cy="7.5" r="2.6" stroke="currentColor" stroke-width="1.5"/><circle cx="15" cy="8.5" r="2.1" stroke="currentColor" stroke-width="1.4"/><path d="M3.5 17c0-2.9 9-2.9 9 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M13.5 15.6c.4-1.6 5-1.6 5 .9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+    my:    '<svg viewBox="0 0 22 22" fill="none"><circle cx="11" cy="7.5" r="3.4" stroke="currentColor" stroke-width="1.6"/><path d="M4 18.5c0-4 14-4 14 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>'
+  };
+
+  // 開いているオーバーレイをすべて閉じる
+  function closeAll(){
+    ['pgShrineDetail','pgMap','pgRegister','pgAiRoute','pgAiResult','pgAreaSearch','pgPostDetail',
+     'pgTourList','pgSeasonList','pgEcList','pgOsupplyList','pgShukatsuList','pgArticleList',
+     'wabiRoutePg','wabiRankMore','wxGuide','wxInvite','wxSignup','wcMypage','wcPost'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+    var mp = document.getElementById('wcMypage');
+    if (mp) mp.classList.remove('show');
+  }
+
+  var nav = document.createElement('div');
+  nav.id = 'wabiNav';
+  nav.innerHTML =
+      '<div class="wn on" data-k="home">'  + IC.home  + '<span>ホーム</span></div>'
+    + '<div class="wn" data-k="map">'      + IC.map   + '<span>マップ</span></div>'
+    + '<div class="wn" data-k="posts">'    + IC.posts + '<span>みんなの投稿</span></div>'
+    + '<div class="wn" data-k="my">'       + IC.my    + '<span>マイページ</span></div>';
+  document.body.appendChild(nav);
+
+  function mark(k){
+    nav.querySelectorAll('.wn').forEach(function(el){
+      el.classList.toggle('on', el.getAttribute('data-k') === k);
+    });
+  }
+
+  nav.querySelectorAll('.wn').forEach(function(el){
+    el.onclick = function(){
+      var k = el.getAttribute('data-k');
+      mark(k);
+      if (k === 'home'){
+        closeAll();
+        if (typeof go === 'function') go('pgHome');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else if (k === 'map'){
+        closeAll();
+        if (typeof openMapFromFab === 'function') openMapFromFab();
+        else if (typeof searchNearby === 'function') searchNearby();
+      } else if (k === 'posts'){
+        closeAll();
+        if (typeof openCommunityAll === 'function') openCommunityAll();
+        else if (typeof showToast === 'function') showToast('みんなの投稿ページは現在準備中です');
+      } else if (k === 'my'){
+        closeAll();
+        if (typeof openWabiMypage === 'function') openWabiMypage();
+      }
+    };
+  });
+
+  // ── 名前のちらつきを解消（LINEの名前→設定名の切り替わりを見せない）──
+  function myName(){
+    try { return localStorage.getItem('wabiName') || ''; } catch(e){ return ''; }
+  }
+  var fixing = false;
+  function fixBtn(){
+    if (fixing) return;
+    var btn = document.getElementById('wlBtn');
+    if (!btn) return;
+    var nm = myName();
+    if (!nm) return;
+    var u = null;
+    try { u = window.WabiLine && WabiLine.user && WabiLine.user(); } catch(e){}
+    if (!u) return;
+    var shown = nm.length > 6 ? nm.slice(0, 6) + '…' : nm;
+    if (btn.textContent.trim() === shown) return;
+    fixing = true;
+    try { if (typeof wabiSyncHeaderName === 'function') wabiSyncHeaderName(); } catch(e){}
+    fixing = false;
+  }
+  // ボタンが作られた／書き換わった瞬間に直す
+  if (window.MutationObserver){
+    var mo = new MutationObserver(function(){ fixBtn(); });
+    var acts = document.querySelector('.site-hd-actions');
+    if (acts) mo.observe(acts, { childList: true, subtree: true, characterData: true });
+  }
+  fixBtn();
+  var t = 0;
+  var iv = setInterval(function(){ fixBtn(); if (++t > 40) clearInterval(iv); }, 120);
+})();
+
+
+/* ── 御朱印タグのランキングで高さが崩れるのを直す ───────────── */
+(function(){
+  if (window.__wabiGoshuinFix) return;
+  window.__wabiGoshuinFix = true;
+  var css = document.createElement('style');
+  css.textContent = [
+    // 行の高さを揃える
+    '#list.wc-rankgrid{grid-auto-rows:1fr !important;align-items:stretch !important;}',
+    '#wrmGrid{grid-auto-rows:1fr !important;align-items:stretch !important;}',
+    // 御朱印の写真・募集中プレースホルダを同じ高さに
+    '.rcard img[style*="height: 340px"],.rcard img[style*="height:340px"]{height:190px !important;}',
+    '#list .rcard [style*="height: 340px"],#list .rcard [style*="height:340px"]{height:190px !important;}',
+    '#list .rcard,#wrmGrid .rcard{display:flex;flex-direction:column;}',
+    '#list .rcard .rftr,#wrmGrid .rcard .rftr{margin-top:auto;}'
+  ].join('');
+  document.head.appendChild(css);
+
+  // インラインで 340px 指定されている要素を実測で詰める
+  function trim(){
+    document.querySelectorAll('#list .rcard img, #wrmGrid .rcard img').forEach(function(im){
+      if (im.style && /340px/.test(im.style.height)) im.style.height = '190px';
+    });
+    document.querySelectorAll('#list .rcard div, #wrmGrid .rcard div').forEach(function(d){
+      if (d.style && /340px/.test(d.style.height)) d.style.height = '190px';
+      if (d.style && /340px/.test(d.style.minHeight)) d.style.minHeight = '190px';
+    });
+  }
+  setInterval(trim, 900);
+})();

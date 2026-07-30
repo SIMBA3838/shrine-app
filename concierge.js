@@ -5852,3 +5852,105 @@
   var iv2 = setInterval(function(){ hookOpenArticle(); if (++n2 > 40) clearInterval(iv2); }, 300);
 })();
 
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：学問の神様（天満宮）を神社データベースに追加
+   評価・クチコミ数・座標は Google Places で実測した実データ
+   （2026-07-30 / index.html は触らず concierge.js から追記）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiTenman) return;
+  window.__wabiTenman = true;
+
+  var ADD = [
+    { name:'湯島天満宮',   addr:'東京都文京区湯島3-30-1',        area:'関東',   rating:4.3, rev:11831, lat:35.7077, lng:139.7682, badges:['学問の神'] },
+    { name:'亀戸天神社',   addr:'東京都江東区亀戸3-6-1',         area:'関東',   rating:4.2, rev:9740,  lat:35.7030, lng:139.8207, badges:['藤の名所'] },
+    { name:'谷保天満宮',   addr:'東京都国立市谷保5209',          area:'関東',   rating:4.3, rev:2427,  lat:35.6801, lng:139.4437, badges:['関東三天神'] },
+    { name:'荏柄天神社',   addr:'神奈川県鎌倉市二階堂74',        area:'関東',   rating:4.3, rev:1389,  lat:35.3259, lng:139.5643, badges:['日本三天神'] },
+    { name:'大阪天満宮',   addr:'大阪府大阪市北区天神橋2-1-8',   area:'近畿',   rating:4.3, rev:10352, lat:34.6961, lng:135.5127, badges:['天神祭'] },
+    { name:'道明寺天満宮', addr:'大阪府藤井寺市道明寺1-16-40',   area:'近畿',   rating:4.2, rev:1411,  lat:34.5692, lng:135.6177, badges:['梅の名所'] },
+    { name:'長岡天満宮',   addr:'京都府長岡京市天神2-15-13',     area:'近畿',   rating:4.2, rev:2707,  lat:34.9229, lng:135.6867, badges:['きりしまツツジ'] },
+    { name:'錦天満宮',     addr:'京都府京都市中京区中之町537',   area:'近畿',   rating:4.3, rev:4704,  lat:35.0050, lng:135.7673, badges:['錦市場'] },
+    { name:'防府天満宮',   addr:'山口県防府市松崎町14-1',        area:'中国四国',rating:4.3, rev:4064,  lat:34.0632, lng:131.5741, badges:['日本三天神'] },
+    { name:'上野天満宮',   addr:'愛知県名古屋市千種区赤坂町4-89',area:'中部',   rating:4.3, rev:1299,  lat:35.1808, lng:136.9571, badges:['名古屋二天神'] }
+  ];
+
+  function build(){
+    if (typeof SHRINES === 'undefined' || !Array.isArray(SHRINES)) return false;
+    if (window.__wabiTenmanDone) return true;
+    var have = {};
+    SHRINES.forEach(function(s){ have[s.name] = 1; });
+    var maxRank = 0;
+    SHRINES.forEach(function(s){ if (s.rank > maxRank) maxRank = s.rank; });
+
+    var added = 0;
+    ADD.forEach(function(a){
+      if (have[a.name]) return;
+      SHRINES.push({
+        rank: ++maxRank,
+        name: a.name,
+        deity: '菅原道真公',
+        addr: a.addr,
+        map: 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(a.name),
+        area: a.area,
+        rating: a.rating,
+        rev: a.rev,
+        visited: false,
+        type: 'shrine',
+        badges: a.badges,
+        tags: ['goshuin', 'gakumon', 'kaiun', 'rekishi'],
+        lat: a.lat,
+        lng: a.lng
+      });
+      added++;
+    });
+    window.__wabiTenmanDone = true;
+    if (added){
+      // 評価順の通し番号を振り直す
+      try {
+        SHRINES.slice().sort(function(x, y){ return (y.rating || 0) - (x.rating || 0); });
+        if (typeof filter === 'function') filter();
+      } catch(e){}
+    }
+    return true;
+  }
+  build();
+  var n = 0;
+  var iv = setInterval(function(){ if (build() || ++n > 40) clearInterval(iv); }, 300);
+})();
+
+
+/* ── マイページの細かい調整 ─────────────────────────────────── */
+(function(){
+  if (window.__wabiMpTweak) return;
+  window.__wabiMpTweak = true;
+
+  var css = document.createElement('style');
+  css.textContent = [
+    // 「友達に紹介」をLINEの緑に
+    '#wxInviteLink{background:#06C755 !important;border-color:#06C755 !important;color:#fff !important;',
+      'box-shadow:0 6px 16px rgba(6,199,85,.26);}',
+    '#wxInviteLink:active{opacity:.9;}'
+  ].join('');
+  document.head.appendChild(css);
+
+  function tweak(){
+    // 文言を「友達に紹介」に
+    var a = document.getElementById('wxInviteLink');
+    if (a && a.textContent.indexOf('友達を紹介') >= 0) a.textContent = '友達に紹介 ›';
+    // 紹介ページのタイトルも合わせる
+    var t = document.querySelector('#wxInvite .wx-hd .t');
+    if (t && t.textContent === '友達を紹介') t.textContent = '友達に紹介';
+    // バッジコレクションの「すべて見る」を消す
+    document.querySelectorAll('#wcMypage .mp-sec').forEach(function(sec){
+      var h = sec.querySelector('.mp-h');
+      if (h && h.textContent.trim() === 'バッジコレクション'){
+        var more = sec.querySelector('.mp-more');
+        if (more) more.style.display = 'none';
+      }
+    });
+  }
+  setInterval(tweak, 700);
+  tweak();
+})();

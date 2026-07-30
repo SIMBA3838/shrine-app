@@ -6139,3 +6139,370 @@
     }).observe(pg, { childList: true, subtree: true });
   })();
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：マイページのヒーローを16:9 ／ 記録シートの横揺れ防止 ／
+             投稿詳細ページのリデザイン ／ 下部メニューの取りこぼし修正
+   （2026-07-30 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiFix5) return;
+  window.__wabiFix5 = true;
+
+  function esc(s){
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ── ① マイページのヒーロー画像を 16:9 に ───────────────── */
+  /* ── ② 参拝を記録するシートは縦スクロールだけにする ───────── */
+  var css = document.createElement('style');
+  css.id = 'wabiFix5Css';
+  css.textContent = [
+    /* ① ヒーロー 16:9（430px幅なら約242px）*/
+    '#wcMypage .mp-hero{height:auto !important;aspect-ratio:16/9 !important;min-height:0 !important;}',
+
+    /* ② 記録シート：横方向の移動を完全に止める */
+    '.wrc{overflow-x:hidden !important;overscroll-behavior-x:none !important;touch-action:pan-y !important;',
+      'width:100% !important;box-sizing:border-box !important;}',
+    '.wrc-in{max-width:100% !important;box-sizing:border-box !important;overflow-x:hidden !important;',
+      'padding-bottom:calc(104px + env(safe-area-inset-bottom)) !important;}',
+    '.wrc-in *{max-width:100%;box-sizing:border-box;}',
+    '.wrc-chips{flex-wrap:wrap !important;overflow-x:visible !important;}',
+    '.wrc-photos{overflow-x:hidden !important;}',
+    '.wrc-mask{touch-action:none;}',
+
+    /* ③ 投稿詳細ページ */
+    ".wpd{display:none;position:fixed;inset:0;z-index:700;background:#FAF8F4;overflow-y:auto;overflow-x:hidden;",
+      "-webkit-overflow-scrolling:touch;overscroll-behavior-x:none;touch-action:pan-y;",
+      "font-family:'Shippori Mincho','Noto Serif JP',serif;color:#2D2D2D;}",
+    '.wpd-hero{position:relative;width:100%;max-width:500px;margin:0 auto;aspect-ratio:16/10;background:#e9e3d8;overflow:hidden;}',
+    '.wpd-track{display:flex;height:100%;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;}',
+    '.wpd-track::-webkit-scrollbar{display:none;}',
+    '.wpd-sl{flex:0 0 100%;height:100%;scroll-snap-align:start;background:#e9e3d8 center/cover no-repeat;}',
+    '.wpd-rd{position:absolute;top:12px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.92);',
+      'box-shadow:0 2px 10px rgba(0,0,0,.14);display:flex;align-items:center;justify-content:center;',
+      'font-size:20px;line-height:1;cursor:pointer;color:#2D2D2D;}',
+    '.wpd-back{left:12px;}',
+    '.wpd-menu{right:12px;font-size:17px;letter-spacing:1px;}',
+    '.wpd-cnt{position:absolute;right:12px;bottom:12px;background:rgba(0,0,0,.55);color:#fff;',
+      "font-size:12px;padding:5px 12px;border-radius:999px;font-family:'Noto Serif JP',serif;}",
+    '.wpd-dots{display:flex;justify-content:center;gap:7px;padding:13px 0 2px;}',
+    '.wpd-dot{width:7px;height:7px;border-radius:50%;background:#dcd6ca;transition:background .2s;}',
+    '.wpd-dot.on{background:#5D3A7A;}',
+    '.wpd-in{max-width:500px;margin:0 auto;padding:4px 16px 120px;}',
+
+    '.wpd-user{display:flex;align-items:center;gap:11px;margin:10px 0 16px;}',
+    '.wpd-av{flex:0 0 46px;width:46px;height:46px;border-radius:50%;background:#5D3A7A center/cover no-repeat;',
+      'color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;}',
+    '.wpd-un{font-size:15.5px;font-weight:700;line-height:1.3;}',
+    ".wpd-ud{font-size:11.5px;color:#8a8378;margin-top:2px;font-family:'Noto Serif JP',serif;}",
+    '.wpd-fol{margin-left:auto;flex:0 0 auto;padding:9px 17px;border:1.4px solid #5D3A7A;border-radius:999px;',
+      "background:#fff;color:#5D3A7A;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;}",
+    '.wpd-fol.on{background:#5D3A7A;color:#fff;}',
+
+    '.wpd-card{background:#fff;border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.06);padding:14px;margin-bottom:14px;}',
+    '.wpd-sh{display:flex;align-items:center;gap:13px;cursor:pointer;}',
+    '.wpd-ic{flex:0 0 46px;width:46px;height:46px;border-radius:50%;background:#F3EFFA;',
+      'display:flex;align-items:center;justify-content:center;}',
+    '.wpd-shn{font-size:17px;font-weight:700;line-height:1.3;}',
+    ".wpd-sha{font-size:11.5px;color:#8a8378;margin-top:3px;font-family:'Noto Serif JP',serif;line-height:1.5;}",
+    '.wpd-cv{margin-left:auto;flex:0 0 auto;color:#b9b2a6;font-size:20px;}',
+
+    '.wpd-h{font-size:12px;font-weight:700;color:#8a8378;letter-spacing:.08em;margin:0 0 10px;}',
+    '.wpd-rows{display:flex;flex-direction:column;gap:0;}',
+    '.wpd-row{display:flex;align-items:center;padding:11px 0;border-top:1px solid #F0EBE1;}',
+    '.wpd-row:first-child{border-top:none;padding-top:2px;}',
+    ".wpd-row .k{font-size:12.5px;color:#8a8378;font-family:'Noto Serif JP',serif;}",
+    '.wpd-row .v{margin-left:auto;font-size:14px;font-weight:700;}',
+    '.wpd-st{margin-left:auto;font-size:16px;color:#ddd6c6;letter-spacing:2px;}',
+    '.wpd-st i{font-style:normal;}',
+    '.wpd-st i.on{color:#C8A04D;}',
+
+    ".wpd-tx{font-size:14px;line-height:2.05;white-space:pre-wrap;font-family:'Noto Serif JP',serif;color:#3a3a3a;",
+      'background:#fff;border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.06);padding:16px;margin-bottom:14px;}',
+
+    '.wpd-act{display:flex;background:#fff;border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.06);overflow:hidden;}',
+    '.wpd-act > div{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:16px 0;',
+      'font-size:13.5px;cursor:pointer;color:#4a4a4a;}',
+    '.wpd-act > div + div{border-left:1px solid #F0EBE1;}',
+    '.wpd-act .hb{font-size:18px;color:#c9736a;}',
+    '.wpd-act .liked .hb{color:#d5453b;}'
+  ].join('');
+  document.head.appendChild(css);
+
+  /* ── ③ 投稿詳細ページ ─────────────────────────────────── */
+
+  // 参拝データ（記録ページと同じ項目）。サンプル投稿ぶんを補完する
+  var META = {
+    p1: { rating:5, stay:'1時間' },
+    p2: { rating:5, stay:'半日' },
+    p3: { rating:4, stay:'2時間' },
+    p4: { rating:5, stay:'2時間' },
+    p5: { rating:4, stay:'1時間' },
+    p6: { rating:4, stay:'1時間' },
+    p7: { rating:5, stay:'2時間' },
+    p8: { rating:4, stay:'〜30分' }
+  };
+
+  // 「3日前」などから実際の参拝日を作る
+  function dateFromRel(s){
+    var d = new Date(), m;
+    s = String(s || '');
+    if ((m = s.match(/(\d+)\s*時間前/)))  d.setHours(d.getHours() - (+m[1]));
+    else if ((m = s.match(/(\d+)\s*日前/)))    d.setDate(d.getDate() - (+m[1]));
+    else if ((m = s.match(/(\d+)?\s*週間前/))) d.setDate(d.getDate() - 7 * (+(m[1] || 1)));
+    else if ((m = s.match(/(\d+)?\s*[かヶ]?月前/))) d.setMonth(d.getMonth() - (+(m[1] || 1)));
+    else if ((m = s.match(/(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/))) return m[1] + '.' + ('0'+m[2]).slice(-2) + '.' + ('0'+m[3]).slice(-2);
+    return d.getFullYear() + '.' + ('0'+(d.getMonth()+1)).slice(-2) + '.' + ('0'+d.getDate()).slice(-2);
+  }
+
+  var TORII = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none">'
+    + '<path d="M3 6h18M4.5 9h15M6.5 6v13M17.5 6v13" stroke="#5D3A7A" stroke-width="1.7" stroke-linecap="round"/></svg>';
+
+  // 神社ごとの写真を最大5枚集める（Google Places → Wikipedia）
+  var photoCache5 = {};
+  function photosFor(name, first, cb){
+    if (!name) { cb(first ? [first] : []); return; }
+    if (photoCache5[name]) { cb(photoCache5[name]); return; }
+    var done = false;
+    function finish(arr){
+      if (done) return; done = true;
+      if (first && arr.indexOf(first) < 0) arr = [first].concat(arr);
+      arr = arr.filter(Boolean).slice(0, 5);
+      photoCache5[name] = arr;
+      cb(arr);
+    }
+    setTimeout(function(){ finish(first ? [first] : []); }, 4000);
+    try {
+      if (window.google && google.maps && google.maps.places && window.mapInstance !== undefined){
+        var host = document.createElement('div');
+        var svc = new google.maps.places.PlacesService(host);
+        svc.findPlaceFromQuery({ query: name, fields: ['photos'] }, function(res, st){
+          if (st === google.maps.places.PlacesServiceStatus.OK && res && res[0] && res[0].photos && res[0].photos.length){
+            finish(res[0].photos.slice(0, 5).map(function(p){
+              try { return p.getUrl({ maxWidth: 900, maxHeight: 700 }); } catch(e){ return null; }
+            }));
+            return;
+          }
+          if (typeof wikiPhotosFor === 'function'){
+            wikiPhotosFor([name], function(map){ finish(map[name] ? [map[name]] : []); });
+          } else finish([]);
+        });
+        return;
+      }
+    } catch(e){}
+    if (typeof wikiPhotosFor === 'function') wikiPhotosFor([name], function(map){ finish(map[name] ? [map[name]] : []); });
+    else finish([]);
+  }
+
+  var pg = document.createElement('div');
+  pg.className = 'wpd'; pg.id = 'wabiPostPg';
+  document.body.appendChild(pg);
+
+  function closePg(){ pg.style.display = 'none'; }
+  window.wabiClosePostPg = closePg;
+
+  function findPost(idOrObj){
+    if (idOrObj && typeof idOrObj === 'object') return idOrObj;
+    try {
+      if (typeof USER_POSTS !== 'undefined' && Array.isArray(USER_POSTS)){
+        var hit = USER_POSTS.filter(function(p){ return p.id === idOrObj; })[0];
+        if (hit) return hit;
+      }
+    } catch(e){}
+    return null;
+  }
+
+  function paint(p, photos){
+    var meta   = META[p.id] || {};
+    var rating = p.rating || meta.rating || 0;
+    var stay   = p.stay   || meta.stay   || '';
+    var vdate  = p.visited || dateFromRel(p.date);
+    var likes  = p.likes || 0;
+    var av = p.pic
+      ? '<div class="wpd-av" style="background-image:url(\'' + esc(p.pic) + '\')"></div>'
+      : '<div class="wpd-av">' + esc((p.avatar || String(p.user || '？')).slice(0, 1)) + '</div>';
+
+    var slides = (photos.length ? photos : ['']).map(function(u){
+      return '<div class="wpd-sl"' + (u ? ' style="background-image:url(\'' + esc(u) + '\')"' : '') + '></div>';
+    }).join('');
+    var n = photos.length || 1;
+
+    pg.innerHTML =
+      '<div class="wpd-hero">'
+      +   '<div class="wpd-track" id="wpdTrack">' + slides + '</div>'
+      +   '<div class="wpd-rd wpd-back" id="wpdBack">‹</div>'
+      +   '<div class="wpd-rd wpd-menu" id="wpdMenu">•••</div>'
+      +   (n > 1 ? '<div class="wpd-cnt" id="wpdCnt">1/' + n + '</div>' : '')
+      + '</div>'
+      + (n > 1 ? '<div class="wpd-dots" id="wpdDots">'
+          + photos.map(function(_, i){ return '<div class="wpd-dot' + (i ? '' : ' on') + '"></div>'; }).join('')
+          + '</div>' : '')
+      + '<div class="wpd-in">'
+      +   '<div class="wpd-user">' + av
+      +     '<div style="min-width:0"><div class="wpd-un">' + esc(p.user || '巡礼者') + '</div>'
+      +     '<div class="wpd-ud">' + esc(p.date || '') + 'に投稿</div></div>'
+      +     (p.mine ? '' : '<button class="wpd-fol" id="wpdFol">フォローする</button>')
+      +   '</div>'
+
+      +   '<div class="wpd-card"><div class="wpd-sh" id="wpdSh">'
+      +     '<div class="wpd-ic">' + TORII + '</div>'
+      +     '<div style="min-width:0"><div class="wpd-shn">' + esc(p.shrine || '') + '</div>'
+      +     (p.addr ? '<div class="wpd-sha">' + esc(p.addr) + '</div>' : '') + '</div>'
+      +     '<div class="wpd-cv">›</div>'
+      +   '</div></div>'
+
+      +   '<div class="wpd-card">'
+      +     '<div class="wpd-h">参拝の記録</div>'
+      +     '<div class="wpd-rows">'
+      +       '<div class="wpd-row"><span class="k">参拝日</span><span class="v">' + esc(vdate) + '</span></div>'
+      +       '<div class="wpd-row"><span class="k">満足度</span><span class="wpd-st">'
+      +         [1,2,3,4,5].map(function(i){ return '<i class="' + (i <= rating ? 'on' : '') + '">★</i>'; }).join('')
+      +       '</span></div>'
+      +       (stay ? '<div class="wpd-row"><span class="k">滞在時間</span><span class="v">' + esc(stay) + '</span></div>' : '')
+      +       '<div class="wpd-row"><span class="k">写真</span><span class="v">' + n + '枚</span></div>'
+      +     '</div>'
+      +   '</div>'
+
+      +   (p.text ? '<div class="wpd-tx">' + esc(p.text) + '</div>' : '')
+
+      +   '<div class="wpd-act">'
+      +     '<div id="wpdLike"><span class="hb">♡</span><span id="wpdLikeN">' + likes + '</span></div>'
+      +     '<div id="wpdShare"><span style="font-size:16px">⤴</span><span>シェア</span></div>'
+      +   '</div>'
+      + '</div>';
+
+    document.getElementById('wpdBack').onclick = closePg;
+    document.getElementById('wpdMenu').onclick = function(){
+      if (typeof showToast === 'function') showToast('この投稿を報告・共有する機能は準備中です');
+    };
+    var fol = document.getElementById('wpdFol');
+    if (fol) fol.onclick = function(){
+      var on = fol.classList.toggle('on');
+      fol.textContent = on ? 'フォロー中' : 'フォローする';
+      if (typeof showToast === 'function') showToast(on ? esc(p.user) + ' さんをフォローしました' : 'フォローを解除しました');
+    };
+    document.getElementById('wpdSh').onclick = function(){
+      var found = null;
+      try {
+        if (typeof SHRINES !== 'undefined') found = SHRINES.filter(function(s){
+          return s.name === p.shrine || s.name.indexOf(p.shrine) >= 0 || String(p.shrine).indexOf(s.name) >= 0;
+        })[0];
+      } catch(e){}
+      closePg();
+      setTimeout(function(){
+        if (found && typeof openShrineDetail === 'function') openShrineDetail(found);
+        else if (typeof showToast === 'function') showToast('この神社の詳細ページは準備中です');
+      }, 180);
+    };
+    var lk = document.getElementById('wpdLike');
+    lk.onclick = function(){
+      var on = lk.classList.toggle('liked');
+      lk.querySelector('.hb').textContent = on ? '♥' : '♡';
+      document.getElementById('wpdLikeN').textContent = likes + (on ? 1 : 0);
+    };
+    document.getElementById('wpdShare').onclick = function(){
+      var t = (p.shrine || 'わびなび') + ' の参拝記録｜わびなび';
+      try {
+        if (navigator.share){ navigator.share({ title: t, text: p.text || '', url: location.href }); return; }
+        navigator.clipboard.writeText(location.href);
+        if (typeof showToast === 'function') showToast('リンクをコピーしました');
+      } catch(e){ if (typeof showToast === 'function') showToast('シェアに失敗しました'); }
+    };
+
+    // 写真スワイプ：何枚目かを表示
+    var tr = document.getElementById('wpdTrack');
+    if (tr && n > 1){
+      tr.addEventListener('scroll', function(){
+        var i = Math.round(tr.scrollLeft / tr.clientWidth);
+        var c = document.getElementById('wpdCnt');
+        if (c) c.textContent = (i + 1) + '/' + n;
+        var ds = document.querySelectorAll('#wpdDots .wpd-dot');
+        for (var k = 0; k < ds.length; k++) ds[k].classList.toggle('on', k === i);
+      }, { passive: true });
+    }
+  }
+
+  window.openPostDetail = function(idOrObj){
+    var p = findPost(idOrObj);
+    if (!p) { if (typeof showToast === 'function') showToast('投稿を読み込めませんでした'); return; }
+    // 他のページを閉じる
+    ['pgShrineDetail','pgMap','pgRegister','pgAiRoute','pgAiResult','pgAreaSearch','pgPostDetail',
+     'pgTourList','pgSeasonList','pgEcList','pgOsupplyList','pgShukatsuList','pgArticleList',
+     'wabiRoutePg','wabiRankMore','wxGuide','wxInvite','wxSignup','wcMypage','wcPost',
+     'wabiListPg','wabiFeedPg'].forEach(function(id){
+      var e = document.getElementById(id); if (e) e.style.display = 'none';
+    });
+    var mp = document.getElementById('wcMypage'); if (mp) mp.classList.remove('show');
+
+    var first = (p.photos && p.photos[0]) || p.img || '';
+    var have  = (p.photos && p.photos.length > 1) ? p.photos.slice(0, 5) : null;
+    paint(p, have || (first ? [first] : []));
+    pg.style.display = 'block';
+    pg.scrollTop = 0;
+    if (!have && !p.mine){
+      photosFor(p.shrine, first, function(arr){
+        if (pg.style.display === 'block' && arr.length > 1) paint(p, arr);
+      });
+    }
+    try { if (window.WabiExp) WabiExp.add('viewPost'); } catch(e){}
+  };
+  window.closePostDetail = closePg;
+
+  // 一覧カードから自分の投稿も詳細で開けるようにする
+  function hookFeed(){
+    var f = document.getElementById('wabiFeedPg');
+    if (!f) return;
+    f.querySelectorAll('.wfd-card').forEach(function(el){
+      if (el.getAttribute('data-pd5')) return;
+      el.setAttribute('data-pd5', '1');
+      el.addEventListener('click', function(){
+        setTimeout(function(){
+          if (pg.style.display === 'block') return;
+          // openPostDetail が呼ばれていなければ自分の投稿として組み立てる
+          var nm = el.querySelector('.nm'), un = el.querySelector('.un'), tm = el.querySelector('.tm'),
+              tx = el.querySelector('.tx'), im = el.querySelector('.im');
+          if (!nm) return;
+          var bg = im ? (im.style.backgroundImage || '').replace(/^url\(["']?/, '').replace(/["']?\)$/, '') : '';
+          window.openPostDetail({
+            id: '', mine: true, user: un ? un.textContent : 'あなた', avatar: (un ? un.textContent : 'あ').slice(0,1),
+            date: tm ? tm.textContent : '', shrine: nm.textContent, addr: '',
+            img: bg, photos: bg ? [bg] : [], text: tx ? tx.textContent : '', likes: 0
+          });
+        }, 60);
+      });
+    });
+  }
+  WABI_TICK(hookFeed, 800);
+
+  /* ── ④ 下部メニューが記録シート・新ページを閉じてから動くように ── */
+  function navGuard(){
+    var nav = document.getElementById('wabiNav');
+    if (!nav || nav.getAttribute('data-fix5')) return;
+    nav.setAttribute('data-fix5', '1');
+    // capture フェーズ＝各ボタンの onclick より先に走る
+    nav.addEventListener('click', function(){
+      try { if (typeof wabiRecClose === 'function') wabiRecClose(); } catch(e){}
+      try { closePg(); } catch(e){}
+      try {
+        var m = document.querySelector('.wrc-mask'); if (m) m.classList.remove('on');
+        var b = document.querySelector('.wrc');      if (b) b.classList.remove('on');
+      } catch(e){}
+    }, true);
+    nav.addEventListener('touchstart', function(){
+      try { if (typeof wabiRecClose === 'function') wabiRecClose(); } catch(e){}
+      try { closePg(); } catch(e){}
+    }, { capture: true, passive: true });
+  }
+  navGuard();
+  WABI_TICK(navGuard, 900);
+
+  // 記録シートが開いている間も下部メニューを押せるように前面へ
+  (function(){
+    var z = document.createElement('style');
+    z.textContent = '#wabiNav{z-index:2000 !important;} .wrc{z-index:421;} .wrc-mask{z-index:420;}';
+    document.head.appendChild(z);
+  })();
+})();

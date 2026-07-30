@@ -2219,9 +2219,9 @@
 
   var css = document.createElement('style');
   css.textContent = [
-    '.wabi-more-rank{grid-column:1/-1;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:6px;',
-      'padding:13px 12px;border:1px solid #e6dcc6;border-radius:14px;background:#fffdf8;cursor:pointer;',
-      "font-family:'Noto Serif JP',serif;font-size:12.5px;font-weight:600;color:#8a6d3b;letter-spacing:.04em;}",
+    '.wabi-more-rank{display:inline-flex;align-items:center;justify-content:center;gap:4px;',
+      'padding:6px 12px;border:1px solid #e6dcc6;border-radius:10px;background:#fffdf8;cursor:pointer;',
+      "font-family:'Noto Serif JP',serif;font-size:10.5px;font-weight:600;color:#8a6d3b;letter-spacing:.02em;}",
     '.wabi-more-rank:active{transform:scale(.985)}',
     '#wabiRankMore{position:fixed;inset:0;z-index:300;background:#faf8f4;display:none;overflow-y:auto;-webkit-overflow-scrolling:touch;}',
     '#wabiRankMore .wrm-hd{position:sticky;top:0;z-index:5;background:#a83320;color:#fff;display:flex;align-items:center;gap:10px;padding:14px 16px;}',
@@ -2287,7 +2287,8 @@
 
   function doTrim(){
     if (!list) return;
-    var old = list.querySelector('.wabi-more-rank');
+    // グリッドの中に置くと行の高さに引き伸ばされるため、#list の外側に置く
+    var old = (list.parentNode || document).querySelector('.wabi-more-rank');
 
     var cards = [];
     for (var i = 0; i < list.children.length; i++) {
@@ -2309,7 +2310,8 @@
     more.className = 'wabi-more-rank';
     more.innerHTML = (TOP + 1) + '位〜' + (TOP + rest.length) + '位を見る　›';
     more.onclick = window.wabiOpenRankMore;
-    list.appendChild(more);
+    if (list.parentNode) list.parentNode.insertBefore(more, list.nextSibling);
+    else list.appendChild(more);
 
     // 件数表示もベスト10に合わせる
     try {
@@ -5644,8 +5646,10 @@
   var css = document.createElement('style');
   css.textContent = [
     // 「11位〜30位を見る」を極小に
-    '.wabi-more-rank{padding:6px 10px !important;font-size:10.5px !important;border-radius:10px !important;',
-      'margin:2px auto 0 !important;width:max-content !important;gap:4px !important;letter-spacing:.02em !important;}',
+    '.wabi-more-rank{display:block !important;width:max-content !important;height:auto !important;',
+      'min-height:0 !important;padding:6px 12px !important;font-size:10.5px !important;line-height:1.4 !important;',
+      'border-radius:10px !important;margin:10px auto 0 !important;text-align:center !important;',
+      'grid-column:auto !important;align-self:center !important;justify-self:center !important;}',
     // 画面の切り替えでちらつかないように
     '#wcMypage,#pgMap,#wabiFeedPg,#wabiListPg{will-change:opacity;}',
     '#wcMypage{transition:none !important;}'

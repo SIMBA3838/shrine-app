@@ -6758,3 +6758,273 @@
     TICK(run, 1200);
   })();
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：Googleログイン（Supabase Auth 経由 / サーバー不要）
+   ・「Googleで登録」「Googleでログイン」を実際に動かす
+   ・Supabase の /auth/v1/authorize?provider=google へ飛ばし、
+     戻ってきた URL の #access_token からユーザー情報を取り出す
+   ・保存先は LINEログインと同じ localStorage('wabiUser') = {id,name,pic}
+     id は 'g:' + SupabaseのユーザーID（LINEのIDと混ざらないように接頭辞をつける）
+   ・Supabase側でGoogleを有効にしていないときは、今までどおり
+     「Googleでのログインは現在準備中です」と出るだけで何も起きない
+   ※ クライアントシークレットはここには置かない（Supabaseのダッシュボード側のみ）
+   （2026-07-30 追加 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiGoogleLogin) return;
+  window.__wabiGoogleLogin = true;
+
+  var LS_USER = 'wabiUser';
+  var LS_SESS = 'wabiSbSession';        // Supabaseのトークン（将来のRLS対応用）
+  var SS_GOING = 'wabiGoogleGoing';
+
+  // Supabaseの接続先は WabiSync と共有する（publishableキーは公開前提の値）
+  function cfg(){
+    var url = 'https://rqkqjrzhvhsogwhtfbqh.supabase.co';
+    var key = 'sb_publishable_cqf_45micn3pe7PtMq1seQ_2UEAxlCv';
+    try {
+      if (window.WabiSync && WabiSync.config){
+        url = WabiSync.config.url || url;
+        key = WabiSync.config.key || key;
+      }
+    } catch(e){}
+    try {
+      url = localStorage.getItem('wabiSbUrl') || url;
+      key = localStorage.getItem('wabiSbKey') || key;
+    } catch(e){}
+    return { url: String(url).trim().replace(/\/+$/, ''), key: String(key).trim() };
+  }
+
+  function toast(m){ try { if (typeof showToast === 'function') showToast(m); } catch(e){} }
+  function getUser(){
+    try { var u = JSON.parse(localStorage.getItem(LS_USER) || 'null'); return (u && u.id) ? u : null; }
+    catch(e){ return null; }
+  }
+
+  // ── ヘッダーのログインボタンを描き直す（__wabiLoginBtn の paintButton と同じ見た目）──
+  var PERSON = '<svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="6.5" r="3.2" stroke="currentColor" stroke-width="1.6"/>'
+             + '<path d="M3.5 17c0-3.6 13-3.6 13 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+  function repaintHeader(){
+    var btn = document.getElementById('wlBtn'), menu = document.getElementById('wlMenu');
+    if (!btn || !menu) return;
+    var u = getUser();
+    if (!u) return;
+    var nm = u.name || '巡礼者';
+    try { nm = localStorage.getItem('wabiName') || nm; } catch(e){}
+    var pic = u.pic || '';
+    try { pic = localStorage.getItem('wabiAvatar') || pic; } catch(e){}
+    btn.innerHTML = (pic ? '<img src="' + pic + '" style="width:20px;height:20px;border-radius:50%;object-fit:cover">' : PERSON)
+                  + (nm.length > 6 ? nm.slice(0, 6) + '…' : nm);
+    menu.innerHTML = '<a id="wlMenuMypage">マイページ</a><div class="sep"></div><a id="wlMenuLogout">ログアウト</a>';
+    var mp = document.getElementById('wlMenuMypage'), lo = document.getElementById('wlMenuLogout');
+    if (mp) mp.onclick = function(){
+      menu.classList.remove('on');
+      if (typeof openWabiMypage === 'function') openWabiMypage();
+    };
+    if (lo) lo.onclick = function(){
+      menu.classList.remove('on');
+      if (window.WabiLine && WabiLine.logout) WabiLine.logout();
+    };
+    try { if (typeof wabiSyncHeaderName === 'function') wabiSyncHeaderName(); } catch(e){}
+  }
+
+  function saveUser(u){
+    try { localStorage.setItem(LS_USER, JSON.stringify(u)); } catch(e){}
+    // ヘッダーの反映は少し遅れて作られることがあるので何度か試す
+    [0, 200, 700, 1500].forEach(function(ms){ setTimeout(repaintHeader, ms); });
+  }
+
+  // ── Googleが有効になっているかをSupabaseに聞く ──────────────
+  function providerReady(){
+    var c = cfg();
+    if (!c.url || !c.key) return Promise.resolve(false);
+    return fetch(c.url + '/auth/v1/settings', { headers: { 'apikey': c.key } })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(j){ return !!(j && j.external && j.external.google); })
+      .catch(function(){ return false; });
+  }
+
+  // 戻り先。クエリやハッシュを外して Supabase の許可リストに合わせる
+  function backUrl(){ return location.origin + location.pathname; }
+
+  // ── ログイン開始 ─────────────────────────────────────────
+  function start(){
+    var c = cfg();
+    if (!c.url || !c.key){
+      toast('Googleでのログインは現在準備中です');
+      return false;
+    }
+    toast('Googleに接続しています…');
+    providerReady().then(function(ok){
+      if (!ok){
+        toast('Googleでのログインは現在準備中です');
+        return;
+      }
+      try { sessionStorage.setItem(SS_GOING, '1'); } catch(e){}
+      location.href = c.url + '/auth/v1/authorize?provider=google'
+                    + '&redirect_to=' + encodeURIComponent(backUrl());
+    });
+    return true;
+  }
+
+  // ── 戻ってきたときの処理 ───────────────────────────────────
+  function parseHash(h){
+    var o = {};
+    String(h || '').replace(/^#/, '').split('&').forEach(function(kv){
+      if (!kv) return;
+      var i = kv.indexOf('=');
+      var k = i < 0 ? kv : kv.slice(0, i);
+      var v = i < 0 ? '' : kv.slice(i + 1);
+      try { o[decodeURIComponent(k)] = decodeURIComponent(v.replace(/\+/g, ' ')); }
+      catch(e){ o[k] = v; }
+    });
+    return o;
+  }
+  function cleanHash(){
+    try { history.replaceState(null, '', location.pathname + location.search); } catch(e){}
+  }
+  // JWTの中身（ネットにつながらなくても名前くらいは取れる）
+  function jwtBody(t){
+    try {
+      var p = String(t).split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      while (p.length % 4) p += '=';
+      return JSON.parse(decodeURIComponent(escape(atob(p))));
+    } catch(e){ return null; }
+  }
+
+  function pickName(meta, email){
+    meta = meta || {};
+    return meta.full_name || meta.name || meta.preferred_username
+        || (email ? String(email).split('@')[0] : '') || '巡礼者';
+  }
+  function pickPic(meta){
+    meta = meta || {};
+    return meta.avatar_url || meta.picture || '';
+  }
+
+  function finish(id, name, pic){
+    saveUser({ id: 'g:' + id, name: name, pic: pic });
+    var sp = document.getElementById('wxSignup'); if (sp) sp.style.display = 'none';
+    var pr = document.getElementById('pgRegister'); if (pr) pr.style.display = 'none';
+    toast('ようこそ、' + name + 'さん');
+    try { if (window.WabiExp) window.WabiExp.add('login', { silent: true }); } catch(e){}
+    // ログイン直後にクラウドの記録を取り込む
+    try { if (window.WabiSync && WabiSync.pull) setTimeout(function(){ WabiSync.pull(); }, 600); } catch(e){}
+  }
+
+  function handleReturn(){
+    var h = location.hash || '';
+    if (h.indexOf('error') >= 0 && h.indexOf('access_token=') < 0){
+      var e = parseHash(h);
+      cleanHash();
+      try { sessionStorage.removeItem(SS_GOING); } catch(e2){}
+      toast('Googleに接続できませんでした');
+      console.warn('[WabiGoogle]', e.error_description || e.error || h);
+      return;
+    }
+    if (h.indexOf('access_token=') < 0) return;
+
+    var p = parseHash(h);
+    cleanHash();
+    try { sessionStorage.removeItem(SS_GOING); } catch(e){}
+
+    try {
+      localStorage.setItem(LS_SESS, JSON.stringify({
+        access_token: p.access_token || '',
+        refresh_token: p.refresh_token || '',
+        expires_at: Date.now() + (parseInt(p.expires_in, 10) || 3600) * 1000,
+        provider: 'google'
+      }));
+    } catch(e){}
+
+    var body = jwtBody(p.access_token) || {};
+    var c = cfg();
+
+    // 正確な情報はユーザーAPIから取る。取れなければJWTの中身で代用する。
+    fetch(c.url + '/auth/v1/user', {
+      headers: { 'apikey': c.key, 'Authorization': 'Bearer ' + p.access_token }
+    }).then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(u){
+        if (u && u.id){
+          finish(u.id, pickName(u.user_metadata, u.email), pickPic(u.user_metadata));
+        } else if (body.sub){
+          finish(body.sub, pickName(body.user_metadata, body.email), pickPic(body.user_metadata));
+        } else {
+          toast('Googleに接続できませんでした');
+        }
+      })
+      .catch(function(){
+        if (body.sub) finish(body.sub, pickName(body.user_metadata, body.email), pickPic(body.user_metadata));
+        else toast('Googleに接続できませんでした');
+      });
+  }
+
+  // ── 公開API（__wabiRegSkin の準備中スタブを置き換える）──────
+  window.WabiGoogle = {
+    ready: true,
+    user: getUser,
+    config: cfg,
+    isEnabled: providerReady,
+    start: start,
+    logout: function(){
+      var c = cfg(), s = null;
+      try { s = JSON.parse(localStorage.getItem(LS_SESS) || 'null'); } catch(e){}
+      if (s && s.access_token){
+        try {
+          fetch(c.url + '/auth/v1/logout', {
+            method: 'POST',
+            headers: { 'apikey': c.key, 'Authorization': 'Bearer ' + s.access_token }
+          }).catch(function(){});
+        } catch(e){}
+      }
+      try { localStorage.removeItem(LS_SESS); } catch(e){}
+    }
+  };
+
+  // ログアウトのときにSupabase側のセッションも切る
+  (function(){
+    function hook(){
+      if (!window.WabiLine || !WabiLine.logout || WabiLine.logout.__wg) return true;
+      var orig = WabiLine.logout;
+      var wrapped = function(){
+        try { window.WabiGoogle.logout(); } catch(e){}
+        return orig.apply(this, arguments);
+      };
+      wrapped.__wg = true;
+      WabiLine.logout = wrapped;
+      return true;
+    }
+    if (!hook()){
+      var n = 0;
+      var iv = setInterval(function(){ if (hook() || ++n > 30) clearInterval(iv); }, 400);
+    }
+  })();
+
+  // index.html の regWithProvider('Google') からも動くようにする
+  (function(){
+    function hook(){
+      var orig = window.regWithProvider;
+      if (typeof orig !== 'function' || orig.__wg) return;
+      var wrapped = function(provider){
+        if (provider === 'Google'){
+          var pr = document.getElementById('pgRegister');
+          if (pr) pr.style.display = 'none';
+          window.WabiGoogle.start();
+          return;
+        }
+        return orig.apply(this, arguments);
+      };
+      wrapped.__wg = true;
+      window.regWithProvider = wrapped;
+    }
+    hook();
+    var n = 0;
+    var iv = setInterval(function(){ hook(); if (++n > 30) clearInterval(iv); }, 400);
+  })();
+
+  // 戻ってきた直後に処理する（すでにログイン済みならヘッダーだけ整える）
+  handleReturn();
+  [300, 1200, 2500].forEach(function(ms){ setTimeout(repaintHeader, ms); });
+})();

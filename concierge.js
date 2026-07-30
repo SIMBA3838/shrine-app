@@ -4317,8 +4317,8 @@
   var IMG = {
     '参拝した神社':        'mp-sanpai.jpg',
     '御朱印':              'mp-goshuin.jpg',
-    'お気に入りの神社仏閣': 'mp-favorite.jpg',
-    '投稿した記録':        'mp-post.jpg',
+    'お気に入りの神社仏閣': 'mp-post.jpg',
+    '投稿した記録':        'mp-favorite.jpg',
     'フォロー':            'mp-follow.jpg',
     'フォロワー':          'mp-follower.jpg'
   };
@@ -4327,9 +4327,11 @@
 
   var css = document.createElement('style');
   css.textContent = [
-    // 横長（4:3）
+    // 横長（4:3）／すべての行を同じ高さに揃える
     '#wcMypage .mp-stat{aspect-ratio:4/3 !important;height:auto !important;min-height:0 !important;}',
-    '#wcMypage .mp-stats{align-items:stretch;}',
+    '#wcMypage .mp-stats{align-items:stretch !important;grid-auto-rows:1fr !important;}',
+    // ラベルが2行になっても箱が伸びないようにする
+    '#wcMypage .mp-stat-l{overflow:hidden;}',
     // 写真があるときはカメラマークを隠す
     '#wcMypage .mp-av.has-photo .wp-cam{display:none !important;}'
   ].join('');

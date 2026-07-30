@@ -5404,3 +5404,220 @@
     }
   } catch(e){}
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：マイページの整理 ／ 下部メニューの確実化 ／ みんなの最新投稿ページ
+   （2026-07-27 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiFeed) return;
+  window.__wabiFeed = true;
+
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  var css = document.createElement('style');
+  css.textContent = [
+    // ── 下部メニューを最前面に、iPhoneでも確実に反応するように ──
+    '#wabiNav{z-index:999 !important;pointer-events:auto !important;-webkit-tap-highlight-color:transparent;}',
+    '#wabiNav .wn{-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;}',
+    // ── みんなの最新投稿 ──
+    ".wfd{position:fixed;inset:0;z-index:355;background:#FAF8F4;display:none;overflow-y:auto;",
+      "-webkit-overflow-scrolling:touch;font-family:'Shippori Mincho','Noto Serif JP',serif;color:#2D2D2D;}",
+    '.wfd-hd{position:sticky;top:0;z-index:5;background:rgba(250,248,244,.96);backdrop-filter:blur(8px);',
+      'display:flex;align-items:center;padding:16px;}',
+    '.wfd-hd .b{font-size:22px;cursor:pointer;width:30px;line-height:1;}',
+    '.wfd-hd .t{flex:1;text-align:center;font-size:17px;font-weight:700;letter-spacing:.06em;}',
+    '.wfd-hd .r{width:30px;text-align:right;font-size:17px;}',
+    '.wfd-in{max-width:500px;margin:0 auto;padding:0 16px 96px;}',
+    ".wfd-sub{font-size:12.5px;color:#6F6F6F;font-family:'Noto Serif JP',serif;margin-bottom:14px;}",
+    '.wfd-chips{display:flex;gap:9px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;}',
+    '.wfd-chips::-webkit-scrollbar{display:none;}',
+    ".wfd-chip{flex:0 0 auto;padding:10px 20px;border:1px solid #E7E1D6;border-radius:999px;background:#fff;",
+      "font-size:13px;color:#6F6F6F;cursor:pointer;font-weight:600;}",
+    '.wfd-chip.on{background:#5D3A7A;border-color:#5D3A7A;color:#fff;}',
+    '.wfd-bar{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:#6F6F6F;',
+      "margin-bottom:14px;font-family:'Noto Serif JP',serif;}",
+    '.wfd-bar span{cursor:pointer;}',
+    '.wfd-g{display:grid;grid-template-columns:1fr 1fr;gap:12px;}',
+    '.wfd-card{background:#fff;border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.06);overflow:hidden;cursor:pointer;',
+      'display:flex;flex-direction:column;}',
+    '.wfd-card .im{position:relative;width:100%;aspect-ratio:4/3;background:#e9e3d8 center/cover;}',
+    '.wfd-card .cat{position:absolute;top:8px;left:8px;background:#5D3A7A;color:#fff;font-size:10px;font-weight:700;',
+      'padding:3px 9px;border-radius:8px;}',
+    '.wfd-card .cnt{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.5);color:#fff;font-size:10px;',
+      'padding:3px 8px;border-radius:8px;}',
+    '.wfd-card .bd{padding:11px 12px 12px;display:flex;flex-direction:column;flex:1;}',
+    '.wfd-card .who{display:flex;align-items:center;gap:7px;margin-bottom:8px;}',
+    '.wfd-card .av{flex:0 0 24px;width:24px;height:24px;border-radius:50%;background:#C8A04D center/cover;color:#fff;',
+      'font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:700;}',
+    '.wfd-card .un{font-size:11.5px;font-weight:700;line-height:1.2;}',
+    ".wfd-card .tm{font-size:10px;color:#a09a90;font-family:'Noto Serif JP',serif;}",
+    '.wfd-card .nm{font-size:14.5px;font-weight:700;line-height:1.3;}',
+    ".wfd-card .lo{font-size:11px;color:#8a8378;margin-top:3px;font-family:'Noto Serif JP',serif;}",
+    ".wfd-card .tx{font-size:11.5px;line-height:1.65;color:#4a4a4a;margin-top:7px;font-family:'Noto Serif JP',serif;",
+      'display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}',
+    '.wfd-card .ft{display:flex;align-items:center;gap:14px;margin-top:auto;padding-top:10px;font-size:11.5px;color:#8a8378;}',
+    '.wfd-card .ft .sp{margin-left:auto;}',
+    '.wfd-empty{text-align:center;padding:60px 20px;color:#8a8378;font-size:13.5px;line-height:1.9;',
+      "font-family:'Noto Serif JP',serif;}"
+  ].join('');
+  document.head.appendChild(css);
+
+  // ── ① マイページの「最近の投稿」「投稿した御朱印」を消す ──
+  function hideSections(){
+    document.querySelectorAll('#wcMypage .mp-sec').forEach(function(sec){
+      var h = sec.querySelector('.mp-h');
+      if (!h) return;
+      var t = h.textContent.trim();
+      if (t === '最近の投稿' || t === '投稿した御朱印') sec.style.display = 'none';
+    });
+  }
+
+  // ── ② 下部メニューを常に最前面・確実に反応させる ────────────
+  function hardenNav(){
+    var nav = document.getElementById('wabiNav');
+    if (!nav) return;
+    if (nav.parentElement !== document.body || nav.nextElementSibling){
+      document.body.appendChild(nav);           // 常に最後＝最前面へ
+    }
+    nav.querySelectorAll('.wn').forEach(function(el){
+      if (el.getAttribute('data-hard')) return;
+      el.setAttribute('data-hard', '1');
+      el.setAttribute('role', 'button');
+      // iOS で反応しないことがあるので touchend でも拾う
+      el.addEventListener('touchend', function(ev){
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (typeof el.onclick === 'function') el.onclick(ev);
+      }, { passive: false });
+    });
+  }
+  setInterval(function(){ hardenNav(); hideSections(); }, 800);
+  hardenNav();
+
+  // ── ③ みんなの最新投稿 ────────────────────────────────────
+  var pg = document.createElement('div');
+  pg.className = 'wfd'; pg.id = 'wabiFeedPg';
+  pg.innerHTML = '<div class="wfd-hd"><span class="b">‹</span><span class="t">みんなの最新投稿</span><span class="r">🌿</span></div>'
+               + '<div class="wfd-in"></div>';
+  document.body.appendChild(pg);
+  pg.querySelector('.b').onclick = function(){ pg.style.display = 'none'; };
+
+  var CATS = ['すべて', '神社', 'お寺', '御朱印'];
+  var state = { cat: 'すべて', sort: 'new' };
+
+  function catOf(p){
+    if (p.cat) return p.cat;
+    var n = String(p.shrine || '');
+    if (/御朱印/.test(String(p.text || ''))) return '御朱印';
+    return /寺$|院$|庵$|坊$|大師$/.test(n) ? 'お寺' : '神社';
+  }
+  function allPosts(){
+    var out = [];
+    // 自分の投稿
+    try {
+      var mine = JSON.parse(localStorage.getItem('wabiMyPosts') || '[]');
+      var nm = localStorage.getItem('wabiName') || '';
+      var u = null; try { u = window.WabiLine && WabiLine.user && WabiLine.user(); } catch(e){}
+      if (Array.isArray(mine)) mine.forEach(function(p){
+        out.push({ user: nm || (u && u.name) || 'あなた', pic: (function(){ try { return localStorage.getItem('wabiAvatar') || (u && u.pic) || ''; } catch(e){ return ''; } })(),
+                   date: p.date || '', shrine: p.shrine || '', addr: '', img: (p.photos && p.photos[0]) || '',
+                   photos: p.photos || [], text: p.text || '', likes: 0, comments: [], ts: p.ts || 0, mine: true });
+      });
+    } catch(e){}
+    // みんなの投稿
+    try {
+      if (typeof USER_POSTS !== 'undefined' && Array.isArray(USER_POSTS)){
+        USER_POSTS.forEach(function(p){
+          out.push({ user: p.user, avatar: p.avatar, date: p.date, shrine: p.shrine, addr: p.addr,
+                     img: p.img, photos: p.photos || (p.img ? [p.img] : []), text: p.text,
+                     likes: p.likes || 0, comments: p.comments || [], _raw: p });
+        });
+      }
+    } catch(e){}
+    return out;
+  }
+
+  function card(p, i){
+    var n = (p.photos && p.photos.length) || (p.img ? 1 : 0);
+    var av = p.pic
+      ? '<div class="av" style="background-image:url(\'' + esc(p.pic) + '\')"></div>'
+      : '<div class="av">' + esc((p.avatar || (p.user || '？')).slice(0, 1)) + '</div>';
+    return '<div class="wfd-card" data-i="' + i + '">'
+      + '<div class="im"' + (p.img ? ' style="background-image:url(\'' + esc(p.img) + '\')"' : '') + '>'
+      +   '<span class="cat">' + esc(catOf(p)) + '</span>'
+      +   (n > 1 ? '<span class="cnt">1/' + n + '</span>' : '')
+      + '</div>'
+      + '<div class="bd"><div class="who">' + av
+      +   '<div style="min-width:0"><div class="un">' + esc(p.user || '巡礼者') + '</div>'
+      +   '<div class="tm">' + esc(p.date || '') + '</div></div></div>'
+      +   '<div class="nm">' + esc(p.shrine || '') + '</div>'
+      +   (p.addr ? '<div class="lo">' + esc(p.addr) + '</div>' : '')
+      +   (p.text ? '<div class="tx">' + esc(p.text) + '</div>' : '')
+      +   '<div class="ft"><span>♡ ' + (p.likes || 0) + '</span>'
+      +     '<span>💬 ' + ((p.comments && p.comments.length) || 0) + '</span>'
+      +     '<span class="sp">🔖</span></div>'
+      + '</div></div>';
+  }
+
+  function render(){
+    var list = allPosts();
+    if (state.cat !== 'すべて') list = list.filter(function(p){ return catOf(p) === state.cat; });
+    if (state.sort === 'like') list.sort(function(a, b){ return (b.likes || 0) - (a.likes || 0); });
+
+    var h = '<div class="wfd-sub">参拝の記録をシェアしよう</div>'
+      + '<div class="wfd-chips">' + CATS.map(function(c){
+          return '<span class="wfd-chip' + (c === state.cat ? ' on' : '') + '" data-c="' + esc(c) + '">' + esc(c) + '</span>';
+        }).join('') + '</div>'
+      + '<div class="wfd-bar"><span id="wfdSort">' + (state.sort === 'new' ? '新しい順' : '人気順') + ' ∨</span>'
+      +   '<span id="wfdFilter">絞り込み ⚙</span></div>'
+      + (list.length ? '<div class="wfd-g">' + list.map(card).join('') + '</div>'
+         : '<div class="wfd-empty">まだ投稿がありません。<br>「参拝を投稿する」から最初の記録を<br>残してみてください。</div>');
+
+    pg.querySelector('.wfd-in').innerHTML = h;
+
+    pg.querySelectorAll('.wfd-chip').forEach(function(c){
+      c.onclick = function(){ state.cat = c.getAttribute('data-c'); render(); };
+    });
+    var so = document.getElementById('wfdSort');
+    if (so) so.onclick = function(){ state.sort = (state.sort === 'new') ? 'like' : 'new'; render(); };
+    var fi = document.getElementById('wfdFilter');
+    if (fi) fi.onclick = function(){ if (typeof showToast === 'function') showToast('絞り込みは準備中です'); };
+
+    pg.querySelectorAll('.wfd-card').forEach(function(el){
+      el.onclick = function(){
+        var p = list[+el.getAttribute('data-i')];
+        if (!p) return;
+        if (p._raw && typeof openPostDetail === 'function'){ pg.style.display = 'none'; openPostDetail(p._raw.id || p._raw); return; }
+        if (typeof showToast === 'function') showToast('投稿の詳細は準備中です');
+      };
+    });
+  }
+
+  window.wabiOpenFeed = function(){ render(); pg.style.display = 'block'; pg.scrollTop = 0; };
+
+  // 下部メニュー「みんなの投稿」と、トップの「もっと見る」をこのページにつなぐ
+  function hook(){
+    var el = document.querySelector('#wabiNav [data-k="posts"]');
+    if (el && !el.getAttribute('data-feed')){
+      el.setAttribute('data-feed', '1');
+      el.onclick = function(){
+        ['pgShrineDetail','pgMap','pgRegister','pgAiRoute','pgAiResult','pgAreaSearch','pgPostDetail',
+         'wabiRoutePg','wabiRankMore','wxGuide','wxInvite','wxSignup','wcMypage','wabiListPg'].forEach(function(id){
+          var e = document.getElementById(id); if (e) e.style.display = 'none';
+        });
+        var mp = document.getElementById('wcMypage'); if (mp) mp.classList.remove('show');
+        window.wabiOpenFeed();
+        document.querySelectorAll('#wabiNav .wn').forEach(function(x){ x.classList.toggle('on', x.getAttribute('data-k') === 'posts'); });
+      };
+    }
+    if (typeof window.openCommunityAll === 'function' && !window.openCommunityAll.__wfd){
+      var f = function(){ window.wabiOpenFeed(); };
+      f.__wfd = true;
+      window.openCommunityAll = f;
+    }
+  }
+  hook();
+  setInterval(hook, 700);
+})();

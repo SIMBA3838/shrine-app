@@ -6622,3 +6622,139 @@
   setTimeout(bind, 1200);
   setTimeout(bind, 3000);
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：全ボタン総点検で見つかった不具合の修正
+   ① 地図が後から勝手に開いてしまう（位置情報の遅い応答）
+   ② 神社詳細「参拝記録を投稿する」が準備中のまま
+   ③ ルートの「ナビ開始」が準備中のまま
+   ④ 画面を見ていない間に止まる定期処理に頼っていた文言・非表示の修正
+   ⑤ 写真変更シートが出てこないことがある
+   （2026-07-30 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiFix7) return;
+  window.__wabiFix7 = true;
+
+  // 画面を見ていない間も動く軽い定期処理（指で動かしている間だけ休む）
+  var scrolling = false, st = null;
+  window.addEventListener('scroll', function(){
+    scrolling = true; clearTimeout(st);
+    st = setTimeout(function(){ scrolling = false; }, 140);
+  }, { passive: true, capture: true });
+  function TICK(fn, ms){
+    return setInterval(function(){ if (scrolling) return; try { fn(); } catch(e){} }, ms);
+  }
+
+  /* ── ① 地図が後から勝手に開くのを防ぐ ──────────────────────
+     searchNearby() の位置情報の応答が数秒遅れて返り、
+     すでに別のページへ移っていても地図を開いてしまうため、
+     マップタブを離れてから8秒間は見張って閉じる。            */
+  (function(){
+    var lastTab = window.__wabiTab || 'home';
+    var leftAt  = 0;
+    setInterval(function(){
+      var t = window.__wabiTab || 'home';
+      if (lastTab === 'map' && t !== 'map') leftAt = Date.now();
+      lastTab = t;
+      if (t === 'map') return;
+      if (!leftAt || Date.now() - leftAt > 8000) return;
+      var m = document.getElementById('pgMap');
+      if (m && m.style.display !== 'none' && getComputedStyle(m).display !== 'none'){
+        m.style.display = 'none';
+      }
+    }, 150);
+  })();
+
+  /* ── ② 神社詳細「参拝記録を投稿する」で記録シートを開く ───── */
+  function fixWriteReview(){
+    if (typeof window.sdWriteReview === 'function' && window.sdWriteReview.__wf7) return;
+    var f = function(){
+      var s = window.currentSdShrine || null;
+      if (window.WabiRec && typeof WabiRec.visit === 'function'){ WabiRec.visit(s); return; }
+      // 記録シートが見つからないときは従来どおり参拝済の導線へ
+      var b = document.querySelector('#pgShrineDetail .sd-visited-btn');
+      if (b) b.click();
+    };
+    f.__wf7 = true;
+    window.sdWriteReview = f;
+  }
+  fixWriteReview();
+  TICK(fixWriteReview, 1500);
+
+  /* ── ③ 「ナビ開始」でGoogleマップの経路案内を開く ────────── */
+  (function(){
+    // どのルートを表示中かを覚えておく
+    if (typeof window.showRouteMap === 'function' && !window.showRouteMap.__wf7){
+      var orig = window.showRouteMap;
+      var wrapped = function(route){ window.__wabiRmRoute = route; return orig.apply(this, arguments); };
+      wrapped.__wf7 = true;
+      window.showRouteMap = wrapped;
+    }
+    var nav = function(){
+      var r = window.__wabiRmRoute;
+      var pts = [];
+      if (r && r.spots && r.spots.length){
+        pts = r.spots.map(function(s){ return s.name; });
+      } else if (window.currentSdShrine){
+        pts = [currentSdShrine.name];
+      }
+      if (!pts.length){
+        if (typeof showToast === 'function') showToast('ルートを選んでから押してください');
+        return;
+      }
+      var dest = encodeURIComponent(pts[pts.length - 1]);
+      var way  = pts.slice(0, -1).map(encodeURIComponent).join('|');
+      var url  = 'https://www.google.com/maps/dir/?api=1&destination=' + dest
+               + (way ? '&waypoints=' + way : '') + '&travelmode=driving';
+      window.open(url, '_blank');
+    };
+    nav.__wf7 = true;
+    window.startNavi = nav;
+  })();
+
+  /* ── ④ 文言・非表示の修正を、画面を見ていなくても効くように ── */
+  function tweaks(){
+    // 「友達を紹介」→「友達に紹介」
+    var a = document.getElementById('wxInviteLink');
+    if (a && a.textContent.indexOf('友達を紹介') >= 0) a.textContent = '友達に紹介 ›';
+    var t = document.querySelector('#wxInvite .wx-hd .t');
+    if (t && t.textContent.trim() === '友達を紹介') t.textContent = '友達に紹介';
+    // マイページの不要セクションと「すべて見る」
+    document.querySelectorAll('#wcMypage .mp-sec').forEach(function(sec){
+      var h = sec.querySelector('.mp-h');
+      if (!h) return;
+      var n = h.textContent.trim();
+      if (n === '最近の投稿' || n === '投稿した御朱印'){ sec.style.display = 'none'; return; }
+      if (n === 'バッジコレクション'){
+        var more = sec.querySelector('.mp-more');
+        if (more) more.style.display = 'none';
+      }
+    });
+  }
+  tweaks();
+  TICK(tweaks, 800);
+  (function(){
+    var mp = document.getElementById('wcMypage');
+    if (!mp) return;
+    new MutationObserver(function(){ tweaks(); }).observe(mp, { childList: true, subtree: true });
+  })();
+
+  /* ── ⑤ 写真変更シートが出てこないことがあるのを防ぐ ───────── */
+  (function(){
+    function guard(maskSel, sheetSel){
+      var m = document.querySelector(maskSel), s = document.querySelector(sheetSel);
+      if (!m || !s || m.__wf7) return;
+      m.__wf7 = true;
+      new MutationObserver(function(){
+        if (m.classList.contains('on') && !s.classList.contains('on')){
+          setTimeout(function(){ if (m.classList.contains('on')) s.classList.add('on'); }, 50);
+        }
+      }).observe(m, { attributes: true, attributeFilter: ['class'] });
+    }
+    function run(){ guard('.wp-mask', '.wp-sheet'); guard('.wrc-mask', '.wrc'); }
+    run();
+    TICK(run, 1200);
+  })();
+})();

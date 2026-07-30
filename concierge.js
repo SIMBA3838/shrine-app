@@ -5069,3 +5069,338 @@
   var n = 0;
   var iv = setInterval(function(){ bind(); bindCards(); if (++n > 40) clearInterval(iv); }, 300);
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：記録機能（参拝の記録 ／ 御朱印の登録 ／ 投稿）
+   保存先は localStorage（Supabase同期の対象キーに追加済み）
+     wabiVisits   参拝の記録
+     wabiGoshuin  御朱印
+     wabiMyPosts  投稿した記録
+   （2026-07-27 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.WabiRec) return;
+
+  var K_V = 'wabiVisits', K_G = 'wabiGoshuin', K_P = 'wabiMyPosts';
+  function load(k){ try { var a = JSON.parse(localStorage.getItem(k) || '[]'); return Array.isArray(a) ? a : []; } catch(e){ return []; } }
+  function save(k, a){
+    try { localStorage.setItem(k, JSON.stringify(a)); return true; }
+    catch(e){ if (typeof showToast === 'function') showToast('保存できませんでした（端末の空き容量が不足しています）'); return false; }
+  }
+  function today(){
+    var d = new Date();
+    return d.getFullYear() + '.' + ('0' + (d.getMonth() + 1)).slice(-2) + '.' + ('0' + d.getDate()).slice(-2);
+  }
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  var css = document.createElement('style');
+  css.textContent = [
+    '.wrc-mask{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:420;display:none;}',
+    '.wrc-mask.on{display:block;}',
+    ".wrc{position:fixed;left:0;right:0;bottom:0;z-index:421;max-width:500px;margin:0 auto;background:#FAF8F4;",
+      "border-radius:24px 24px 0 0;max-height:90vh;overflow-y:auto;transform:translateY(100%);",
+      "transition:transform .24s cubic-bezier(.22,.61,.36,1);font-family:'Shippori Mincho','Noto Serif JP',serif;color:#2D2D2D;}",
+    '.wrc.on{transform:translateY(0);}',
+    '.wrc .bar{width:38px;height:4px;border-radius:2px;background:#e2dbcd;margin:10px auto 4px;}',
+    '.wrc-in{padding:8px 20px calc(24px + env(safe-area-inset-bottom));}',
+    '.wrc-ttl{font-size:19px;font-weight:700;text-align:center;margin:6px 0 4px;}',
+    ".wrc-sub{font-size:12.5px;color:#6F6F6F;text-align:center;margin-bottom:18px;font-family:'Noto Serif JP',serif;}",
+    '.wrc-lb{font-size:13px;font-weight:700;margin:16px 0 8px;}',
+    ".wrc-in input[type=text],.wrc-in input[type=date],.wrc-in textarea,.wrc-in select{width:100%;box-sizing:border-box;",
+      "padding:13px;border:1px solid #E7E1D6;border-radius:14px;background:#fff;font-family:'Noto Serif JP',serif;",
+      "font-size:14px;color:#2D2D2D;outline:none;}",
+    '.wrc-in textarea{min-height:96px;resize:vertical;line-height:1.7;}',
+    '.wrc-in input:focus,.wrc-in textarea:focus,.wrc-in select:focus{border-color:#5D3A7A;}',
+    '.wrc-stars{display:flex;gap:8px;font-size:30px;color:#ddd6c6;cursor:pointer;}',
+    '.wrc-stars .s.on{color:#C8A04D;}',
+    '.wrc-chips{display:flex;flex-wrap:wrap;gap:8px;}',
+    ".wrc-chip{padding:9px 14px;border:1px solid #E7E1D6;border-radius:999px;background:#fff;font-size:12.5px;cursor:pointer;color:#6F6F6F;}",
+    '.wrc-chip.on{border-color:#5D3A7A;color:#5D3A7A;font-weight:700;background:#F6F2FC;}',
+    '.wrc-photos{display:flex;gap:10px;flex-wrap:wrap;}',
+    '.wrc-ph{position:relative;width:88px;height:88px;border-radius:14px;overflow:hidden;background:#e9e3d8 center/cover;}',
+    '.wrc-ph .x{position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.94);',
+      'display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;}',
+    '.wrc-add{width:88px;height:88px;border-radius:14px;border:1.5px dashed #d8d0c0;background:#fff;color:#a89f8e;',
+      'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;cursor:pointer;}',
+    '.wrc-add span{font-size:20px;}',
+    '.wrc-save{width:100%;margin-top:22px;height:54px;border:none;border-radius:16px;background:#5D3A7A;color:#fff;',
+      "font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 8px 22px rgba(93,58,122,.26);}",
+    '.wrc-save:active{transform:scale(.98);}',
+    '.wrc-cancel{width:100%;margin-top:10px;height:48px;border:none;border-radius:14px;background:#f2eee6;color:#6F6F6F;',
+      "font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;}",
+    ".wrc-note{font-size:11px;color:#9a948a;line-height:1.7;margin-top:12px;text-align:center;font-family:'Noto Serif JP',serif;}",
+    '.wrc-pub{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #E7E1D6;border-radius:14px;padding:13px;}',
+    '.wrc-pub input{width:auto !important;}'
+  ].join('');
+  document.head.appendChild(css);
+
+  var mask = document.createElement('div'); mask.className = 'wrc-mask';
+  var box  = document.createElement('div'); box.className  = 'wrc';
+  box.innerHTML = '<div class="bar"></div><div class="wrc-in"></div>';
+  document.body.appendChild(mask); document.body.appendChild(box);
+  mask.onclick = close;
+  function close(){ mask.classList.remove('on'); box.classList.remove('on'); }
+  function open(html){
+    box.querySelector('.wrc-in').innerHTML = html;
+    mask.classList.add('on');
+    requestAnimationFrame(function(){ box.classList.add('on'); });
+  }
+  window.wabiRecClose = close;
+
+  // 写真：端末内で縮小してから保存
+  var fileInput = document.createElement('input');
+  fileInput.type = 'file'; fileInput.accept = 'image/*'; fileInput.style.display = 'none';
+  document.body.appendChild(fileInput);
+  function pick(maxW, cb){
+    fileInput.value = '';
+    fileInput.onchange = function(){
+      var f = fileInput.files && fileInput.files[0];
+      if (!f || !/^image\//.test(f.type)) return;
+      var fr = new FileReader();
+      fr.onload = function(){
+        var img = new Image();
+        img.onload = function(){
+          var sc = Math.min(1, maxW / img.width);
+          var cv = document.createElement('canvas');
+          cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc);
+          cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+          try { cb(cv.toDataURL('image/jpeg', 0.8)); } catch(e){}
+        };
+        img.src = fr.result;
+      };
+      fr.readAsDataURL(f);
+    };
+    fileInput.click();
+  }
+
+  var STAY = ['〜30分', '1時間', '2時間', '半日', '1日'];
+
+  // ── 参拝の記録 ────────────────────────────────────────────
+  function recordVisit(shrine){
+    var name = (shrine && shrine.name) || (window.currentSdShrine && currentSdShrine.name) || '';
+    if (!name) { if (typeof showToast === 'function') showToast('神社情報を取得できませんでした'); return; }
+    var addr = (shrine && shrine.addr) || '';
+    var state = { rating: 0, stay: '', photos: [] };
+
+    open('<div class="wrc-ttl">参拝を記録する</div><div class="wrc-sub">' + esc(name) + '</div>'
+      + '<div class="wrc-lb">参拝日</div><input type="date" id="wrcDate">'
+      + '<div class="wrc-lb">満足度</div><div class="wrc-stars" id="wrcStars">'
+      +   [1,2,3,4,5].map(function(i){ return '<span class="s" data-i="' + i + '">★</span>'; }).join('') + '</div>'
+      + '<div class="wrc-lb">滞在時間</div><div class="wrc-chips" id="wrcStay">'
+      +   STAY.map(function(s){ return '<span class="wrc-chip" data-s="' + esc(s) + '">' + esc(s) + '</span>'; }).join('') + '</div>'
+      + '<div class="wrc-lb">感想</div><textarea id="wrcMemo" placeholder="そのときに感じたことを残しておきましょう"></textarea>'
+      + '<div class="wrc-lb">写真</div><div class="wrc-photos" id="wrcPhotos">'
+      +   '<div class="wrc-add" id="wrcAdd"><span>＋</span>写真を追加</div></div>'
+      + '<div class="wrc-lb">みんなの投稿にも載せる</div>'
+      + '<label class="wrc-pub"><input type="checkbox" id="wrcPub"><span style="font-size:13px">投稿として公開する（＋50 EXP）</span></label>'
+      + '<button class="wrc-save" id="wrcSave">記録する</button>'
+      + '<button class="wrc-cancel" onclick="wabiRecClose()">キャンセル</button>'
+      + '<div class="wrc-note">写真は端末内で縮小して保存されます。<br>ログイン中は自動でクラウドにも保存されます。</div>');
+
+    var d = new Date();
+    document.getElementById('wrcDate').value =
+      d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+
+    document.querySelectorAll('#wrcStars .s').forEach(function(s){
+      s.onclick = function(){
+        state.rating = +s.getAttribute('data-i');
+        document.querySelectorAll('#wrcStars .s').forEach(function(x){
+          x.classList.toggle('on', +x.getAttribute('data-i') <= state.rating);
+        });
+      };
+    });
+    document.querySelectorAll('#wrcStay .wrc-chip').forEach(function(c){
+      c.onclick = function(){
+        var v = c.getAttribute('data-s');
+        var on = c.classList.contains('on');
+        document.querySelectorAll('#wrcStay .wrc-chip').forEach(function(x){ x.classList.remove('on'); });
+        if (!on) { c.classList.add('on'); state.stay = v; } else state.stay = '';
+      };
+    });
+    function paintPhotos(){
+      var wrap = document.getElementById('wrcPhotos');
+      wrap.innerHTML = state.photos.map(function(p, i){
+        return '<div class="wrc-ph" style="background-image:url(\'' + p + '\')"><div class="x" data-x="' + i + '">✕</div></div>';
+      }).join('') + (state.photos.length < 4 ? '<div class="wrc-add" id="wrcAdd"><span>＋</span>写真を追加</div>' : '');
+      var add = document.getElementById('wrcAdd');
+      if (add) add.onclick = function(){ pick(1000, function(u){ state.photos.push(u); paintPhotos(); }); };
+      wrap.querySelectorAll('[data-x]').forEach(function(x){
+        x.onclick = function(){ state.photos.splice(+x.getAttribute('data-x'), 1); paintPhotos(); };
+      });
+    }
+    paintPhotos();
+
+    document.getElementById('wrcSave').onclick = function(){
+      var dv = (document.getElementById('wrcDate') || {}).value || '';
+      var date = dv ? dv.replace(/-/g, '.') : today();
+      var memo = (document.getElementById('wrcMemo') || {}).value || '';
+      var pub  = !!(document.getElementById('wrcPub') || {}).checked;
+
+      var list = load(K_V);
+      list.unshift({ name: name, addr: addr, date: date, rating: state.rating,
+                     stay: state.stay, memo: memo, photos: state.photos, ts: Date.now() });
+      if (!save(K_V, list)) return;
+
+      if (pub){
+        var posts = load(K_P);
+        posts.unshift({ shrine: name, date: date, text: memo, photos: state.photos, ts: Date.now() });
+        save(K_P, posts);
+      }
+      close();
+      try {
+        if (window.WabiExp){
+          WabiExp.add('visit_record', { silent: true });
+          if (pub) WabiExp.add('post_photo', { silent: true });
+        }
+      } catch(e){}
+      if (typeof showToast === 'function') showToast('参拝を記録しました　＋80 EXP');
+      refreshCounts();
+    };
+  }
+
+  // ── 御朱印の登録 ──────────────────────────────────────────
+  function recordGoshuin(shrineName){
+    var name = shrineName || (window.currentSdShrine && currentSdShrine.name) || '';
+    if (!name) { if (typeof showToast === 'function') showToast('神社情報を取得できませんでした'); return; }
+    var state = { img: '' };
+
+    open('<div class="wrc-ttl">御朱印を登録する</div><div class="wrc-sub">' + esc(name) + '</div>'
+      + '<div class="wrc-lb">御朱印の写真</div><div class="wrc-photos" id="wrcGP">'
+      +   '<div class="wrc-add" id="wrcGAdd" style="width:120px;height:150px"><span>📷</span>写真を選ぶ</div></div>'
+      + '<div class="wrc-lb">拝受日</div><input type="date" id="wrcGDate">'
+      + '<div class="wrc-lb">メモ</div><textarea id="wrcGMemo" placeholder="限定御朱印、書き置き など"></textarea>'
+      + '<button class="wrc-save" id="wrcGSave">登録する</button>'
+      + '<button class="wrc-cancel" onclick="wabiRecClose()">キャンセル</button>'
+      + '<div class="wrc-note">登録した御朱印はマイページの御朱印帳に並びます。</div>');
+
+    var d = new Date();
+    document.getElementById('wrcGDate').value =
+      d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+
+    function paint(){
+      var w = document.getElementById('wrcGP');
+      w.innerHTML = state.img
+        ? '<div class="wrc-ph" style="width:120px;height:150px;background-image:url(\'' + state.img + '\')"><div class="x" id="wrcGX">✕</div></div>'
+        : '<div class="wrc-add" id="wrcGAdd" style="width:120px;height:150px"><span>📷</span>写真を選ぶ</div>';
+      var a = document.getElementById('wrcGAdd');
+      if (a) a.onclick = function(){ pick(1100, function(u){ state.img = u; paint(); }); };
+      var x = document.getElementById('wrcGX');
+      if (x) x.onclick = function(){ state.img = ''; paint(); };
+    }
+    paint();
+
+    document.getElementById('wrcGSave').onclick = function(){
+      if (!state.img) { if (typeof showToast === 'function') showToast('御朱印の写真を選んでください'); return; }
+      var dv = (document.getElementById('wrcGDate') || {}).value || '';
+      var list = load(K_G);
+      list.unshift({ shrine: name, imageUrl: state.img, date: dv ? dv.replace(/-/g, '.') : today(),
+                     memo: (document.getElementById('wrcGMemo') || {}).value || '', author: 'あなた', ts: Date.now() });
+      if (!save(K_G, list)) return;
+      close();
+      try { if (window.WabiExp) WabiExp.add('goshuin_record', { silent: true }); } catch(e){}
+      if (typeof showToast === 'function') showToast('御朱印を登録しました　＋100 EXP');
+      refreshCounts();
+    };
+  }
+
+  // ── マイページの数字を実データに合わせる ──────────────────
+  function counts(){
+    var fav = 0, vis = 0, gos = 0, pos = 0;
+    try { fav = (JSON.parse(localStorage.getItem('wabiFavorites') || '[]') || []).length; } catch(e){}
+    vis = load(K_V).length;
+    gos = load(K_G).length;
+    pos = load(K_P).length;
+    // データベース側で参拝済になっているものも数える
+    try {
+      if (typeof SHRINES !== 'undefined'){
+        SHRINES.filter(function(s){ return s.visited; }).forEach(function(s){
+          if (!load(K_V).some(function(v){ return v.name === s.name; })) vis++;
+        });
+      }
+    } catch(e){}
+    try {
+      if (typeof goshuinList !== 'undefined') gos += goshuinList.filter(function(g){ return g && g.imageUrl; }).length;
+    } catch(e){}
+    return { '参拝した神社': vis, '御朱印': gos, 'お気に入りの神社仏閣': fav, '投稿した記録': pos,
+             'フォロー': 0, 'フォロワー': 0 };
+  }
+  function refreshCounts(){
+    try {
+      var c = counts();
+      document.querySelectorAll('#wcMypage .mp-stat').forEach(function(card){
+        var l = card.querySelector('.mp-stat-l');
+        var v = card.querySelector('.mp-stat-v');
+        if (!l || !v) return;
+        var key = l.textContent.trim();
+        if (!(key in c)) return;
+        v.setAttribute('data-count', c[key]);
+        var unit = v.querySelector('small');
+        v.textContent = c[key];
+        if (unit) v.appendChild(unit);
+      });
+    } catch(e){}
+  }
+  window.wabiRefreshCounts = refreshCounts;
+
+  // ── 既存のボタンにつなぐ ──────────────────────────────────
+  function hookAll(){
+    // 神社詳細「参拝済にする」
+    if (typeof window.sdVisited === 'function' && !window.sdVisited.__wrc){
+      var f = function(){ recordVisit(window.currentSdShrine); };
+      f.__wrc = true;
+      window.sdVisited = f;
+    }
+    // 御朱印の登録（index.html 側の showGoshuinForm を差し替え）
+    if (typeof window.showGoshuinForm === 'function' && !window.showGoshuinForm.__wrc){
+      var g = function(name){ recordGoshuin(name); };
+      g.__wrc = true;
+      window.showGoshuinForm = g;
+    }
+    // コミュニティの「参拝を投稿する」
+    if (typeof window.openCommunityPost === 'function' && !window.openCommunityPost.__wrc){
+      var p = function(){ recordVisit(window.currentSdShrine || null); };
+      p.__wrc = true;
+      window.openCommunityPost = p;
+    }
+  }
+  hookAll();
+  var n = 0;
+  var iv = setInterval(function(){ hookAll(); if (++n > 60) clearInterval(iv); }, 300);
+
+  // マイページを開いたら実データの件数に直す
+  function bind(){
+    if (typeof window.openWabiMypage !== 'function' || window.openWabiMypage.__wrc) return;
+    var orig = window.openWabiMypage;
+    var w = function(){
+      var r = orig.apply(this, arguments);
+      [120, 400, 1100].forEach(function(ms){ setTimeout(refreshCounts, ms); });
+      return r;
+    };
+    w.__wrc = true;
+    window.openWabiMypage = w;
+  }
+  bind();
+  var m = 0;
+  var iv2 = setInterval(function(){ bind(); if (++m > 40) clearInterval(iv2); }, 300);
+
+  window.WabiRec = {
+    visit: recordVisit,
+    goshuin: recordGoshuin,
+    counts: counts,
+    refresh: refreshCounts,
+    keys: { visits: K_V, goshuin: K_G, posts: K_P }
+  };
+})();
+
+
+/* 記録した内容もクラウド同期の対象にする */
+(function(){
+  try {
+    if (window.WabiSync && WabiSync.keys){
+      ['wabiVisits', 'wabiGoshuin', 'wabiMyPosts'].forEach(function(k){
+        if (WabiSync.keys.indexOf(k) < 0) WabiSync.keys.push(k);
+      });
+    }
+  } catch(e){}
+})();

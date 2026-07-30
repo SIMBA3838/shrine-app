@@ -4629,3 +4629,443 @@
   }
   setInterval(trim, 900);
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：カバー写真のちらつき解消 ／ 神社・お寺タグ追加
+   （2026-07-27 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiFix3) return;
+  window.__wabiFix3 = true;
+
+  // ── ① カバー写真のちらつきを消す ──────────────────────────
+  // mypage.js があとから Wikipedia の写真を入れてくるので、
+  // 自分で設定したカバーがあるときは CSS で強制的に固定する。
+  var coverStyle = document.createElement('style');
+  coverStyle.id = 'wabiCoverFix';
+  document.head.appendChild(coverStyle);
+  function fixCover(){
+    var u = '';
+    try { u = localStorage.getItem('wabiCover') || ''; } catch(e){}
+    coverStyle.textContent = u
+      ? '#wcMypage #mpCover{background:#3a3025 url("' + u + '") center/cover !important;}'
+      : '';
+  }
+  fixCover();
+  var _set = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function(k, v){ var r = _set(k, v); if (k === 'wabiCover') fixCover(); return r; };
+  var _rm = localStorage.removeItem.bind(localStorage);
+  localStorage.removeItem = function(k){ var r = _rm(k); if (k === 'wabiCover') fixCover(); return r; };
+
+  // ── ② 「すべて」と「御朱印」の間に 神社／お寺 を追加 ────────
+  function addTypeChips(){
+    var row = document.querySelector('.tagrow');
+    if (!row || row.querySelector('[data-wtype]')) return;
+    var all = row.querySelector('.tag');
+    if (!all) return;
+
+    function mk(label, type){
+      var s = document.createElement('span');
+      s.className = 'tag';
+      s.setAttribute('data-wtype', type);
+      s.textContent = label;
+      s.onclick = function(){
+        var on = s.classList.contains('on');
+        row.querySelectorAll('[data-wtype]').forEach(function(e){ e.classList.remove('on'); });
+        if (on){
+          // もう一度押したら解除（神社・寺の両方を表示）
+          try { window.currentType = ''; } catch(e){}
+          if (typeof currentType !== 'undefined') currentType = '';
+        } else {
+          s.classList.add('on');
+          if (typeof setType === 'function') setType(type);
+          else if (typeof currentType !== 'undefined') currentType = type;
+        }
+        if (typeof filter === 'function') filter();
+      };
+      return s;
+    }
+    var shrine = mk('神社', 'shrine');
+    var temple = mk('お寺', 'temple');
+    all.parentNode.insertBefore(temple, all.nextSibling);
+    all.parentNode.insertBefore(shrine, all.nextSibling);
+
+    // 「すべて」を押したら種別の絞り込みも解除する
+    var origAll = all.onclick;
+    all.addEventListener('click', function(){
+      row.querySelectorAll('[data-wtype]').forEach(function(e){ e.classList.remove('on'); });
+      try { if (typeof currentType !== 'undefined') currentType = ''; } catch(e){}
+      setTimeout(function(){ if (typeof filter === 'function') filter(); }, 0);
+    });
+  }
+  addTypeChips();
+  var n = 0;
+  var iv = setInterval(function(){ addTypeChips(); if (++n > 30) clearInterval(iv); }, 400);
+})();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：マイページ6枚のカードから開く一覧ページ
+   ① 参拝した神社 ② 御朱印帳 ③ お気に入り ④ 投稿した記録
+   ⑤ フォロー ⑥ フォロワー
+   （2026-07-27 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiListPages) return;
+  window.__wabiListPages = true;
+
+  var css = document.createElement('style');
+  css.textContent = [
+    ".wlp{position:fixed;inset:0;z-index:350;background:#FAF8F4;display:none;overflow-y:auto;",
+      "-webkit-overflow-scrolling:touch;font-family:'Shippori Mincho','Noto Serif JP',serif;color:#2D2D2D;}",
+    '.wlp-hd{position:sticky;top:0;z-index:5;background:rgba(250,248,244,.96);backdrop-filter:blur(8px);',
+      'display:flex;align-items:center;padding:16px;border-bottom:1px solid #EFE9DD;}',
+    '.wlp-hd .b{font-size:22px;cursor:pointer;line-height:1;width:30px;}',
+    '.wlp-hd .t{flex:1;text-align:center;font-size:15px;font-weight:800;letter-spacing:.1em;}',
+    '.wlp-hd .r{width:30px;text-align:right;color:#C8A04D;font-size:18px;}',
+    '.wlp-in{max-width:500px;margin:0 auto;padding:20px 20px 90px;}',
+    '.wlp-h{font-size:19px;font-weight:700;letter-spacing:.04em;}',
+    '.wlp-cnt{font-size:30px;font-weight:800;color:#5D3A7A;margin:2px 0 18px;}',
+    '.wlp-cnt small{font-size:14px;font-weight:700;margin-left:3px;color:#6F6F6F;}',
+    // 検索欄
+    '.wlp-search{position:relative;margin-bottom:18px;}',
+    ".wlp-search input{width:100%;box-sizing:border-box;height:44px;padding:0 40px 0 14px;border:1px solid #E7E1D6;",
+      "border-radius:14px;background:#fff;font-family:'Noto Serif JP',serif;font-size:13px;color:#333;outline:none;}",
+    '.wlp-search input:focus{border-color:#5D3A7A;}',
+    '.wlp-search .ic{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:#b9b0a2;}',
+    // 大きめカード（参拝した神社）
+    '.wlp-card{display:flex;gap:12px;background:#fff;border-radius:24px;box-shadow:0 10px 30px rgba(0,0,0,.06);',
+      'padding:12px;margin-bottom:14px;cursor:pointer;align-items:center;}',
+    '.wlp-card:active{transform:scale(.995);}',
+    '.wlp-card .ph{flex:0 0 108px;width:108px;height:84px;border-radius:16px;background:#e9e3d8 center/cover;overflow:hidden;}',
+    '.wlp-card .nm{font-size:16px;font-weight:700;line-height:1.35;}',
+    ".wlp-card .sub{font-size:12px;color:#6F6F6F;font-family:'Noto Serif JP',serif;margin-top:3px;}",
+    '.wlp-card .dt{font-size:11.5px;color:#C8A04D;font-weight:700;margin-top:6px;}',
+    '.wlp-card .ar{flex:0 0 14px;color:#c9c2b6;font-size:20px;}',
+    // 3列グリッド（御朱印帳）
+    '.wlp-g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}',
+    '.wlp-g3 .it{cursor:pointer;}',
+    '.wlp-g3 .im{width:100%;aspect-ratio:3/4;border-radius:14px;background:#fff center/cover;border:1px solid #E7E1D6;',
+      'box-shadow:0 6px 18px rgba(0,0,0,.06);display:flex;align-items:center;justify-content:center;overflow:hidden;}',
+    '.wlp-g3 .im img{width:100%;height:100%;object-fit:contain;background:#fff;}',
+    ".wlp-g3 .nm{font-size:11.5px;font-weight:700;margin-top:7px;line-height:1.35;text-align:center;}",
+    ".wlp-g3 .dt{font-size:10px;color:#9a948a;text-align:center;margin-top:2px;font-family:'Noto Serif JP',serif;}",
+    // 2列グリッド（お気に入り・投稿）
+    '.wlp-g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}',
+    '.wlp-g2 .it{position:relative;border-radius:20px;overflow:hidden;background:#fff;',
+      'box-shadow:0 10px 30px rgba(0,0,0,.06);cursor:pointer;}',
+    '.wlp-g2 .im{width:100%;aspect-ratio:1/1;background:#e9e3d8 center/cover;}',
+    '.wlp-g2 .bd{padding:10px 12px 12px;}',
+    '.wlp-g2 .nm{font-size:13px;font-weight:700;line-height:1.35;}',
+    ".wlp-g2 .sub{font-size:11px;color:#6F6F6F;margin-top:3px;font-family:'Noto Serif JP',serif;}",
+    '.wlp-g2 .heart{position:absolute;top:9px;right:9px;width:28px;height:28px;border-radius:50%;',
+      'background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;font-size:13px;color:#5D3A7A;}',
+    '.wlp-g2 .cap{position:absolute;left:10px;bottom:10px;color:#fff;font-size:11.5px;font-weight:700;text-shadow:0 1px 6px rgba(0,0,0,.6);}',
+    // 人リスト（フォロー・フォロワー）
+    '.wlp-tabs{display:flex;gap:0;border-bottom:1px solid #EFE9DD;margin-bottom:16px;}',
+    '.wlp-tabs .tb{flex:1;text-align:center;padding:12px 0;font-size:13.5px;font-weight:700;color:#9a948a;cursor:pointer;}',
+    '.wlp-tabs .tb.on{color:#5D3A7A;box-shadow:inset 0 -2px 0 #5D3A7A;}',
+    '.wlp-person{display:flex;align-items:center;gap:12px;background:#fff;border-radius:20px;',
+      'box-shadow:0 8px 24px rgba(0,0,0,.05);padding:12px 14px;margin-bottom:10px;}',
+    '.wlp-person .av{flex:0 0 46px;width:46px;height:46px;border-radius:50%;background:#e9e3d8 center/cover;}',
+    '.wlp-person .nm{font-size:14px;font-weight:700;}',
+    ".wlp-person .mt{font-size:11.5px;color:#6F6F6F;margin-top:3px;font-family:'Noto Serif JP',serif;}",
+    ".wlp-btn{flex:0 0 auto;padding:8px 14px;border-radius:999px;border:1px solid #E7E1D6;background:#fff;",
+      "font-family:inherit;font-size:12px;font-weight:700;color:#6F6F6F;cursor:pointer;}",
+    '.wlp-btn.act{border-color:#5D3A7A;color:#5D3A7A;}',
+    // 空のとき
+    '.wlp-empty{text-align:center;padding:52px 20px;}',
+    '.wlp-empty .em{font-size:34px;opacity:.35;}',
+    ".wlp-empty .tx{font-size:13.5px;color:#8a8378;line-height:1.9;margin-top:14px;font-family:'Noto Serif JP',serif;}",
+    // 詳細シート
+    '.wlp-sheet{position:fixed;inset:0;z-index:360;background:rgba(0,0,0,.55);display:none;align-items:flex-end;}',
+    '.wlp-sheet.on{display:flex;}',
+    '.wlp-sheet .bx{width:100%;max-width:500px;margin:0 auto;background:#FAF8F4;border-radius:24px 24px 0 0;',
+      'max-height:88vh;overflow-y:auto;padding:0 0 calc(24px + env(safe-area-inset-bottom));}',
+    '.wlp-sheet .hero{width:100%;aspect-ratio:4/3;background:#e9e3d8 center/cover;border-radius:24px 24px 0 0;}',
+    '.wlp-sheet .hero img{width:100%;height:100%;object-fit:contain;background:#fff;border-radius:24px 24px 0 0;}',
+    '.wlp-sheet .bd{padding:20px;}',
+    '.wlp-sheet .nm{font-size:21px;font-weight:700;}',
+    ".wlp-sheet .sub{font-size:12.5px;color:#6F6F6F;margin-top:5px;font-family:'Noto Serif JP',serif;}",
+    '.wlp-sheet .row{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #EFE9DD;font-size:13.5px;}',
+    ".wlp-sheet .row span:first-child{color:#8a8378;font-family:'Noto Serif JP',serif;}",
+    '.wlp-sheet .cta{width:100%;margin-top:20px;height:54px;border:none;border-radius:16px;background:#5D3A7A;color:#fff;',
+      "font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;}",
+    '.wlp-sheet .cta2{width:100%;margin-top:10px;height:50px;border:1px solid #C8A04D;border-radius:16px;background:#fff;',
+      "color:#8a6d3b;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;}"
+  ].join('');
+  document.head.appendChild(css);
+
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function photoOf(name){
+    try { if (window.photoCache && photoCache[name] && photoCache[name][0]) return photoCache[name][0]; } catch(e){}
+    return '';
+  }
+
+  // ── 共通のページ枠 ─────────────────────────────────────────
+  var pg = document.createElement('div');
+  pg.className = 'wlp'; pg.id = 'wabiListPg';
+  pg.innerHTML = '<div class="wlp-hd"><span class="b">‹</span><span class="t"></span><span class="r"></span></div><div class="wlp-in"></div>';
+  document.body.appendChild(pg);
+  pg.querySelector('.b').onclick = function(){ pg.style.display = 'none'; };
+
+  var sheet = document.createElement('div');
+  sheet.className = 'wlp-sheet';
+  sheet.innerHTML = '<div class="bx"></div>';
+  document.body.appendChild(sheet);
+  sheet.onclick = function(e){ if (e.target === sheet) sheet.classList.remove('on'); };
+  function openSheet(html){ sheet.querySelector('.bx').innerHTML = html; sheet.classList.add('on'); }
+  window.wabiCloseSheet = function(){ sheet.classList.remove('on'); };
+
+  function show(title, right, html){
+    pg.querySelector('.wlp-hd .t').textContent = title;
+    pg.querySelector('.wlp-hd .r').innerHTML = right || '';
+    pg.querySelector('.wlp-in').innerHTML = html;
+    pg.style.display = 'block';
+    pg.scrollTop = 0;
+  }
+  function empty(em, tx){
+    return '<div class="wlp-empty"><div class="em">' + em + '</div><div class="tx">' + tx + '</div></div>';
+  }
+
+  // ── ① 参拝した神社 ────────────────────────────────────────
+  function visitedList(){
+    var out = [];
+    try {
+      var rec = JSON.parse(localStorage.getItem('wabiVisits') || '[]');
+      if (Array.isArray(rec)) rec.forEach(function(v){ if (v && v.name) out.push(v); });
+    } catch(e){}
+    try {
+      if (typeof SHRINES !== 'undefined'){
+        SHRINES.filter(function(s){ return s.visited; }).forEach(function(s){
+          if (!out.some(function(o){ return o.name === s.name; }))
+            out.push({ name: s.name, addr: s.addr, date: '', _s: s });
+        });
+      }
+    } catch(e){}
+    return out;
+  }
+  function openVisited(){
+    var list = visitedList();
+    var h = '<div class="wlp-h">参拝した神社</div><div class="wlp-cnt">' + list.length + '<small>社</small></div>';
+    h += '<div class="wlp-search"><input id="wlpQ1" placeholder="神社名・地域で検索"><span class="ic">🔍</span></div>';
+    h += '<div id="wlpBody1">' + (list.length ? list.map(cardVisited).join('')
+        : empty('⛩', 'まだ参拝の記録がありません。<br>神社詳細から「参拝済にする」を押すと<br>ここに残っていきます。')) + '</div>';
+    show('参拝した神社', '', h);
+    var q = document.getElementById('wlpQ1');
+    if (q) q.oninput = function(){
+      var v = q.value.trim();
+      var f = v ? list.filter(function(x){ return (x.name + (x.addr || '')).indexOf(v) >= 0; }) : list;
+      document.getElementById('wlpBody1').innerHTML = f.length ? f.map(cardVisited).join('')
+        : empty('🔍', '見つかりませんでした');
+    };
+    bindVisited(list);
+  }
+  function cardVisited(v, i){
+    var ph = photoOf(v.name);
+    return '<div class="wlp-card" data-v="' + i + '">'
+      + '<div class="ph"' + (ph ? ' style="background-image:url(\'' + esc(ph) + '\')"' : '') + '></div>'
+      + '<div style="flex:1;min-width:0"><div class="nm">' + esc(v.name) + '</div>'
+      + '<div class="sub">' + esc(v.addr || '') + '</div>'
+      + (v.date ? '<div class="dt">' + esc(v.date) + ' 参拝</div>' : '<div class="dt">参拝済</div>')
+      + '</div><div class="ar">›</div></div>';
+  }
+  function bindVisited(list){
+    pg.querySelectorAll('[data-v]').forEach(function(el){
+      el.onclick = function(){
+        var v = list[+el.getAttribute('data-v')];
+        if (!v) return;
+        var s = v._s || null;
+        try { if (!s && typeof SHRINES !== 'undefined') s = SHRINES.filter(function(x){ return x.name === v.name; })[0]; } catch(e){}
+        pg.style.display = 'none';
+        if (s && typeof openShrineDetail === 'function') openShrineDetail(s);
+      };
+    });
+  }
+
+  // ── ② 御朱印帳 ────────────────────────────────────────────
+  function goshuinItems(){
+    var out = [];
+    try {
+      if (typeof goshuinList !== 'undefined'){
+        goshuinList.forEach(function(g){ if (g && g.imageUrl) out.push(g); });
+      }
+    } catch(e){}
+    try {
+      var mine = JSON.parse(localStorage.getItem('wabiGoshuin') || '[]');
+      if (Array.isArray(mine)) mine.forEach(function(g){ if (g && g.imageUrl) out.push(g); });
+    } catch(e){}
+    return out;
+  }
+  function openGoshuin(){
+    var list = goshuinItems();
+    var h = '<div class="wlp-h">御朱印帳</div><div class="wlp-cnt">' + list.length + '<small>体</small></div>';
+    h += list.length
+      ? '<div class="wlp-g3">' + list.map(function(g, i){
+          return '<div class="it" data-g="' + i + '"><div class="im"><img src="' + esc(g.imageUrl) + '" loading="lazy"></div>'
+            + '<div class="nm">' + esc(g.shrine) + '</div>'
+            + (g.date ? '<div class="dt">' + esc(g.date) + '</div>' : '') + '</div>';
+        }).join('') + '</div>'
+      : empty('📕', 'まだ御朱印が登録されていません。<br>神社詳細の「タップして御朱印を登録」から<br>追加できます。');
+    show('御朱印帳', '📖', h);
+    pg.querySelectorAll('[data-g]').forEach(function(el){
+      el.onclick = function(){
+        var g = list[+el.getAttribute('data-g')];
+        if (!g) return;
+        openSheet('<div class="hero"><img src="' + esc(g.imageUrl) + '"></div><div class="bd">'
+          + '<div class="nm">' + esc(g.shrine) + '</div>'
+          + '<div class="sub">' + esc(g.author ? '投稿者：' + g.author : '') + '</div>'
+          + (g.date ? '<div class="row"><span>拝受日</span><span>' + esc(g.date) + '</span></div>' : '')
+          + '<button class="cta" onclick="wabiCloseSheet()">閉じる</button></div>');
+      };
+    });
+  }
+
+  // ── ③ お気に入り ──────────────────────────────────────────
+  function favList(){
+    try { var a = JSON.parse(localStorage.getItem('wabiFavorites') || '[]'); return Array.isArray(a) ? a : []; }
+    catch(e){ return []; }
+  }
+  function openFav(){
+    var list = favList();
+    var h = '<div class="wlp-h">お気に入り</div><div class="wlp-cnt">' + list.length + '<small>件</small></div>';
+    h += list.length
+      ? '<div class="wlp-g2">' + list.map(function(f, i){
+          var ph = photoOf(f.name);
+          return '<div class="it" data-f="' + i + '"><div class="im"' + (ph ? ' style="background-image:url(\'' + esc(ph) + '\')"' : '') + '></div>'
+            + '<div class="heart">♥</div>'
+            + '<div class="bd"><div class="nm">' + esc(f.name) + '</div>'
+            + '<div class="sub">' + esc(f.addr || f.area || '') + '</div></div></div>';
+        }).join('') + '</div>'
+      : empty('★', 'まだお気に入りがありません。<br>神社詳細の「お気に入りに登録」を押すと<br>ここに集まります。');
+    show('お気に入り', '', h);
+    pg.querySelectorAll('[data-f]').forEach(function(el){
+      el.onclick = function(){
+        var f = list[+el.getAttribute('data-f')];
+        if (!f) return;
+        var s = null;
+        try { if (typeof SHRINES !== 'undefined') s = SHRINES.filter(function(x){ return x.name === f.name; })[0]; } catch(e){}
+        if (!s) s = { name:f.name, deity:'—', addr:f.addr || '', map:'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(f.name),
+                      area:f.area || '', rating:0, rev:0, visited:false, tags:['goshuin'], lat:f.lat, lng:f.lng, rank:0 };
+        pg.style.display = 'none';
+        if (typeof openShrineDetail === 'function') openShrineDetail(s);
+      };
+    });
+  }
+
+  // ── ④ 投稿した記録 ────────────────────────────────────────
+  function myPosts(){
+    try { var a = JSON.parse(localStorage.getItem('wabiMyPosts') || '[]'); return Array.isArray(a) ? a : []; }
+    catch(e){ return []; }
+  }
+  function openPosts(){
+    var list = myPosts();
+    var h = '<div class="wlp-h">投稿した記録</div><div class="wlp-cnt">' + list.length + '<small>件</small></div>';
+    h += list.length
+      ? '<div class="wlp-g2">' + list.map(function(p, i){
+          var im = (p.photos && p.photos[0]) || p.image || '';
+          return '<div class="it" data-p="' + i + '"><div class="im"' + (im ? ' style="background-image:url(\'' + esc(im) + '\')"' : '') + '>'
+            + '<div class="cap">' + esc(p.date || '') + '<br>' + esc(p.shrine || '') + '</div></div></div>';
+        }).join('') + '</div>'
+      : empty('✎', 'まだ投稿がありません。<br>「参拝を投稿する」から、参拝の記録や<br>御朱印の写真を残せます。');
+    show('投稿した記録', '✎', h);
+    pg.querySelectorAll('[data-p]').forEach(function(el){
+      el.onclick = function(){
+        var p = list[+el.getAttribute('data-p')];
+        if (!p) return;
+        var im = (p.photos && p.photos[0]) || p.image || '';
+        openSheet((im ? '<div class="hero" style="background-image:url(\'' + esc(im) + '\')"></div>' : '')
+          + '<div class="bd"><div class="nm">' + esc(p.shrine || '参拝の記録') + '</div>'
+          + '<div class="sub">' + esc(p.date || '') + '</div>'
+          + '<div style="margin-top:14px;font-size:14px;line-height:1.9;font-family:\'Noto Serif JP\',serif">'
+          + esc(p.text || p.body || '') + '</div>'
+          + '<button class="cta" onclick="wabiCloseSheet()">閉じる</button></div>');
+      };
+    });
+  }
+
+  // ── ⑤⑥ フォロー・フォロワー ──────────────────────────────
+  function people(key){
+    try { var a = JSON.parse(localStorage.getItem(key) || '[]'); return Array.isArray(a) ? a : []; }
+    catch(e){ return []; }
+  }
+  function personRow(p, btnLabel, act){
+    return '<div class="wlp-person"><div class="av"' + (p.pic ? ' style="background-image:url(\'' + esc(p.pic) + '\')"' : '') + '></div>'
+      + '<div style="flex:1;min-width:0"><div class="nm">' + esc(p.name) + '</div>'
+      + '<div class="mt">巡礼Lv.' + (p.level || 1) + '　参拝数 ' + (p.visits || 0) + ' 社</div></div>'
+      + '<button class="wlp-btn' + (act ? ' act' : '') + '">' + btnLabel + '</button></div>';
+  }
+  function openFollow(){
+    var list = people('wabiFollowing');
+    var h = '<div class="wlp-tabs"><div class="tb on">フォロー中</div><div class="tb">おすすめ</div></div>'
+      + '<div class="wlp-h">フォロー</div><div class="wlp-cnt">' + list.length + '<small>人</small></div>'
+      + '<div class="wlp-search"><input placeholder="名前で検索"><span class="ic">🔍</span></div>'
+      + (list.length ? list.map(function(p){ return personRow(p, 'フォロー中', false); }).join('')
+         : empty('👥', 'まだ誰もフォローしていません。<br>みんなの投稿から気になる方を<br>フォローできます。'));
+    show('フォロー', '＋', h);
+    pg.querySelectorAll('.wlp-tabs .tb').forEach(function(t){
+      t.onclick = function(){
+        pg.querySelectorAll('.wlp-tabs .tb').forEach(function(x){ x.classList.remove('on'); });
+        t.classList.add('on');
+        if (typeof showToast === 'function' && t.textContent === 'おすすめ') showToast('おすすめの表示は準備中です');
+      };
+    });
+  }
+  function openFollower(){
+    var list = people('wabiFollowers');
+    var h = '<div class="wlp-tabs"><div class="tb on">フォロワー</div><div class="tb">リクエスト</div></div>'
+      + '<div class="wlp-h">フォロワー</div><div class="wlp-cnt">' + list.length + '<small>人</small></div>'
+      + '<div class="wlp-search"><input placeholder="名前で検索"><span class="ic">🔍</span></div>'
+      + (list.length ? list.map(function(p){ return personRow(p, p.following ? 'フォロー中' : 'フォローバック', !p.following); }).join('')
+         : empty('🎖', 'まだフォロワーがいません。<br>参拝の記録や御朱印を投稿すると<br>見つけてもらいやすくなります。'));
+    show('フォロワー', '＋', h);
+    pg.querySelectorAll('.wlp-tabs .tb').forEach(function(t){
+      t.onclick = function(){
+        pg.querySelectorAll('.wlp-tabs .tb').forEach(function(x){ x.classList.remove('on'); });
+        t.classList.add('on');
+        if (typeof showToast === 'function' && t.textContent === 'リクエスト') showToast('リクエストの表示は準備中です');
+      };
+    });
+  }
+
+  // ── マイページの6枚のカードに割り当てる ───────────────────
+  var MAP = {
+    '参拝した神社':        openVisited,
+    '御朱印':              openGoshuin,
+    'お気に入りの神社仏閣': openFav,
+    '投稿した記録':        openPosts,
+    'フォロー':            openFollow,
+    'フォロワー':          openFollower
+  };
+  window.wabiOpenList = MAP;
+
+  function bindCards(){
+    document.querySelectorAll('#wcMypage .mp-stat').forEach(function(c){
+      if (c.getAttribute('data-wlp')) return;
+      var l = c.querySelector('.mp-stat-l');
+      var fn = l ? MAP[l.textContent.trim()] : null;
+      if (!fn) return;
+      c.setAttribute('data-wlp', '1');
+      c.removeAttribute('data-tap');            // 「準備中です」トーストを止める
+      c.addEventListener('click', function(ev){
+        ev.stopPropagation();
+        fn();
+      }, true);
+    });
+  }
+  function bind(){
+    if (typeof window.openWabiMypage !== 'function' || window.openWabiMypage.__wlp) return;
+    var orig = window.openWabiMypage;
+    var wrapped = function(){
+      var r = orig.apply(this, arguments);
+      [0, 250, 800].forEach(function(ms){ setTimeout(bindCards, ms); });
+      return r;
+    };
+    wrapped.__wlp = true;
+    window.openWabiMypage = wrapped;
+  }
+  bind();
+  var n = 0;
+  var iv = setInterval(function(){ bind(); bindCards(); if (++n > 40) clearInterval(iv); }, 300);
+})();

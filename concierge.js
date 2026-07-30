@@ -4158,3 +4158,145 @@
   // 画面を離れるときに取りこぼしを送る
   window.addEventListener('pagehide', function(){ if (enabled()) push(); });
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：ログイン画面と新規登録画面の作り直し
+   ・ログイン画面（#pgRegister）… LINEでログイン／Googleでログイン／新規登録はこちら
+   ・新規登録画面（#wxSignup）  … 「わびなびアカウントを作成」＋LINE／Googleのみ
+   （2026-07-27 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiRegSkin) return;
+  window.__wabiRegSkin = true;
+
+  var GOOGLE_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">'
+    + '<path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>'
+    + '<path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>'
+    + '<path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>'
+    + '<path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>';
+  var LINE_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" fill="#fff" aria-hidden="true"><path d="M12 2C6.48 2 2 5.78 2 10.43c0 4.18 3.49 7.69 8.21 8.36.32.07.75.21.86.49.1.25.06.64.03.89l-.14.84c-.04.25-.19.97.85.53 1.04-.44 5.6-3.3 7.64-5.65 1.41-1.55 2.08-3.12 2.08-4.93C21.83 5.78 17.35 2 12 2zM8.31 12.98H6.43c-.22 0-.41-.18-.41-.41V9.04c0-.22.18-.41.41-.41h.16c.22 0 .41.18.41.41v3.12h1.31c.22 0 .41.18.41.41v.16c0 .05-.19.25-.41.25zm1.6-.41c0 .22-.18.41-.41.41h-.16c-.22 0-.41-.18-.41-.41V9.04c0-.22.18-.41.41-.41h.16c.22 0 .41.18.41.41v3.53zm4.05 0c0 .18-.11.33-.28.38-.4.01-.8.02-.13.02-.13 0-.25-.07-.32-.16l-1.61-2.19v1.95c0 .22-.18.41-.41.41h-.16c-.22 0-.41-.18-.41-.41V9.04c0-.18.11-.33.28-.38.04-.1.08-.2.13-.2.13 0 .25.07.32.16l1.61 2.19V9.04c0-.22.18-.41.41-.41h.16c.22 0 .41.18.41.41v3.53zm3.15-2.53c.22 0 .41.18.41.41v.16c0 .22-.18.41-.41.41h-1.31v.84h1.31c.22 0 .41.18.41.41v.16c0 .22-.18.41-.41.41h-1.88c-.22 0-.41-.18-.41-.41V9.04c0-.22.18-.41.41-.41h1.88c.22 0 .41.18.41.41v.16c0 .22-.18.41-.41.41h-1.31v.84h1.31z"/></svg>';
+
+  // Googleログインはまだ未設定（Supabaseの認証にGoogleを連携したら有効化する）
+  window.WabiGoogle = {
+    ready: false,
+    start: function(){
+      if (typeof showToast === 'function') showToast('Googleでのログインは現在準備中です');
+      return false;
+    }
+  };
+
+  var css = document.createElement('style');
+  css.textContent = [
+    // ── ログイン画面（背景を少し薄く／会員になるとを白に）──
+    '#pgRegister.reg-bg{background:linear-gradient(180deg,#5b3722 0%,#4a3170 42%,#463067 100%) !important;}',
+    '#pgRegister .reg-btn{height:54px;padding:0 16px;border-radius:14px;font-family:\'Shippori Mincho\',serif;font-size:15px;font-weight:700;letter-spacing:.04em;}',
+    '#pgRegister .reg-divider{display:none !important;}',
+    '#pgRegister .reg-btn-mail{display:none !important;}',
+    '#pgRegister .reg-benefits{background:#fff !important;border:1px solid #ece4d3 !important;border-radius:20px !important;',
+      'box-shadow:0 10px 30px rgba(0,0,0,.14);padding:20px 22px !important;}',
+    '#pgRegister .reg-benefits *{color:#2D2D2D !important;}',
+    '#pgRegister .reg-benefits b{color:#5D3A7A !important;}',
+    '#pgRegister .reg-benefits-tit{font-family:\'Shippori Mincho\',serif;font-weight:700 !important;}',
+    // 新規登録はこちら（メール登録の位置に置く）
+    '.reg-signup-link{display:block;width:100%;height:54px;line-height:54px;text-align:center;border-radius:14px;',
+      'background:rgba(255,255,255,.10);border:1px solid rgba(201,168,76,.55);color:#fff;cursor:pointer;',
+      'font-family:\'Shippori Mincho\',serif;font-size:15px;font-weight:700;letter-spacing:.04em;margin-bottom:10px;}',
+    '.reg-signup-link:active{transform:scale(.98);}',
+    // ── 新規登録画面 ──
+    '#wxSignup{background:#FBFAF7 !important;}',
+    '#wxSignup .wl-hd{background:#FBFAF7;border-bottom:none;}',
+    '#wxSignup .wl-in{padding:6px 24px 56px;}',
+    '#wxSignup .su-ttl{font-family:\'Shippori Mincho\',serif;font-size:24px;font-weight:700;color:#222;',
+      'letter-spacing:.04em;margin:14px 0 10px;}',
+    '#wxSignup .su-lead{font-size:13px;line-height:1.9;color:#666;font-family:\'Noto Serif JP\',serif;margin-bottom:30px;}',
+    // クラシル風：白い丸型ボタン＋左にブランドアイコン
+    '#wxSignup .su-btn{position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:62px;',
+      'border-radius:999px;background:#fff;border:1px solid #DFDCD6;cursor:pointer;color:#4a4a4a;',
+      'font-family:\'Shippori Mincho\',serif;font-size:17px;font-weight:700;letter-spacing:.06em;',
+      'margin-bottom:14px;transition:transform .12s,box-shadow .2s;box-shadow:0 2px 8px rgba(0,0,0,.03);}',
+    '#wxSignup .su-btn:active{transform:scale(.97);}',
+    '#wxSignup .su-btn .ic{position:absolute;left:22px;top:50%;transform:translateY(-50%);display:flex;align-items:center;}',
+    '#wxSignup .su-btn .lineic{width:28px;height:28px;border-radius:7px;background:#06C755;display:flex;align-items:center;justify-content:center;}',
+    '#wxSignup .su-benefit{background:#fff;border-radius:24px;box-shadow:0 10px 30px rgba(0,0,0,.08);padding:22px 24px;margin-top:32px;}',
+    '#wxSignup .su-benefit .h{font-family:\'Shippori Mincho\',serif;font-size:15px;font-weight:700;color:#222;margin-bottom:14px;}',
+    '#wxSignup .su-benefit li{list-style:none;display:flex;gap:10px;font-size:13.5px;line-height:1.75;color:#444;',
+      'font-family:\'Noto Serif JP\',serif;margin-top:10px;}',
+    '#wxSignup .su-benefit li .c{color:#C8A04D;font-weight:700;}',
+    '#wxSignup .su-benefit li b{color:#5D3A7A;}',
+    '#wxSignup .su-login{display:block;text-align:center;margin-top:22px;font-size:13px;color:#5D3A7A;font-weight:700;cursor:pointer;}',
+    '#wxSignup .su-fine{font-size:11px;color:#9a948a;text-align:center;line-height:1.8;margin-top:20px;font-family:\'Noto Serif JP\',serif;}'
+  ].join('');
+  document.head.appendChild(css);
+
+  // ── 新規登録画面を作り直す ────────────────────────────────
+  function buildSignup(){
+    var pg = document.getElementById('wxSignup');
+    if (!pg) return;
+    var box = pg.querySelector('.wl-in');
+    if (!box || box.getAttribute('data-su')) return;
+    box.setAttribute('data-su', '1');
+    box.innerHTML =
+        '<div class="su-ttl">わびなびアカウントを作成</div>'
+      + '<div class="su-lead">参拝の記録・御朱印・巡礼レベルを保存できます。<br>'
+      +   'パスワードを覚える必要はありません。</div>'
+      + '<button class="su-btn" id="suLine"><span class="ic"><span class="lineic">' + LINE_ICON + '</span></span>LINEで登録</button>'
+      + '<button class="su-btn" id="suGoogle"><span class="ic">' + GOOGLE_ICON + '</span>Googleで登録</button>'
+      + '<div class="su-benefit"><div class="h">会員になると</div><ul>'
+      +   '<li><span class="c">◆</span><span>参拝記録・御朱印を<b>クラウド保存</b></span></li>'
+      +   '<li><span class="c">◆</span><span>AI巡拝ルートが<b>無制限</b>に</span></li>'
+      +   '<li><span class="c">◆</span><span>お気に入りを<b>複数端末</b>で共有</span></li>'
+      +   '<li><span class="c">◆</span><span>参拝や投稿で<b>巡礼レベル</b>が上がる</span></li>'
+      +   '<li><span class="c">◆</span><span>限定・特別御朱印の<b>お知らせ</b></span></li>'
+      + '</ul></div>'
+      + '<a class="su-login" id="suLogin">すでにアカウントをお持ちの方はログイン ›</a>'
+      + '<div class="su-fine">登録することで利用規約とプライバシーポリシーに<br>同意したものとみなされます。</div>';
+
+    document.getElementById('suLine').onclick   = function(){ window.WabiLine.start(); };
+    document.getElementById('suGoogle').onclick = function(){ window.WabiGoogle.start(); };
+    document.getElementById('suLogin').onclick  = function(){
+      pg.style.display = 'none';
+      if (typeof window.wabiOpenLogin === 'function') window.wabiOpenLogin();
+    };
+  }
+
+  // ── ログイン画面の文言とボタンを差し替える ─────────────────
+  function fixLogin(){
+    var pr = document.getElementById('pgRegister');
+    if (!pr) return;
+    var line = pr.querySelector('.reg-btn-line');
+    var goog = pr.querySelector('.reg-btn-google');
+    if (line && line.getAttribute('data-wl') !== '1'){
+      line.setAttribute('data-wl', '1');
+      line.innerHTML = LINE_ICON + 'LINEでログイン';
+      line.setAttribute('onclick', '');
+      line.onclick = function(){ pr.style.display = 'none'; window.WabiLine.start(); };
+    }
+    if (goog && goog.getAttribute('data-wl') !== '1'){
+      goog.setAttribute('data-wl', '1');
+      goog.innerHTML = GOOGLE_ICON + 'Googleでログイン';
+      goog.setAttribute('onclick', '');
+      goog.onclick = function(){ window.WabiGoogle.start(); };
+    }
+    // メール登録の位置に「新規登録はこちら」を置く
+    var mail = pr.querySelector('.reg-btn-mail');
+    if (mail && !pr.querySelector('.reg-signup-link')){
+      var a = document.createElement('div');
+      a.className = 'reg-signup-link';
+      a.textContent = '新規登録はこちら';
+      a.onclick = function(){
+        pr.style.display = 'none';
+        if (typeof window.wabiOpenSignup === 'function') window.wabiOpenSignup();
+      };
+      mail.parentNode.insertBefore(a, mail);
+    }
+    // 下の切り替えリンクは重複するので隠す
+    var tg = pr.querySelector('.reg-toggle');
+    if (tg) tg.style.display = 'none';
+  }
+
+  buildSignup();
+  fixLogin();
+  var n = 0;
+  var iv = setInterval(function(){ buildSignup(); fixLogin(); if (++n > 40) clearInterval(iv); }, 400);
+})();

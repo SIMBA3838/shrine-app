@@ -6097,5 +6097,17 @@
       }
     } catch(e){}
   }
+  window.wabiFillListPhotos = fillListPhotos;
   WABI_TICK(fillListPhotos, 1200);
+
+  // 一覧が描き直された瞬間にも写真を読み込む（タイマー待ちにしない）
+  (function(){
+    var pg = document.getElementById('wabiListPg');
+    if (!pg || !window.MutationObserver) return;
+    var t = null;
+    new MutationObserver(function(){
+      clearTimeout(t);
+      t = setTimeout(function(){ try { fillListPhotos(); } catch(e){} }, 120);
+    }).observe(pg, { childList: true, subtree: true });
+  })();
 })();

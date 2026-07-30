@@ -4611,7 +4611,8 @@
     // 御朱印の写真・募集中プレースホルダを同じ高さに
     '.rcard img[style*="height: 340px"],.rcard img[style*="height:340px"]{height:190px !important;}',
     '#list .rcard [style*="height: 340px"],#list .rcard [style*="height:340px"]{height:190px !important;}',
-    '#list .rcard,#wrmGrid .rcard{display:flex;flex-direction:column;}',
+    '#list .rcard,#wrmGrid .rcard{display:flex;flex-direction:column;height:100% !important;}',
+    '#list.wc-rankgrid>.rcard,#wrmGrid>.rcard{align-self:stretch !important;}',
     '#list .rcard .rftr,#wrmGrid .rcard .rftr{margin-top:auto;}'
   ].join('');
   document.head.appendChild(css);

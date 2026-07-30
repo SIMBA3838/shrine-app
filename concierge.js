@@ -4300,3 +4300,135 @@
   var n = 0;
   var iv = setInterval(function(){ buildSignup(); fixLogin(); if (++n > 40) clearInterval(iv); }, 400);
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：マイページ調整
+   ・表示名をヘッダー（ログインボタン）にも反映
+   ・アバターに写真があるときはカメラマークを隠す
+   ・6枚のカードを横長（4:3）に。参拝した神社と御朱印の位置を入れ替え
+   ・カードの背景画像を差し替え
+   （2026-07-27 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiMypage2) return;
+  window.__wabiMypage2 = true;
+
+  var IMG = {
+    '参拝した神社':        'mp-sanpai.jpg',
+    '御朱印':              'mp-goshuin.jpg',
+    'お気に入りの神社仏閣': 'mp-favorite.jpg',
+    '投稿した記録':        'mp-post.jpg',
+    'フォロー':            'mp-follow.jpg',
+    'フォロワー':          'mp-follower.jpg'
+  };
+  // 表示順（参拝した神社と御朱印を入れ替え）
+  var ORDER = ['御朱印', '参拝した神社', 'お気に入りの神社仏閣', '投稿した記録', 'フォロー', 'フォロワー'];
+
+  var css = document.createElement('style');
+  css.textContent = [
+    // 横長（4:3）
+    '#wcMypage .mp-stat{aspect-ratio:4/3 !important;height:auto !important;min-height:0 !important;}',
+    '#wcMypage .mp-stats{align-items:stretch;}',
+    // 写真があるときはカメラマークを隠す
+    '#wcMypage .mp-av.has-photo .wp-cam{display:none !important;}'
+  ].join('');
+  document.head.appendChild(css);
+
+  function labelOf(el){
+    var l = el.querySelector('.mp-stat-l');
+    return l ? l.textContent.trim() : '';
+  }
+
+  function fixCards(){
+    var wrap = document.querySelector('#wcMypage .mp-stats');
+    if (!wrap) return;
+    var cards = [].slice.call(wrap.querySelectorAll('.mp-stat'));
+    if (!cards.length) return;
+
+    // 背景画像を差し替え（data-bg を外して mypage.js 側の上書きを止める）
+    cards.forEach(function(c){
+      var lb = labelOf(c);
+      var f = IMG[lb];
+      if (!f) return;
+      c.removeAttribute('data-bg');
+      c.style.background = '#3a3025 url(' + f + ') center/cover';
+    });
+
+    // 並び替え
+    if (wrap.getAttribute('data-ordered') !== '1'){
+      var byLabel = {};
+      cards.forEach(function(c){ byLabel[labelOf(c)] = c; });
+      var ok = ORDER.every(function(k){ return byLabel[k]; });
+      if (ok){
+        ORDER.forEach(function(k){ wrap.appendChild(byLabel[k]); });
+        wrap.setAttribute('data-ordered', '1');
+      }
+    }
+  }
+
+  // アバターに写真があるかどうかでカメラマークを出し分け
+  function fixAvatarBadge(){
+    var av = document.querySelector('#wcMypage .mp-av');
+    if (!av) return;
+    var hasImg = !!av.querySelector('img');
+    if (hasImg) av.classList.add('has-photo');
+    else av.classList.remove('has-photo');
+  }
+
+  // 表示名をヘッダーのログインボタンにも反映
+  function syncHeaderName(){
+    try {
+      var btn = document.getElementById('wlBtn');
+      if (!btn) return;
+      var u = (window.WabiLine && WabiLine.user && WabiLine.user()) || null;
+      if (!u) return;                      // 未ログインなら「ログイン」のまま
+      var my = '';
+      try { my = localStorage.getItem('wabiName') || ''; } catch(e){}
+      var nm = my || u.name || '巡礼者';
+      var pic = '';
+      try { pic = localStorage.getItem('wabiAvatar') || u.pic || ''; } catch(e){}
+      var ic = pic
+        ? '<img src="' + pic + '" style="width:20px;height:20px;border-radius:50%;object-fit:cover">'
+        : '<svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="6.5" r="3.2" stroke="currentColor" stroke-width="1.6"/>'
+          + '<path d="M3.5 17c0-3.6 13-3.6 13 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+      btn.innerHTML = ic + (nm.length > 6 ? nm.slice(0, 6) + '…' : nm);
+    } catch(e){}
+  }
+  window.wabiSyncHeaderName = syncHeaderName;
+
+  function run(){ fixCards(); fixAvatarBadge(); syncHeaderName(); }
+
+  // マイページを開くたび／写真や名前を変えたときに反映
+  function bind(){
+    if (typeof window.openWabiMypage !== 'function' || window.openWabiMypage.__mp2) return;
+    var orig = window.openWabiMypage;
+    var wrapped = function(){
+      var r = orig.apply(this, arguments);
+      [0, 200, 600, 1400].forEach(function(ms){ setTimeout(run, ms); });
+      return r;
+    };
+    wrapped.__mp2 = true;
+    window.openWabiMypage = wrapped;
+  }
+  bind();
+  var n = 0;
+  var iv = setInterval(function(){ bind(); if (++n > 40) clearInterval(iv); }, 300);
+
+  // 写真・名前の保存を検知して即反映
+  var _set = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function(k, v){
+    var r = _set(k, v);
+    if (k === 'wabiName' || k === 'wabiAvatar') setTimeout(run, 60);
+    return r;
+  };
+  var _rm = localStorage.removeItem.bind(localStorage);
+  localStorage.removeItem = function(k){
+    var r = _rm(k);
+    if (k === 'wabiName' || k === 'wabiAvatar') setTimeout(run, 60);
+    return r;
+  };
+
+  setTimeout(syncHeaderName, 2500);
+  setTimeout(syncHeaderName, 5000);
+})();

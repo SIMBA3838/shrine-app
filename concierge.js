@@ -4521,7 +4521,8 @@
   function closeAll(){
     ['pgShrineDetail','pgMap','pgRegister','pgAiRoute','pgAiResult','pgAreaSearch','pgPostDetail',
      'pgTourList','pgSeasonList','pgEcList','pgOsupplyList','pgShukatsuList','pgArticleList',
-     'wabiRoutePg','wabiRankMore','wxGuide','wxInvite','wxSignup','wcMypage','wcPost'].forEach(function(id){
+     'wabiRoutePg','wabiRankMore','wxGuide','wxInvite','wxSignup','wcMypage','wcPost',
+     'wabiListPg','wabiFeedPg'].forEach(function(id){
       var el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });
@@ -4554,8 +4555,16 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else if (k === 'map'){
         closeAll();
-        if (typeof openMapFromFab === 'function') openMapFromFab();
-        else if (typeof searchNearby === 'function') searchNearby();
+        // 閉じる処理が終わってから地図を開く（同時に走ると閉じられてしまう）
+        setTimeout(function(){
+          if (typeof searchNearby === 'function') searchNearby();
+          else if (typeof openMapFromFab === 'function') openMapFromFab();
+          // 念のため：数秒経っても開かなければ強制的に表示する
+          setTimeout(function(){
+            var m = document.getElementById('pgMap');
+            if (m && m.style.display !== 'flex' && typeof showMapArea === 'function') showMapArea();
+          }, 2500);
+        }, 80);
       } else if (k === 'posts'){
         closeAll();
         if (typeof openCommunityAll === 'function') openCommunityAll();

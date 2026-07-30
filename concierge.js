@@ -6269,8 +6269,10 @@
     var done = false;
     function finish(arr){
       if (done) return; done = true;
-      if (first && arr.indexOf(first) < 0) arr = [first].concat(arr);
-      arr = arr.filter(Boolean).slice(0, 5);
+      arr = (arr || []).filter(Boolean);
+      // 実写が取れたときはそれを優先（サンプル画像を先頭に出さない）
+      if (!arr.length && first) arr = [first];
+      arr = arr.slice(0, 5);
       photoCache5[name] = arr;
       cb(arr);
     }
@@ -6498,6 +6500,18 @@
   }
   navGuard();
   WABI_TICK(navGuard, 900);
+
+  // 記録シートが「開いたのに出てこない」を防ぐ
+  // （requestAnimationFrame が止まる状況でも必ずせり上がるようにする）
+  (function(){
+    var m = document.querySelector('.wrc-mask'), b = document.querySelector('.wrc');
+    if (!m || !b) return;
+    new MutationObserver(function(){
+      if (m.classList.contains('on') && !b.classList.contains('on')){
+        setTimeout(function(){ if (m.classList.contains('on')) b.classList.add('on'); }, 50);
+      }
+    }).observe(m, { attributes: true, attributeFilter: ['class'] });
+  })();
 
   // 記録シートが開いている間も下部メニューを押せるように前面へ
   (function(){

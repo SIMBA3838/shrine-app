@@ -7065,3 +7065,64 @@
     put(); if (++n > 20 || document.getElementById('wabiLegal')) clearInterval(iv);
   }, 600);
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：Googleアナリティクス（GA4）
+   測定ID G-0WRQVNFV8Y ／ 2026-07-31 設置
+   ※測定IDは公開前提の値なのでコードに書いて問題ありません
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiGA) return;
+  window.__wabiGA = true;
+
+  var GA_ID = 'G-0WRQVNFV8Y';
+
+  // すでに他の場所で読み込まれていれば何もしない
+  if (document.querySelector('script[src*="googletagmanager.com/gtag/js"]')) return;
+
+  var s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+  document.head.appendChild(s);
+
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){ dataLayer.push(arguments); }
+  window.gtag = window.gtag || gtag;
+  gtag('js', new Date());
+  gtag('config', GA_ID);
+
+  /* ── わびなびの中の移動もページとして数える ──────────────
+     1枚のHTMLの中でページを切り替えるつくりなので、
+     オーバーレイが開いたときに page_view を送る                */
+  var PAGES = {
+    pgShrineDetail: '神社詳細', pgMap: 'マップ', pgRegister: 'ログイン',
+    pgAiRoute: 'AIルート', pgAiRouteList: 'AIルート一覧', pgAreaSearch: 'エリア検索',
+    pgTourList: 'ツアー一覧', pgSeasonList: '季節の行事', pgEcList: '御朱印グッズ',
+    pgOsupplyList: '参拝のお供', pgShukatsuList: '終活・供養', pgArticleList: '記事一覧',
+    pgThemeDetail: '特集', wabiRoutePg: '巡拝ルート', wabiRankMore: 'ランキング11-30位',
+    wxGuide: 'EXPガイド', wxInvite: '友達に紹介', wxSignup: '新規登録',
+    wcMypage: 'マイページ', wabiListPg: '一覧ページ', wabiFeedPg: 'みんなの投稿',
+    wabiPostPg: '投稿詳細'
+  };
+  var shown = {};
+  function check(){
+    Object.keys(PAGES).forEach(function(id){
+      var el = document.getElementById(id);
+      if (!el) return;
+      var open = getComputedStyle(el).display !== 'none';
+      if (open && !shown[id]){
+        shown[id] = true;
+        try {
+          gtag('event', 'page_view', {
+            page_title: 'わびなび｜' + PAGES[id],
+            page_location: location.origin + '/#' + id
+          });
+        } catch(e){}
+      } else if (!open){
+        shown[id] = false;
+      }
+    });
+  }
+  setInterval(check, 1200);
+})();

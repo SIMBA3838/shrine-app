@@ -7626,3 +7626,122 @@
   run();
   setInterval(run, 800);
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：みんなの投稿の「絞り込み ⚙」を検索窓に変更
+   投稿者名・神社名・地名・本文で探せるようにする
+   （2026-07-31 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiFeedSearch) return;
+  window.__wabiFeedSearch = true;
+
+  var css = document.createElement('style');
+  css.textContent = [
+    '.wfs{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #E7E1D6;',
+      'border-radius:999px;padding:9px 14px;margin:0 0 12px;box-shadow:0 4px 14px rgba(0,0,0,.04);}',
+    '.wfs svg{flex:0 0 16px;opacity:.45;}',
+    ".wfs input{flex:1;border:none;outline:none;background:transparent;font-family:'Noto Serif JP',serif;",
+      'font-size:13.5px;color:#2D2D2D;min-width:0;}',
+    '.wfs input::placeholder{color:#b3aca0;}',
+    '.wfs .x{flex:0 0 auto;width:18px;height:18px;border-radius:50%;background:#eee7db;color:#8a8378;',
+      'display:none;align-items:center;justify-content:center;font-size:11px;cursor:pointer;}',
+    '.wfs .x.on{display:flex;}',
+    ".wfs-hit{font-size:11.5px;color:#8a8378;margin:-6px 0 10px 4px;font-family:'Noto Serif JP',serif;}"
+  ].join('');
+  document.head.appendChild(css);
+
+  var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="#2D2D2D" stroke-width="1.8">'
+    + '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5" stroke-linecap="round"/></svg>';
+
+  var keyword = '';
+
+  function norm(s){
+    return String(s || '').toLowerCase()
+      .replace(/[ぁ-ん]/g, function(c){ return String.fromCharCode(c.charCodeAt(0) + 0x60); })
+      .replace(/[\s　]/g, '');
+  }
+
+  function apply(){
+    var pg = document.getElementById('wabiFeedPg');
+    if (!pg) return;
+    var cards = pg.querySelectorAll('.wfd-card');
+    if (!cards.length) return;
+    var q = norm(keyword);
+    var hit = 0;
+    cards.forEach(function(c){
+      if (!q){ c.style.display = ''; hit++; return; }
+      var t = norm(c.textContent);
+      var ok = t.indexOf(q) >= 0;
+      c.style.display = ok ? '' : 'none';
+      if (ok) hit++;
+    });
+    var lbl = pg.querySelector('.wfs-hit');
+    if (lbl){
+      lbl.textContent = q ? ('「' + keyword + '」の検索結果 ' + hit + '件') : '';
+      lbl.style.display = q ? 'block' : 'none';
+    }
+    var empty = pg.querySelector('.wfd-empty-search');
+    if (q && hit === 0){
+      if (!empty){
+        empty = document.createElement('div');
+        empty.className = 'wfd-empty wfd-empty-search';
+        empty.innerHTML = '見つかりませんでした。<br>神社名・お寺名・投稿者名でお試しください。';
+        var g = pg.querySelector('.wfd-g');
+        if (g) g.parentNode.insertBefore(empty, g.nextSibling);
+      }
+      empty.style.display = 'block';
+    } else if (empty){
+      empty.style.display = 'none';
+    }
+  }
+
+  function build(){
+    var pg = document.getElementById('wabiFeedPg');
+    if (!pg) return;
+    var bar = pg.querySelector('.wfd-bar');
+    if (!bar) return;
+
+    // 「絞り込み ⚙」を消す
+    var fi = pg.querySelector('#wfdFilter');
+    if (fi) fi.style.display = 'none';
+
+    if (!pg.querySelector('.wfs')){
+      var box = document.createElement('div');
+      box.className = 'wfs';
+      box.innerHTML = ICON
+        + '<input type="search" placeholder="神社名・投稿者名で検索" autocomplete="off">'
+        + '<span class="x">✕</span>';
+      bar.parentNode.insertBefore(box, bar);
+
+      var lbl = document.createElement('div');
+      lbl.className = 'wfs-hit';
+      lbl.style.display = 'none';
+      bar.parentNode.insertBefore(lbl, bar.nextSibling);
+
+      var inp = box.querySelector('input');
+      var clr = box.querySelector('.x');
+      inp.value = keyword;
+      clr.classList.toggle('on', !!keyword);
+
+      var t = null;
+      inp.addEventListener('input', function(){
+        keyword = inp.value.trim();
+        clr.classList.toggle('on', !!keyword);
+        clearTimeout(t);
+        t = setTimeout(apply, 160);
+      });
+      inp.addEventListener('keydown', function(e){
+        if (e.key === 'Enter'){ e.preventDefault(); inp.blur(); apply(); }
+      });
+      clr.onclick = function(){
+        keyword = ''; inp.value = ''; clr.classList.remove('on'); apply(); inp.focus();
+      };
+    }
+    apply();
+  }
+
+  setInterval(build, 700);
+  build();
+})();

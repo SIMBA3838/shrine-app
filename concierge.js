@@ -7351,3 +7351,234 @@
     }
   };
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：プレースホルダだった2ページを実データに差し替え
+   ① 季節の行事・ライトアップ … 公式情報で日程を確認した実在の行事10件
+   ② 御朱印グッズ           … 楽天で実在を確認した商品4点
+   ③ 終活・供養             … 提携が未締結のため、いったん非表示
+   （2026-07-31 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiReal) return;
+  window.__wabiReal = true;
+
+  function esc(s){
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ── ① 季節の行事・ライトアップ（実在・公式で日程確認済み）──── */
+  var EVENTS = [
+    { id:'e1', title:'京都五山送り火', sub:'大文字から鳥居形まで、五つの送り火',
+      area:'京都', place:'京都市内一円', period:'2026年8月16日（日）20:00〜', tag:'夏',
+      photo:'大文字山 京都',
+      url:'https://ja.kyoto.travel/event/major/okuribi/' },
+    { id:'e2', title:'清水寺 千日詣り・夜間特別拝観', sub:'一日の参拝で千日分の功徳',
+      area:'京都', place:'清水寺', period:'2026年8月9日（日）〜16日（日）／夜間は14〜16日', tag:'夏',
+      photo:'清水寺',
+      url:'https://www.kiyomizudera.or.jp/news/sennichi-mairi.php' },
+    { id:'e3', title:'春日大社 中元万燈籠', sub:'三千基の燈籠に火が入る夜',
+      area:'奈良', place:'春日大社', period:'2026年8月14日（金）・15日（土）19:00〜21:30', tag:'夏',
+      photo:'春日大社',
+      url:'https://www.kasugataisha.or.jp/calendar/summer08/' },
+    { id:'e4', title:'東大寺 万灯供養会', sub:'大仏殿を囲む約2,500基の灯籠',
+      area:'奈良', place:'東大寺 大仏殿', period:'2026年8月15日（土）19:00〜22:00', tag:'夏',
+      photo:'東大寺',
+      url:'https://narashikanko.or.jp/event/detail_10260.html' },
+    { id:'e5', title:'高台寺 東山観月路', sub:'夜の庭園と方丈前庭のプロジェクション',
+      area:'京都', place:'高台寺', period:'2026年7月11日（土）〜8月23日（日）※8/10休', tag:'夏',
+      photo:'高台寺',
+      url:'https://ja.kyoto.travel/event/single.php?event_id=8391' },
+    { id:'e6', title:'青蓮院門跡 青蓮華の夏灯り', sub:'苔庭と竹林を照らす夏の夜間拝観',
+      area:'京都', place:'青蓮院門跡', period:'2026年7月17日（金）〜8月23日（日）※8/13〜16除く', tag:'夏',
+      photo:'青蓮院',
+      url:'https://ja.kyoto.travel/event/single.php?event_id=14582' },
+    { id:'e7', title:'貴船神社 七夕笹飾りライトアップ', sub:'川床の里に揺れる願いの短冊',
+      area:'京都', place:'貴船神社', period:'2026年7月1日（水）〜8月15日（土）', tag:'夏',
+      photo:'貴船神社',
+      url:'https://ja.kyoto.travel/event/single.php?event_id=4549' },
+    { id:'e8', title:'瑠璃光院 夏の特別公開', sub:'書院の机に映り込む青もみじ',
+      area:'京都', place:'瑠璃光院', period:'2026年7月1日（水）〜8月17日（月）', tag:'夏',
+      photo:'瑠璃光院',
+      url:'https://ja.kyoto.travel/event/single.php?event_id=8361' },
+    { id:'e9', title:'上賀茂神社 本殿・権殿 特別公開', sub:'第51回 京の夏の旅',
+      area:'京都', place:'上賀茂神社', period:'2026年7月10日（金）〜9月30日（水）', tag:'夏',
+      photo:'上賀茂神社',
+      url:'https://ja.kyoto.travel/event/single.php?event_id=14518' },
+    { id:'e10', title:'下鴨神社 本殿・大炊殿 特別公開', sub:'第51回 京の夏の旅',
+      area:'京都', place:'下鴨神社', period:'2026年7月10日（金）〜9月30日（水）', tag:'夏',
+      photo:'下鴨神社',
+      url:'https://ja.kyoto.travel/event/single.php?event_id=14519' }
+  ];
+
+  /* ── ② 御朱印グッズ（楽天で実在を確認した商品）───────────── */
+  // link が hb.afl… のものは楽天アフィリエイトのリンク（PR表示あり）
+  var GOODS = [
+    { name:'御朱印帳 大判 金剛力士像 箔押し 金箔 蛇腹', shop:'日本製 nippoh', price:'¥2,090', tag:'箔押し',
+      img:'https://shop.r10s.jp/nippoh-bb/cabinet/hakuoshi/imgrc0107619189.jpg',
+      pr:true,
+      link:'https://hb.afl.rakuten.co.jp/ichiba/55e6354a.261418e4.55e6354b.281f8a3b/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fnippoh-bb%2F8-001%2F%3Fscid%3Daf_pc_bbtn&link_type=picttext&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0dGV4dCIsInNpemUiOiIyNDB4MjQwIiwibmFtIjoxLCJuYW1wIjoicmlnaHQiLCJjb20iOjEsImNvbXAiOiJkb3duIiwicHJpY2UiOjEsImJvciI6MSwiY29sIjoxLCJiYnRuIjoxLCJwcm9kIjowLCJhbXAiOmZhbHNlfQ==' },
+    { name:'御朱印帳 大判 翡翠花吹雪 金襴 京都ちせん', shop:'御朱印帳工房 京都ちせん', price:'¥2,480', tag:'金襴',
+      img:'https://shop.r10s.jp/kyoto-chisen/cabinet/compass1649313958.jpg',
+      pr:true,
+      link:'https://hb.afl.rakuten.co.jp/ichiba/55e637eb.50260a1f.55e637ec.b9335393/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fkyoto-chisen%2F10000067%2F%3Fscid%3Daf_pc_bbtn&link_type=picttext&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0dGV4dCIsInNpemUiOiIyNDB4MjQwIiwibmFtIjoxLCJuYW1wIjoicmlnaHQiLCJjb20iOjEsImNvbXAiOiJkb3duIiwicHJpY2UiOjEsImJvciI6MSwiY29sIjoxLCJiYnRuIjoxLCJwcm9kIjowLCJhbXAiOmZhbHNlfQ==' },
+    { name:'御朱印帳 大判 鳥獣戯画 金襴生地 蛇腹', shop:'御朱印帳工房 京都ちせん', price:'¥2,480', tag:'鳥獣戯画',
+      img:'https://shop.r10s.jp/kyoto-chisen/cabinet/compass1751434539.jpg',
+      pr:false,
+      link:'https://item.rakuten.co.jp/kyoto-chisen/10000163/' },
+    { name:'御朱印帳 -JAPAN- 大判 蛇腹式', shop:'めのうの店 川島', price:'¥1,870', tag:'定番',
+      img:'https://shop.r10s.jp/since1877/cabinet/syouhin/gosyuintyo/imgrc0115043440.jpg',
+      pr:false,
+      link:'https://item.rakuten.co.jp/since1877/japan-series/' }
+  ];
+
+  /* ── スタイル ─────────────────────────────────────────── */
+  var css = document.createElement('style');
+  css.textContent = [
+    '.wev-card{background:#fff;border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.06);overflow:hidden;cursor:pointer;',
+      'display:flex;flex-direction:column;}',
+    '.wev-card .im{position:relative;width:100%;aspect-ratio:4/3;background:#e9e3d8 center/cover no-repeat;}',
+    '.wev-card .bd{padding:12px 13px 14px;}',
+    '.wev-card .tt{font-size:14.5px;font-weight:700;line-height:1.4;}',
+    ".wev-card .sb{font-size:11.5px;color:#8a8378;margin-top:4px;line-height:1.6;font-family:'Noto Serif JP',serif;}",
+    ".wev-card .pd{font-size:11.5px;color:#5D3A7A;margin-top:8px;font-family:'Noto Serif JP',serif;line-height:1.5;}",
+    '.wev-card .ar{position:absolute;top:8px;left:8px;background:rgba(42,32,24,.62);color:#fff;font-size:10px;',
+      'padding:3px 9px;border-radius:999px;}',
+    '.wev-card .go{display:inline-block;margin-top:9px;font-size:11px;color:#5D3A7A;}',
+    '.wgd-pr{position:absolute;top:6px;right:6px;background:rgba(42,32,24,.6);color:#fff;font-size:8.5px;',
+      'padding:2px 7px;border-radius:9px;z-index:2;}',
+    '.wgd-shop{font-size:10.5px;color:#8a8378;margin-top:3px;}',
+    '.wgd-btn{display:block;text-align:center;margin-top:7px;background:#bf0000;color:#fff !important;',
+      'font-size:11px;font-weight:700;padding:7px 0;border-radius:14px;text-decoration:none;}'
+  ].join('');
+  document.head.appendChild(css);
+
+  /* ── 写真をあとから読み込む（Places → Wikipedia）───────────── */
+  var photoCacheEv = {};
+  function fillPhotos(root){
+    var els = root.querySelectorAll('[data-ph]');
+    var names = [];
+    els.forEach(function(el){
+      var n = el.getAttribute('data-ph');
+      if (!n || el.getAttribute('data-done')) return;
+      if (photoCacheEv[n]){ el.style.backgroundImage = 'url("' + photoCacheEv[n] + '")'; el.setAttribute('data-done','1'); return; }
+      if (names.indexOf(n) < 0) names.push(n);
+    });
+    if (!names.length) return;
+
+    function apply(n, url){
+      if (!url) return;
+      photoCacheEv[n] = url;
+      root.querySelectorAll('[data-ph="' + n + '"]').forEach(function(el){
+        el.style.backgroundImage = 'url("' + url + '")'; el.setAttribute('data-done','1');
+      });
+    }
+    try {
+      if (window.google && google.maps && google.maps.places){
+        var svc = new google.maps.places.PlacesService(document.createElement('div'));
+        names.forEach(function(n, i){
+          setTimeout(function(){
+            svc.findPlaceFromQuery({ query: n, fields: ['photos'] }, function(res, st){
+              if (st === google.maps.places.PlacesServiceStatus.OK && res && res[0] && res[0].photos && res[0].photos[0]){
+                try { apply(n, res[0].photos[0].getUrl({ maxWidth: 700, maxHeight: 520 })); } catch(e){}
+              }
+            });
+          }, i * 200);
+        });
+        return;
+      }
+    } catch(e){}
+    if (typeof wikiPhotosFor === 'function'){
+      wikiPhotosFor(names, function(map){ names.forEach(function(n){ apply(n, map[n]); }); });
+    }
+  }
+
+  /* ── 季節の行事を描き直す ─────────────────────────────── */
+  function evCard(e){
+    return '<div class="wev-card" data-url="' + esc(e.url) + '">'
+      + '<div class="im" data-ph="' + esc(e.photo) + '"><span class="ar">' + esc(e.area) + '</span></div>'
+      + '<div class="bd">'
+      +   '<div class="tt">' + esc(e.title) + '</div>'
+      +   '<div class="sb">' + esc(e.sub) + '</div>'
+      +   '<div class="pd">' + esc(e.period) + '</div>'
+      +   '<span class="go">公式ページで詳しく見る ›</span>'
+      + '</div></div>';
+  }
+  function bindCards(root){
+    root.querySelectorAll('.wev-card').forEach(function(el){
+      if (el.getAttribute('data-b')) return;
+      el.setAttribute('data-b','1');
+      el.onclick = function(){ window.open(el.getAttribute('data-url'), '_blank', 'noopener'); };
+    });
+    fillPhotos(root);
+  }
+  function paintSeasons(){
+    // トップの横スクロール（3件）と、もっと見るページ（全件）
+    var top = document.getElementById('seasonList');
+    if (top && !top.getAttribute('data-real')){
+      top.setAttribute('data-real','1');
+      top.innerHTML = EVENTS.slice(0, 5).map(evCard).join('');
+      bindCards(top);
+    }
+    var full = document.getElementById('seasonListFull');
+    if (full && !full.getAttribute('data-real')){
+      full.setAttribute('data-real','1');
+      full.innerHTML = EVENTS.map(evCard).join('');
+      bindCards(full);
+    }
+  }
+
+  /* ── 御朱印グッズを描き直す ───────────────────────────── */
+  function goodsCard(g){
+    return '<div class="ec-card" style="position:relative">'
+      + (g.pr ? '<span class="wgd-pr">PR</span>' : '')
+      + '<a href="' + esc(g.link) + '" target="_blank" rel="' + (g.pr ? 'nofollow sponsored noopener' : 'noopener') + '" style="text-decoration:none;color:inherit;display:block">'
+      +   '<div class="ec-img"><img src="' + esc(g.img) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">'
+      +     '<div class="ec-img-tag">' + esc(g.tag) + '</div></div>'
+      +   '<div class="ec-body"><div class="ec-title">' + esc(g.name) + '</div>'
+      +     '<div class="wgd-shop">' + esc(g.shop) + '</div>'
+      +     '<div class="ec-price">' + esc(g.price) + '<small>(税込)</small></div>'
+      +     '<span class="wgd-btn">楽天で見る</span></div>'
+      + '</a></div>';
+  }
+  function paintGoods(){
+    ['ecGrid', 'ecGridFull'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el && !el.getAttribute('data-real')){
+        el.setAttribute('data-real','1');
+        el.innerHTML = GOODS.map(goodsCard).join('');
+      }
+    });
+  }
+
+  /* ── 終活・供養は提携が済むまで隠す ───────────────────── */
+  // 「無料で資料請求」と書いてあるのに実際には請求できない状態は、
+  // お墓や供養という大切な話題では不誠実なので、提携が決まるまで出さない。
+  function hideShukatsu(){
+    ['shukatsuList', 'shukatsuListFull'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (!el || el.getAttribute('data-hid')) return;
+      el.setAttribute('data-hid', '1');
+      el.innerHTML = '';
+      // トップページ側はセクションごと隠す（もっと見るの導線も消す）
+      if (id === 'shukatsuList'){
+        var sec = el.parentElement;
+        for (var i = 0; i < 4 && sec; i++){
+          if (/終活・供養/.test(sec.textContent || '')){ sec.style.display = 'none'; break; }
+          sec = sec.parentElement;
+        }
+      } else {
+        el.innerHTML = '<div style="padding:48px 20px;text-align:center;color:#8a8378;'
+          + 'font-size:13px;line-height:2">'
+          + 'このページは準備中です。<br>信頼できる提携先が決まりしだい公開いたします。</div>';
+      }
+    });
+  }
+
+  function run(){ try { paintSeasons(); paintGoods(); hideShukatsu(); } catch(e){} }
+  run();
+  var n = 0;
+  var iv = setInterval(function(){ run(); if (++n > 40) clearInterval(iv); }, 700);
+})();

@@ -7539,16 +7539,28 @@
   function paintSeasons(){
     // トップの横スクロール（3件）と、もっと見るページ（全件）
     var top = document.getElementById('seasonList');
-    if (top && !top.getAttribute('data-real')){
-      top.setAttribute('data-real','1');
+    if (top && !top.querySelector('.wev-card')){
       top.innerHTML = EVENTS.slice(0, 5).map(evCard).join('');
       bindCards(top);
     }
+    // もっと見るページは別の処理があとから上書きするので、
+    // 自分のカードが消えていたら何度でも描き直す
     var full = document.getElementById('seasonListFull');
-    if (full && !full.getAttribute('data-real')){
-      full.setAttribute('data-real','1');
+    if (full && !full.querySelector('.wev-card')){
       full.innerHTML = EVENTS.map(evCard).join('');
       bindCards(full);
+    }
+    // 同ページ上部に残っている古い行事カード（終了した7月の祭）を隠す
+    var pg = document.getElementById('pgSeasonList');
+    if (pg){
+      pg.querySelectorAll('.route-card').forEach(function(el){
+        var w = el.parentElement;
+        if (w && w !== pg && w.getAttribute('data-hid') !== '1'){
+          w.setAttribute('data-hid','1'); w.style.display = 'none';
+        } else if (el.getAttribute('data-hid') !== '1'){
+          el.setAttribute('data-hid','1'); el.style.display = 'none';
+        }
+      });
     }
   }
 
@@ -7568,8 +7580,7 @@
   function paintGoods(){
     ['ecGrid', 'ecGridFull'].forEach(function(id){
       var el = document.getElementById(id);
-      if (el && !el.getAttribute('data-real')){
-        el.setAttribute('data-real','1');
+      if (el && !el.querySelector('.wgd-btn')){
         el.innerHTML = GOODS.map(goodsCard).join('');
       }
     });
@@ -7610,6 +7621,5 @@
     } catch(e){}
   }
   run();
-  var n = 0;
-  var iv = setInterval(function(){ run(); if (++n > 40) clearInterval(iv); }, 700);
+  setInterval(run, 800);
 })();

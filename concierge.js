@@ -7439,6 +7439,10 @@
   css.textContent = [
     '.wev-card{background:#fff;border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.06);overflow:hidden;cursor:pointer;',
       'display:flex;flex-direction:column;}',
+    '#seasonList{display:flex;gap:12px;overflow-x:auto;padding:4px 2px 10px;scrollbar-width:none;}',
+    '#seasonList::-webkit-scrollbar{display:none;}',
+    '#seasonList .wev-card{flex:0 0 245px;width:245px;}',
+    '#seasonListFull{display:grid;grid-template-columns:1fr 1fr;gap:12px;}',
     '.wev-card .im{position:relative;width:100%;aspect-ratio:4/3;background:#e9e3d8 center/cover no-repeat;}',
     '.wev-card .bd{padding:12px 13px 14px;}',
     '.wev-card .tt{font-size:14.5px;font-weight:700;line-height:1.4;}',
@@ -7482,17 +7486,35 @@
           setTimeout(function(){
             svc.findPlaceFromQuery({ query: n, fields: ['photos'] }, function(res, st){
               if (st === google.maps.places.PlacesServiceStatus.OK && res && res[0] && res[0].photos && res[0].photos[0]){
-                try { apply(n, res[0].photos[0].getUrl({ maxWidth: 700, maxHeight: 520 })); } catch(e){}
+                try { apply(n, res[0].photos[0].getUrl({ maxWidth: 700, maxHeight: 520 })); return; } catch(e){}
               }
+              wikiPhotos([n], function(map){ apply(n, map[n]); });
             });
           }, i * 200);
         });
         return;
       }
     } catch(e){}
-    if (typeof wikiPhotosFor === 'function'){
-      wikiPhotosFor(names, function(map){ names.forEach(function(n){ apply(n, map[n]); }); });
-    }
+    wikiPhotos(names, function(map){ names.forEach(function(n){ apply(n, map[n]); }); });
+  }
+  function wikiPhotos(names, cb){
+    try {
+      var url = 'https://ja.wikipedia.org/w/api.php?action=query&format=json&origin=*'
+        + '&prop=pageimages&piprop=thumbnail&pithumbsize=700&redirects=1&titles='
+        + encodeURIComponent(names.join('|'));
+      fetch(url).then(function(r){ return r.json(); }).then(function(j){
+        var map = {}, redir = {};
+        ((j.query || {}).redirects || []).forEach(function(r){ redir[r.from] = r.to; });
+        ((j.query || {}).normalized || []).forEach(function(r){ redir[r.from] = r.to; });
+        var pages = (j.query || {}).pages || {};
+        Object.keys(pages).forEach(function(k){
+          if (pages[k].thumbnail) map[pages[k].title] = pages[k].thumbnail.source;
+        });
+        var out = {};
+        names.forEach(function(n){ out[n] = map[redir[n] || n] || null; });
+        cb(out);
+      }).catch(function(){ cb({}); });
+    } catch(e){ cb({}); }
   }
 
   /* ── 季節の行事を描き直す ─────────────────────────────── */
@@ -7577,7 +7599,16 @@
     });
   }
 
-  function run(){ try { paintSeasons(); paintGoods(); hideShukatsu(); } catch(e){} }
+  function run(){
+    try { paintSeasons(); paintGoods(); hideShukatsu(); } catch(e){}
+    // 写真はGoogleマップの読み込みを待って何度か取りに行く
+    try {
+      ['seasonList', 'seasonListFull'].forEach(function(id){
+        var el = document.getElementById(id);
+        if (el && el.querySelector('[data-ph]:not([data-done])')) fillPhotos(el);
+      });
+    } catch(e){}
+  }
   run();
   var n = 0;
   var iv = setInterval(function(){ run(); if (++n > 40) clearInterval(iv); }, 700);

@@ -7745,3 +7745,62 @@
   setInterval(build, 700);
   build();
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：記事ページの見え方を整える
+   ① 記事一覧のサムネイル写真が出ないのを直す
+   ② 記事末尾「まとめ」の文字が薄くて読めないのを直す
+   ③ その下の赤い「記事一覧へ戻る」ボタンを消す
+   （2026-07-31 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiArtFix) return;
+  window.__wabiArtFix = true;
+
+  var css = document.createElement('style');
+  css.textContent = [
+    /* ① サムネイルは写真を敷き詰めて表示 */
+    '.art-thumb{position:relative;overflow:hidden;}',
+    '.art-thumb img{width:100%;height:100%;object-fit:cover;display:block;}',
+    '.art-thumb img[src]{display:block !important;}',
+
+    /* ② まとめは元の意図どおり濃い茶色の箱に */
+    '#pgArticleDetail .summary{background:#4a3728 !important;color:#faf8f5 !important;',
+      'padding:24px 22px !important;border-radius:16px !important;margin:32px 0 8px !important;line-height:2;}',
+    '#pgArticleDetail .summary h2{color:#f3ead9 !important;border-left:3px solid #c9a24a !important;',
+      'padding-left:12px !important;margin:0 0 10px !important;font-size:17px !important;}',
+    '#pgArticleDetail .summary p,#pgArticleDetail .summary li{color:#f6f0e6 !important;font-size:14px !important;}',
+
+    /* ③ 赤い「記事一覧へ戻る」は消す（左上の「‹ 記事」で戻れる） */
+    '#pgArticleDetail .ext-btn{display:none !important;}'
+  ].join('');
+  document.head.appendChild(css);
+
+  /* Wikimediaの写真は「1280px」でないと404になるので直す */
+  function fixSize(u){
+    return (typeof u === 'string' && u.indexOf('upload.wikimedia.org') >= 0)
+      ? u.replace(/\/\d+px-/, '/1280px-') : u;
+  }
+  function run(){
+    try {
+      if (typeof ARTICLES !== 'undefined' && Array.isArray(ARTICLES)){
+        ARTICLES.forEach(function(a){ if (a && a.img) a.img = fixSize(a.img); });
+      }
+    } catch(e){}
+    document.querySelectorAll('.art-thumb img, #pgArticleDetail img').forEach(function(im){
+      var s = im.getAttribute('src') || '';
+      var f = fixSize(s);
+      if (f !== s){ im.setAttribute('src', f); im.style.display = ''; }
+      // 一度エラーで隠された写真をもう一度出す
+      if (im.style.display === 'none' && im.naturalWidth > 0) im.style.display = '';
+    });
+    // 写真が出たら「寺院」などの文字プレースホルダは隠す
+    document.querySelectorAll('.art-thumb').forEach(function(th){
+      var im = th.querySelector('img'), ph = th.querySelector('.art-thumb-ph');
+      if (im && ph) ph.style.display = (im.naturalWidth > 0) ? 'none' : '';
+    });
+  }
+  run();
+  setInterval(run, 900);
+})();

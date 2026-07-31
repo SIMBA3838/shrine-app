@@ -7028,3 +7028,40 @@
   handleReturn();
   [300, 1200, 2500].forEach(function(ms){ setTimeout(repaintHeader, ms); });
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：フッターにプライバシーポリシー・利用規約のリンクを置く
+   （Googleログインの本番公開に必要／サイト公開時にも必須）
+   （2026-07-31 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiLegal) return;
+  window.__wabiLegal = true;
+
+  var css = document.createElement('style');
+  css.textContent = [
+    '#wabiLegal{max-width:500px;margin:0 auto;padding:26px 20px calc(120px + env(safe-area-inset-bottom));',
+      "text-align:center;font-family:'Noto Serif JP',serif;font-size:11.5px;line-height:2;color:#8a8378;",
+      'border-top:1px solid #EFE9DE;}',
+    '#wabiLegal a{color:#5D3A7A;text-decoration:none;margin:0 8px;white-space:nowrap;}',
+    '#wabiLegal .cp{display:block;margin-top:8px;color:#a8a196;font-size:10.5px;}'
+  ].join('');
+  document.head.appendChild(css);
+
+  function put(){
+    var home = document.getElementById('pgHome');
+    if (!home || document.getElementById('wabiLegal')) return;
+    var box = document.createElement('div');
+    box.id = 'wabiLegal';
+    box.innerHTML = '<a href="/privacy.html">プライバシーポリシー</a>･'
+                  + '<a href="/terms.html">利用規約</a>'
+                  + '<span class="cp">© 2026 わびなび（和美導）</span>';
+    home.appendChild(box);
+  }
+  put();
+  var n = 0;
+  var iv = setInterval(function(){
+    put(); if (++n > 20 || document.getElementById('wabiLegal')) clearInterval(iv);
+  }, 600);
+})();

@@ -7206,3 +7206,148 @@
   }
   setInterval(check, 1200);
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：写真をクラウド（Supabase Storage）に預ける
+   ・これまで写真は端末内に dataURL で保存していたため、
+     1台あたり約5MB（縮小後30枚前後）が上限だった。
+   ・ログイン中は写真だけを保管庫へ上げ、端末にはURLだけを残す。
+   ・ログインしていないときは今までどおり端末内に保存する。
+   （2026-07-31 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.WabiPhoto) return;
+
+  var FN = 'https://rqkqjrzhvhsogwhtfbqh.supabase.co/functions/v1/wabi-sync';
+
+  function isData(v){ return typeof v === 'string' && v.indexOf('data:image/') === 0; }
+  function isCloud(v){ return typeof v === 'string' && v.indexOf('/storage/v1/object/public/wabi-photos/') > 0; }
+
+  // WabiSync が持っている「本人の証明」を借りる
+  function proof(){
+    try {
+      var u = JSON.parse(localStorage.getItem('wabiUser') || 'null');
+      if (!u || !u.id) return Promise.resolve(null);
+      if (u.id.indexOf('g:') === 0){
+        var s = JSON.parse(localStorage.getItem('wabiSbSession') || 'null');
+        if (!s || !s.access_token) return Promise.resolve(null);
+        return Promise.resolve({ provider: 'google', token: s.access_token });
+      }
+      var t = localStorage.getItem('wabiLineIdToken') || '';
+      return Promise.resolve(t ? { provider: 'line', token: t } : null);
+    } catch(e){ return Promise.resolve(null); }
+  }
+
+  // 写真1枚をクラウドへ。失敗したら元のdataURLをそのまま返す（記録は必ず残す）
+  function upload(dataUrl){
+    if (!isData(dataUrl)) return Promise.resolve(dataUrl);
+    return proof().then(function(pr){
+      if (!pr) return dataUrl;
+      return fetch(FN, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'upload', provider: pr.provider, token: pr.token, dataUrl: dataUrl })
+      }).then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(j){ return (j && j.url) ? j.url : dataUrl; })
+        .catch(function(){ return dataUrl; });
+    });
+  }
+  function uploadAll(list){
+    if (!list || !list.length) return Promise.resolve(list || []);
+    return Promise.all(list.map(upload));
+  }
+
+  window.WabiPhoto = { upload: upload, uploadAll: uploadAll, isData: isData, isCloud: isCloud };
+
+  /* ── ① 記録するときに写真をクラウドへ ───────────────────── */
+  // localStorage への保存を横取りして、写真だけ先にクラウドへ上げる
+  var KEYS = ['wabiVisits', 'wabiGoshuin', 'wabiMyPosts'];
+  var busy = {};
+  function liftPhotos(key){
+    if (busy[key]) return;
+    var arr;
+    try { arr = JSON.parse(localStorage.getItem(key) || '[]'); } catch(e){ return; }
+    if (!Array.isArray(arr) || !arr.length) return;
+
+    var jobs = [];
+    arr.forEach(function(rec){
+      if (!rec) return;
+      if (Array.isArray(rec.photos)){
+        rec.photos.forEach(function(ph, i){
+          if (isData(ph)) jobs.push(upload(ph).then(function(u){ rec.photos[i] = u; }));
+        });
+      }
+      ['img', 'photo', 'image'].forEach(function(f){
+        if (isData(rec[f])) jobs.push(upload(rec[f]).then(function(u){ rec[f] = u; }));
+      });
+    });
+    if (!jobs.length) return;
+
+    busy[key] = true;
+    Promise.all(jobs).then(function(){
+      try { localStorage.setItem(key, JSON.stringify(arr)); } catch(e){}
+      busy[key] = false;
+      try { if (window.WabiRec && WabiRec.refresh) WabiRec.refresh(); } catch(e){}
+    }).catch(function(){ busy[key] = false; });
+  }
+
+  /* ── ② プロフィール写真・カバー写真もクラウドへ ─────────── */
+  function liftOne(key){
+    if (busy[key]) return;
+    var v;
+    try { v = localStorage.getItem(key) || ''; } catch(e){ return; }
+    if (!isData(v)) return;
+    busy[key] = true;
+    upload(v).then(function(u){
+      if (u && u !== v){ try { localStorage.setItem(key, u); } catch(e){} }
+      busy[key] = false;
+      try { if (typeof wabiApplyProfilePhotos === 'function') wabiApplyProfilePhotos(); } catch(e){}
+    }).catch(function(){ busy[key] = false; });
+  }
+
+  function sweep(){
+    // ログインしていないときは何もしない（端末内保存のまま）
+    var u = null;
+    try { u = JSON.parse(localStorage.getItem('wabiUser') || 'null'); } catch(e){}
+    if (!u || !u.id) return;
+    KEYS.forEach(liftPhotos);
+    liftOne('wabiAvatar');
+    liftOne('wabiCover');
+  }
+
+  // 保存された直後と、ときどき見回る
+  var _set = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function(k, v){
+    var r = _set(k, v);
+    if (KEYS.indexOf(k) >= 0 || k === 'wabiAvatar' || k === 'wabiCover'){
+      setTimeout(sweep, 400);
+    }
+    return r;
+  };
+  setTimeout(sweep, 4000);
+  setInterval(sweep, 30000);
+
+  /* ── ③ 端末の空きが足りないときに備える ─────────────────── */
+  // 保存に失敗したら、いちばん古い写真を落として入れ直す
+  window.wabiSafeSet = function(k, v){
+    try { localStorage.setItem(k, v); return true; }
+    catch(e){
+      try {
+        KEYS.forEach(function(key){
+          var a = JSON.parse(localStorage.getItem(key) || '[]');
+          if (Array.isArray(a)){
+            a.forEach(function(rec){
+              if (rec && Array.isArray(rec.photos)){
+                rec.photos = rec.photos.filter(function(p){ return !isData(p); });
+              }
+            });
+            _set(key, JSON.stringify(a));
+          }
+        });
+        localStorage.setItem(k, v);
+        return true;
+      } catch(e2){ return false; }
+    }
+  };
+})();

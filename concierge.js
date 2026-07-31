@@ -3568,6 +3568,7 @@
     },
     logout: function(){
       setUser(null);
+      try { localStorage.removeItem('wabiLineIdToken'); } catch(e){}
       try { if (window.liff && liff.isLoggedIn && liff.isLoggedIn()) liff.logout(); } catch(e){}
       if (typeof showToast === 'function') showToast('ログアウトしました');
     },
@@ -3595,6 +3596,11 @@
           // redirectUri は指定しない。指定するとクエリ文字列付きURLになり、
           // コールバックURLの完全一致に外れて 400 Bad Request になるため。
           if (!liff.isLoggedIn()) { liff.login(); return null; }
+          // クラウド同期の本人確認に使うIDトークンも取っておく
+          try {
+            var it = liff.getIDToken();
+            if (it) localStorage.setItem('wabiLineIdToken', it);
+          } catch(e){}
           return liff.getProfile();
         });
       }).then(function(p){
@@ -3615,6 +3621,10 @@
       loadLiff().then(function(liff){
         return liff.init({ liffId: LINE_CFG.liffId }).then(function(){
           if (!liff.isLoggedIn()) return null;
+          try {
+            var it = liff.getIDToken();
+            if (it) localStorage.setItem('wabiLineIdToken', it);
+          } catch(e){}
           return liff.getProfile();
         });
       }).then(function(p){
@@ -4089,34 +4099,104 @@
     return call(url, { method: 'POST', body: JSON.stringify(args) });
   }
 
+  /* ── 本人確認つきの読み書き（2026-07-31）────────────────────
+     以前は「LINEユーザーIDを知っていれば誰でも読み書きできる」状態だった。
+     いまは Edge Function(wabi-sync) にログインの証明を渡し、
+     サーバー側で本人だと確かめてから読み書きする。               */
+  var FN_URL = CFG.url + '/functions/v1/wabi-sync';
+
+  function googleSession(){
+    try { return JSON.parse(localStorage.getItem('wabiSbSession') || 'null'); }
+    catch(e){ return null; }
+  }
+  // Googleのトークンが切れていたら更新する
+  function refreshGoogle(){
+    var s = googleSession();
+    if (!s || !s.refresh_token) return Promise.resolve(null);
+    return fetch(CFG.url + '/auth/v1/token?grant_type=refresh_token', {
+      method: 'POST',
+      headers: { 'apikey': CFG.key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: s.refresh_token })
+    }).then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(j){
+        if (!j || !j.access_token) return null;
+        var ns = {
+          access_token: j.access_token,
+          refresh_token: j.refresh_token || s.refresh_token,
+          expires_at: Date.now() + (parseInt(j.expires_in, 10) || 3600) * 1000,
+          provider: 'google'
+        };
+        try { localStorage.setItem('wabiSbSession', JSON.stringify(ns)); } catch(e){}
+        return ns.access_token;
+      }).catch(function(){ return null; });
+  }
+  // LINEのIDトークン（ログイン時に取っておいたもの）
+  function lineToken(){
+    try { return localStorage.getItem('wabiLineIdToken') || ''; } catch(e){ return ''; }
+  }
+  // いま使える「本人の証明」を返す
+  function proof(){
+    var id = lineId();
+    if (!id) return Promise.resolve(null);
+    if (id.indexOf('g:') === 0){
+      var s = googleSession();
+      if (!s || !s.access_token) return Promise.resolve(null);
+      if (s.expires_at && s.expires_at < Date.now() + 60000){
+        return refreshGoogle().then(function(t){
+          return t ? { provider: 'google', token: t } : null;
+        });
+      }
+      return Promise.resolve({ provider: 'google', token: s.access_token });
+    }
+    var t = lineToken();
+    return Promise.resolve(t ? { provider: 'line', token: t } : null);
+  }
+
+  function callFn(action, extra, retried){
+    return proof().then(function(pr){
+      if (!pr) return null;
+      var body = { action: action, provider: pr.provider, token: pr.token };
+      for (var k in (extra || {})) body[k] = extra[k];
+      return fetch(FN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': CFG.key },
+        body: JSON.stringify(body)
+      }).then(function(r){
+        // Googleのトークン切れなら一度だけ取り直して再挑戦
+        if (r.status === 401 && !retried && pr.provider === 'google'){
+          return refreshGoogle().then(function(t){
+            return t ? callFn(action, extra, true) : null;
+          });
+        }
+        if (!r.ok) return null;
+        return r.json();
+      });
+    }).catch(function(){ return null; });
+  }
+
   function pull(){
     if (!enabled()) return Promise.resolve(null);
-    // テーブルを直接読まず、自分の行だけを返す関数を呼ぶ
-    return rpc('wabi_get', { p_line_id: lineId() })
-      .then(function(r){ return r.ok ? r.json() : null; })
-      .then(function(rows){
-        if (!rows || !rows.length) return null;
-        var row = rows[0];
-        var remote = row.updated_at ? Date.parse(row.updated_at) : 0;
-        // サーバー側が新しいときだけ端末に取り込む
-        if (remote > localStamp()){
-          var n = restore(row.data);
-          touch();
-          repaint();
-          return { restored: n, at: remote };
-        }
-        return { restored: 0, at: remote };
-      })
-      .catch(function(){ return null; });
+    return callFn('get').then(function(j){
+      if (!j || !j.ok || !j.row) return null;
+      var row = j.row;
+      var remote = row.updated_at ? Date.parse(row.updated_at) : 0;
+      // サーバー側が新しいときだけ端末に取り込む
+      if (remote > localStamp()){
+        var n = restore(row.data);
+        touch();
+        repaint();
+        return { restored: n, at: remote };
+      }
+      return { restored: 0, at: remote };
+    }).catch(function(){ return null; });
   }
 
   function push(){
     if (!enabled()) return Promise.resolve(false);
-    return rpc('wabi_put', { p_line_id: lineId(), p_data: snapshot() })
-      .then(function(r){
-        if (r.ok) { touch(); return true; }
-        return false;
-      }).catch(function(){ return false; });
+    return callFn('put', { data: snapshot() }).then(function(j){
+      if (j && j.ok) { touch(); return true; }
+      return false;
+    }).catch(function(){ return false; });
   }
 
   // 画面の再描画（EXPバー・写真・お気に入り件数）

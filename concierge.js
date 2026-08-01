@@ -7923,15 +7923,25 @@
   /* ② セクション名の変更 */
   var OLD = '季節の行事・ライトアップ';
   var NEW = 'この時期おすすめイベント';
-  function rename(){
-    document.querySelectorAll('.home-sec-tit,.ovl-tit,.sec-tit,h2,h3').forEach(function(el){
-      if (el.children.length === 0 && el.textContent.trim() === OLD) el.textContent = NEW;
-    });
-    // 「もっと見る」ページの見出しなど、絵文字つきの場合にも対応
-    document.querySelectorAll('.home-sec-tit,.ovl-tit').forEach(function(el){
-      if (el.children.length === 0 && el.textContent.indexOf(OLD) >= 0){
-        el.textContent = el.textContent.replace(OLD, NEW);
+  // アイコン（svg）が中に入っている見出しもあるので、
+  // 要素まるごとではなく「文字の部分」だけを書き換える
+  function swapText(root){
+    var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+    var n;
+    while ((n = w.nextNode())){
+      if (n.nodeValue && n.nodeValue.indexOf(OLD) >= 0){
+        n.nodeValue = n.nodeValue.split(OLD).join(NEW);
       }
+    }
+  }
+  function rename(){
+    document.querySelectorAll('.home-sec-tit,.ovl-tit,.sec-tit,.wlp-ttl,h1,h2,h3').forEach(function(el){
+      if (el.textContent.indexOf(OLD) >= 0) swapText(el);
+    });
+    // ページ見出し（戻るボタンの隣など）
+    ['pgSeasonList'].forEach(function(id){
+      var pg = document.getElementById(id);
+      if (pg && pg.textContent.indexOf(OLD) >= 0) swapText(pg);
     });
   }
   rename();

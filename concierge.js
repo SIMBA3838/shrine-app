@@ -8074,8 +8074,114 @@
     ]
   };
 
+
+  /* ── テーマD：本気で人生を変える！全国・最強金運アップ寺社 ───── */
+  var THEME_D = {
+    id: 'D',
+    title: '本気で人生を変える！全国・最強金運アップ寺社',
+    lead: 'お金を洗えば何倍にもなって還ってくるという霊水、黄金に輝く鳥居、'
+        + '宝くじの高額当選者が続出した島の社——。'
+        + '日本各地には、財運を願う人々が全国から足を運ぶ「金運の聖地」があります。'
+        + 'ご利益の伝承、参拝者の多さ、そして境内に流れる空気の力強さ。'
+        + 'その三つを軸に選んだ、本気で人生を変えたい方のためのランキングです。',
+    hero: 'https://upload.wikimedia.org/wikipedia/commons/0/0b/Mikane_jinja.jpg',
+    heroCap: '御金神社 黄金の鳥居（京都市中京区）',
+    items: [
+      { rank:1, name:'新屋山神社', yomi:'あらややまじんじゃ', area:'山梨県富士吉田市',
+        season:'5月〜11月（奥宮への林道が通行可能な時期）',
+        access:'富士山駅から車で約10分（奥宮へはさらに車で約30分）',
+        see:'富士山の強力なエネルギーが満ちる本宮と、神秘的な奥宮',
+        goshuin:'富士山の印が押された、力強くご利益を感じるデザイン',
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/A_Torii_of_Araya_yama_shrine_Okuno_Inn.jpg/1280px-A_Torii_of_Araya_yama_shrine_Okuno_Inn.jpg',
+        cap:'新屋山神社 奥宮の鳥居',
+        text:'「日本三大金運神社」の筆頭として、全国の経営者や投資家がこぞって足を運ぶ最強の金運パワースポットです。富士山麓の豊かな自然に抱かれた本宮はもちろんのこと、富士山2合目に位置する奥宮はさらに強力な磁場を持つとされ、本気で人生を変えたい、財力を高めたいと願う人々に絶大な支持を得ています。清らかな山の空気を深呼吸しながら参拝すれば、金運上昇への強力な後押しを実感できるはずです。' },
+
+      { rank:2, name:'銭洗弁財天 宇賀福神社', yomi:'ぜにあらいべんざいてん うがふくじんじゃ', area:'神奈川県鎌倉市',
+        season:'巳の日、特に己巳（つちのとみ）の日',
+        access:'鎌倉駅から徒歩約25分',
+        see:'洞窟内に湧き出る「銭洗水」と神秘的な境内',
+        goshuin:'シンプルながらも歴史を感じる墨書きと朱印',
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/Zeniaraibenzaiten_Ugafuku-Shrine_01.jpg/1280px-Zeniaraibenzaiten_Ugafuku-Shrine_01.jpg',
+        cap:'銭洗弁財天 宇賀福神社 参道の洞窟',
+        text:'鎌倉の急な坂道を登り、トンネルを抜けた先に広がる異空間。境内の洞窟内に湧き出る霊水「銭洗水」でお金を洗うと、何倍にもなって還ってくると言い伝えられています。ザルに硬貨や紙幣を入れて清める体験は、お金への執着や心の厄を洗い流すような清々しさがあります。宝くじの高額当選祈願や商売繁盛を願って、全国から参拝者が絶えません。洗ったお金は有意義に使うことで、さらなる金運を引き寄せるとされています。' },
+
+      { rank:3, name:'御金神社', yomi:'みかねじんじゃ', area:'京都府京都市中京区',
+        season:'通年（お正月は特に多くの参拝者で賑わいます）',
+        access:'地下鉄・烏丸御池駅から徒歩約5分',
+        see:'住宅街に突如現れる、黄金に輝く見事な鳥居',
+        goshuin:'金色の文字で「金」と書かれたインパクト抜群のデザイン',
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Mikane_jinja_03.jpg/1280px-Mikane_jinja_03.jpg',
+        cap:'御金神社 拝殿とイチョウ型の絵馬',
+        text:'京都の閑静な住宅街に突如として現れる、黄金に輝く鳥居が目印の御金神社。金属全般の神様である金山毘古命（かなやまひこのみこと）をお祀りしており、通貨＝お金の神様として絶大な人気を集めています。境内には、宝くじ当選や資産運用成功、借金完済など、切実な願いが書かれたイチョウ型の絵馬がびっしり。お守りや御朱印も金色づくしで、参拝するだけで気分が明るくなり、金運が爆発的にアップしそうなパワーに満ちています。' },
+
+      { rank:4, name:'小網神社', yomi:'こあみじんじゃ', area:'東京都中央区',
+        season:'通年（毎年11月の「どぶろく祭」もおすすめ）',
+        access:'日比谷線・人形町駅から徒歩約5分',
+        see:'強運厄除けのシンボル「昇り龍・降り龍」の精巧な彫刻',
+        goshuin:'力強い筆致と、福禄寿などの縁起の良い印',
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Koami_jinja.jpg/1280px-Koami_jinja.jpg',
+        cap:'小網神社 社殿',
+        text:'ビル群の谷間にひっそりと鎮座しながら、連日行列が絶えない東京屈指のパワースポット。「強運厄除けの神様」として知られ、第二次世界大戦時の戦災を免れた奇跡の神社です。境内にある「東京銭洗い弁天」の水でお金を清めて財布に収めると、財運を授かると言われています。社殿に彫られた「昇り龍・降り龍」は見事で、強運を引き寄せるパワーの源。投資家やビジネスマンがこぞって訪れる、小さくも最強の金運神社です。' },
+
+      { rank:5, name:'金持神社', yomi:'かもちじんじゃ', area:'鳥取県日野郡日野町',
+        season:'通年',
+        access:'JR根雨駅からタクシーで約10分',
+        see:'豊かな自然に囲まれた静寂な境内と、縁起の良い名前',
+        goshuin:'「金持神社」の文字が光る、大変縁起の良い御朱印',
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Kamochi_Jinja.jpg/1280px-Kamochi_Jinja.jpg',
+        cap:'金持神社 参道の石段',
+        text:'その名の通り「金運が上がる」として全国から参拝者が殺到する鳥取県の金持神社。古くから鉄の産地であったこの地で、「金（鉄）を持つ」という意味から名付けられました。社務所には、「宝くじで高額当選しました」「事業が軌道に乗りました」といったお礼参りの絵馬が数多く奉納されており、そのご利益は本物と噂されています。豊かな自然のエネルギーを吸収しながら、本気で財運アップを祈願したい方にぴったりの聖地です。' },
+
+      { rank:6, name:'聖神社', yomi:'ひじりじんじゃ', area:'埼玉県秩父市',
+        season:'通年',
+        access:'秩父鉄道・和銅黒谷駅から徒歩約5分',
+        see:'日本初の流通貨幣「和同開珎」の巨大なモニュメント',
+        goshuin:'和同開珎のスタンプが押された金運祈願の御朱印',
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/%E8%81%96%E7%A5%9E%E7%A4%BE%E3%81%AE%E6%8B%9D%E6%AE%BF%E5%89%8D.JPG/1280px-%E8%81%96%E7%A5%9E%E7%A4%BE%E3%81%AE%E6%8B%9D%E6%AE%BF%E5%89%8D.JPG',
+        cap:'聖神社 社殿と和同開珎',
+        text:'「銭神様」と呼ばれ親しまれる埼玉県の聖神社。この地で和銅が採掘され、日本初の流通貨幣「和同開珎」が造られたことに由来する、お金に非常に縁の深い神社です。境内のすぐ近くには巨大な和同開珎のモニュメントがあり、絶好の写真スポットになっています。宝くじ当選やギャンブル運向上、ビジネスの成功などを願う参拝者で賑わい、黄色いハンカチに願い事を書いて奉納するユニークな祈願方法も人気を集めています。' },
+
+      { rank:7, name:'宝当神社', yomi:'ほうとうじんじゃ', area:'佐賀県唐津市（高島）',
+        season:'通年',
+        access:'唐津駅から徒歩で宝当桟橋へ、そこから定期船で約10分',
+        see:'のどかな島の風景と、島全体を包むポジティブな空気',
+        goshuin:'「宝当」の文字が力強く書かれた縁起の良い御朱印',
+        photo:'https://upload.wikimedia.org/wikipedia/commons/a/a5/Houtou_Shrine%2C_Saga%2C_Japan.jpg',
+        cap:'宝当神社 参道（佐賀県唐津市 高島）',
+        text:'唐津湾に浮かぶ人口数百人の小さな島、高島にある宝当神社。1990年代に参拝者の中から宝くじの高額当選者が続出したことで一躍全国区になりました。「宝が当たる」というストレートで縁起の良い名前から、現在も一攫千金を夢見る人々が船に乗って訪れます。島内には宝くじ売り場や開運グッズを扱うお店もあり、島全体が金運アップのテーマパークのような明るい雰囲気に包まれています。' },
+
+      { rank:8, name:'鷲子山上神社', yomi:'とりのこさんしょうじんじゃ', area:'栃木県那須郡那珂川町／茨城県常陸大宮市',
+        season:'秋（紅葉の季節）',
+        access:'JR烏山駅からタクシーで約30分',
+        see:'県境をまたぐ珍しい境内と、日本一巨大な「フクロウ像」',
+        goshuin:'フクロウの可愛らしい印が押された特別な御朱印',
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Torinoko_Sanjo_Shrine_06.jpg/1280px-Torinoko_Sanjo_Shrine_06.jpg',
+        cap:'鷲子山上神社 楼門',
+        text:'栃木県と茨城県の県境、標高470メートルの山頂に鎮座する神社。神様のお使いである「フクロウ」が境内の至る所に祀られており、「不苦労（苦労しない）」のご利益があるとされています。特に目を引くのが、日本最大級の巨大な黄金のフクロウ像。その柱を叩いて願い事をすると、金運や幸運が舞い込むと言われています。豊かな自然の中でハイキングを楽しみながら、苦労を払い、金運を呼び込むことができる心温まるパワースポットです。' },
+
+      { rank:9, name:'金華山黄金山神社', yomi:'きんかさんこがねやまじんじゃ', area:'宮城県石巻市',
+        season:'初夏〜秋（フェリーでの移動があるため気候の良い時期）',
+        access:'石巻駅からバスで鮎川港へ、そこからフェリーで約20分',
+        see:'島全体が神域という圧倒的なスケールと、神の使いである鹿',
+        goshuin:'黄金山神社の力強い文字と、金華山の印',
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Koganeyama-jinja_Haiden.jpg/1280px-Koganeyama-jinja_Haiden.jpg',
+        cap:'金華山 黄金山神社 拝殿',
+        text:'太平洋に浮かぶ孤島・金華山に鎮座し、「3年続けてお参りすれば一生お金に困らない」という有名な言い伝えがある東北屈指の霊場です。島全体が神域とされ、手つかずの大自然の中を神の使いである鹿たちが悠然と歩いています。アクセスは容易ではありませんが、船に乗って海を渡り、急な階段を登って本殿に辿り着いた時の達成感と清々しさは格別です。本気で金運を引き寄せたい人が、覚悟を持って訪れるべき最強の聖地です。' },
+
+      { rank:10, name:'宝来宝来神社', yomi:'ほぎほぎじんじゃ', area:'熊本県阿蘇郡南阿蘇村',
+        season:'通年',
+        access:'南阿蘇鉄道・長陽駅からタクシーで約10分',
+        see:'独特の雰囲気を持つ真っ赤な鳥居群と、御神体である巨大な「当銭岩」',
+        goshuin:'無人のため、お札や開運グッズの自動販売機が設置されています',
+        pq:'宝来宝来神社 南阿蘇',
+        cap:'宝来宝来神社（熊本県南阿蘇村）',
+        text:'熊本県の南阿蘇に位置する、知る人ぞ知る金運神社。重機で解体しようとしてもできなかった巨大な岩を御神体「当銭岩（とうせんいわ）」として祀ったところ、関わった人々に次々と宝くじの当選が舞い込んだという逸話があります。境内は独特のBGMが流れ、真っ赤な鳥居や奇抜なモニュメントが並ぶ非常にユニークな空間です。「ホギホギ」と呪文を唱えながら岩の周りを回る独自の参拝方法があり、強烈な個性とパワーで金運を刺激してくれます。' }
+    ]
+  };
+
   var THEMES = {};
   THEMES[THEME_A.id] = THEME_A;
+  THEMES[THEME_D.id] = THEME_D;
   window.WABI_THEME_RANK = THEMES;
 
   /* ── スタイル ─────────────────────────────────────────── */
@@ -8157,8 +8263,11 @@
   function card(it){
     var gold = it.rank <= 3 ? ' g' : '';
     var q = encodeURIComponent(it.name + ' ' + it.area);
+    var im = it.photo
+      ? '<div class="wtr-im" style="background-image:url(\'' + esc(it.photo) + '\')">'
+      : '<div class="wtr-im" data-pq="' + esc(it.pq || (it.name + ' ' + it.area)) + '">';
     return '<div class="wtr-card">'
-      + '<div class="wtr-im" style="background-image:url(\'' + esc(it.photo) + '\')">'
+      + im
       +   '<span class="wtr-no' + gold + '"><b>' + it.rank + '</b><span>位</span></span>'
       +   '<span class="wtr-icap">' + esc(it.cap) + '</span>'
       + '</div>'
@@ -8210,9 +8319,9 @@
     h += '</div>';
 
     if (page === pages - 1){
-      h += '<div class="wtr-note">写真：ウィキメディア・コモンズ<br>'
+      h += '<div class="wtr-note">写真：ウィキメディア・コモンズ／Google<br>'
          + '拝観時間・御朱印の授与状況は変更される場合があります。<br>'
-         + 'お出かけの前に各寺院の公式情報をご確認ください。</div>';
+         + 'お出かけの前に各社寺の公式情報をご確認ください。</div>';
     }
     h += '</div>';
 
@@ -8225,6 +8334,33 @@
     var nx = document.getElementById('wtrNext');
     if (nx) nx.onclick = function(){ page++; render(); pg.scrollTop = 0; };
     pg.scrollTop = 0;
+    fillPlaces();
+  }
+
+  /* ウィキメディアに写真がない社寺は Google の写真で埋める */
+  var pqCache = {};
+  function fillPlaces(){
+    var els = pg.querySelectorAll('.wtr-im[data-pq]');
+    if (!els.length) return;
+    els.forEach(function(el, i){
+      var q = el.getAttribute('data-pq');
+      if (pqCache[q]){ el.style.backgroundImage = 'url("' + pqCache[q] + '")'; return; }
+      setTimeout(function(){
+        try {
+          if (!(window.google && google.maps && google.maps.places)) return;
+          var svc = new google.maps.places.PlacesService(document.createElement('div'));
+          svc.findPlaceFromQuery({ query: q, fields: ['photos'] }, function(res, st){
+            if (st !== google.maps.places.PlacesServiceStatus.OK) return;
+            if (!res || !res[0] || !res[0].photos || !res[0].photos[0]) return;
+            var url = res[0].photos[0].getUrl({ maxWidth: 900, maxHeight: 700 });
+            pqCache[q] = url;
+            pg.querySelectorAll('.wtr-im[data-pq="' + q + '"]').forEach(function(x){
+              x.style.backgroundImage = 'url("' + url + '")';
+            });
+          });
+        } catch(e){}
+      }, 150 + i * 250);
+    });
   }
 
   function open(id){

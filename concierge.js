@@ -8144,8 +8144,12 @@
   pg.className = 'wtr'; pg.id = 'wabiThemeRank';
   document.body.appendChild(pg);
 
-  var PER = 4;            // 1ページ目に載せる件数
+  // 1ページ目は1〜4位、2ページ目に5位以降をまとめる（全2ページ）
+  var FIRST = 4;
   var cur = null, page = 0;
+  function slice(t, p){
+    return p === 0 ? t.items.slice(0, FIRST) : t.items.slice(FIRST);
+  }
 
   function close(){ pg.style.display = 'none'; }
   window.wabiCloseThemeRank = close;
@@ -8176,9 +8180,10 @@
   function render(){
     var t = cur; if (!t) return;
     var total = t.items.length;
-    var pages = Math.ceil(total / PER);
-    var from = page * PER, to = Math.min(from + PER, total);
-    var list = t.items.slice(from, to);
+    var pages = total > FIRST ? 2 : 1;
+    var list = slice(t, page);
+    var from = page === 0 ? 0 : FIRST;
+    var to = from + list.length;
 
     var h = '<div class="wtr-hd"><span class="b" id="wtrBack">‹</span>'
           +   '<span class="t">' + esc(t.title) + '</span><span class="sp"></span></div>';
@@ -8198,10 +8203,9 @@
     h += list.map(card).join('');
 
     h += '<div class="wtr-pager">';
-    if (page > 0) h += '<button id="wtrPrev">‹ ' + (from - PER + 1) + '位〜を見る</button>';
-    if (page < pages - 1){
-      var n1 = to + 1, n2 = Math.min(to + PER, total);
-      h += '<button class="main" id="wtrNext">' + n1 + '位〜' + n2 + '位を見る ›</button>';
+    if (page > 0) h += '<button id="wtrPrev">‹ 1位〜' + FIRST + '位に戻る</button>';
+    if (pages > 1 && page === 0){
+      h += '<button class="main" id="wtrNext">' + (FIRST + 1) + '位〜' + total + '位を見る ›</button>';
     }
     h += '</div>';
 

@@ -7804,3 +7804,85 @@
   run();
   setInterval(run, 900);
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：友達に紹介ページの上半分をリデザイン
+   （円相の下地・大きなEXP表示・LINEボタン。「または」より下は据え置き）
+   （2026-07-31 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiInviteSkin) return;
+  window.__wabiInviteSkin = true;
+
+  // 円相（一筆書きの丸）— 背景にうっすら敷く
+  var ENSO = "data:image/svg+xml;utf8," + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">' +
+    '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">' +
+    '<stop offset="0%" stop-color="#EFE3C6"/><stop offset="55%" stop-color="#E6D7B4"/>' +
+    '<stop offset="100%" stop-color="#F4EBD8"/></linearGradient></defs>' +
+    '<path d="M290 78 C 236 40, 150 44, 102 96 C 48 154, 48 250, 104 305 ' +
+    'C 160 360, 258 356, 308 298 C 352 247, 352 168, 306 120" ' +
+    'fill="none" stroke="url(#g)" stroke-width="17" stroke-linecap="round"/>' +
+    '</svg>');
+
+  // 下地の小さな金の粒
+  var DOTS = "data:image/svg+xml;utf8," + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">' +
+    '<g fill="#E3D2A8" opacity="0.75">' +
+    '<circle cx="18" cy="152" r="3.2"/><circle cx="34" cy="170" r="2.2"/>' +
+    '<circle cx="10" cy="178" r="1.8"/><circle cx="46" cy="150" r="1.6"/>' +
+    '<circle cx="28" cy="140" r="1.4"/><circle cx="182" cy="150" r="3"/>' +
+    '<circle cx="168" cy="168" r="2"/><circle cx="190" cy="174" r="1.6"/>' +
+    '<circle cx="160" cy="146" r="1.5"/>' +
+    '</g></svg>');
+
+  var css = document.createElement('style');
+  css.textContent = [
+    /* ── 紹介カード（円相の下地つき）───────────────────────── */
+    '#wxInvite .iv-card{position:relative;overflow:hidden;text-align:center;',
+      'background:#FBF8F0;border:1px solid #F1E8D6;border-radius:28px;',
+      'padding:54px 24px 46px;margin:6px 0 26px;',
+      'box-shadow:0 10px 30px rgba(120,100,60,.07);}',
+    '#wxInvite .iv-card::before{content:"";position:absolute;left:50%;top:50%;',
+      'transform:translate(-50%,-50%);width:min(88%,340px);aspect-ratio:1;',
+      'background:url("' + ENSO + '") center/contain no-repeat;opacity:.85;pointer-events:none;}',
+    '#wxInvite .iv-card::after{content:"";position:absolute;inset:0;',
+      'background:url("' + DOTS + '") center/100% 100% no-repeat;pointer-events:none;}',
+    '#wxInvite .iv-card > *{position:relative;z-index:1;}',
+
+    /* 見出し */
+    "#wxInvite .iv-h{font-family:'Shippori Mincho','Noto Serif JP',serif;",
+      'font-size:23px;font-weight:700;letter-spacing:.04em;color:#2D2D2D;margin:0 0 26px;line-height:1.5;}',
+
+    /* ＋300 EXP */
+    "#wxInvite .iv-exp{font-family:'Shippori Mincho',serif;color:#5D3A7A;",
+      'font-size:62px;font-weight:800;line-height:1;letter-spacing:-.01em;margin:0;}',
+    '#wxInvite .iv-exp small{font-size:24px;font-weight:700;margin-left:5px;letter-spacing:.02em;}',
+    "#wxInvite .iv-cap{font-family:'Shippori Mincho',serif;font-size:14.5px;color:#4a4340;margin-top:16px;}",
+
+    /* 区切り線 */
+    '#wxInvite .iv-line{width:58%;max-width:230px;height:1px;margin:26px auto;border:0;',
+      'background:linear-gradient(90deg,rgba(201,162,74,0),#C9A24A,rgba(201,162,74,0));}',
+
+    /* ＋100 EXP */
+    "#wxInvite .iv-sub{font-family:'Shippori Mincho',serif;font-size:16px;color:#3f3a36;margin-bottom:12px;}",
+    "#wxInvite .iv-exp2{font-family:'Shippori Mincho',serif;color:#C9A24A;",
+      'font-size:44px;font-weight:800;line-height:1;margin:0;}',
+    '#wxInvite .iv-exp2 small{font-size:19px;font-weight:700;margin-left:4px;}',
+    "#wxInvite .iv-note{font-family:'Shippori Mincho',serif;font-size:13px;color:#6b635c;",
+      'line-height:2;margin-top:16px;}',
+
+    /* LINEボタン */
+    '#wxInvite .iv-linebtn{display:flex;align-items:center;justify-content:center;gap:12px;',
+      'width:100%;height:60px;border:none;border-radius:16px;background:#06C755;color:#fff;',
+      "font-family:'Shippori Mincho',serif;font-size:17px;font-weight:700;letter-spacing:.08em;",
+      'cursor:pointer;box-shadow:0 8px 22px rgba(6,199,85,.28);}',
+    '#wxInvite .iv-linebtn:active{transform:scale(.99);opacity:.93;}',
+    '#wxInvite .iv-linebtn svg{width:26px;height:26px;}',
+
+    /* 「または」まわりの余白 */
+    '#wxInvite .iv-or{margin-top:22px;}'
+  ].join('');
+  document.head.appendChild(css);
+})();

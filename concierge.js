@@ -7886,3 +7886,65 @@
   ].join('');
   document.head.appendChild(css);
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：一覧ページの下に余白／セクション名の変更
+   ① 一覧の最後のカードが下部メニューに隠れないよう余白を足す
+   ② 「季節の行事・ライトアップ」→「この時期おすすめイベント」
+   （2026-07-31 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiBottomPad) return;
+  window.__wabiBottomPad = true;
+
+  var PAD = 'calc(124px + env(safe-area-inset-bottom))';
+
+  var css = document.createElement('style');
+  css.textContent = [
+    /* ① 各一覧ページの中身に下余白（下部メニュー＋ひと呼吸ぶん） */
+    '#pgArticleList .ovl-cont,#pgSeasonList .ovl-cont,#pgEcList .ovl-cont,',
+    '#pgTourList .ovl-cont,#pgOsupplyList .ovl-cont,#pgShukatsuList .ovl-cont,',
+    '#pgAreaSearch .ovl-cont,#pgThemeDetail .ovl-cont{',
+      'padding-bottom:' + PAD + ' !important;}',
+
+    /* テーマで巡るベスト10 の詳細ページ */
+    '#pgThemeDetail{padding-bottom:' + PAD + ' !important;}',
+    '#wcTheme,#wcThemeBody{padding-bottom:' + PAD + ' !important;}',
+
+    /* 念のため、一覧系の最後の要素にも余白 */
+    '#pgArticleList .art-item:last-child,#pgSeasonList .wev-card:last-child{margin-bottom:10px;}',
+
+    /* テーマ一覧（トップの横並び）も下が詰まらないように */
+    '#themeGrid{padding-bottom:6px;}'
+  ].join('');
+  document.head.appendChild(css);
+
+  /* ② セクション名の変更 */
+  var OLD = '季節の行事・ライトアップ';
+  var NEW = 'この時期おすすめイベント';
+  function rename(){
+    document.querySelectorAll('.home-sec-tit,.ovl-tit,.sec-tit,h2,h3').forEach(function(el){
+      if (el.children.length === 0 && el.textContent.trim() === OLD) el.textContent = NEW;
+    });
+    // 「もっと見る」ページの見出しなど、絵文字つきの場合にも対応
+    document.querySelectorAll('.home-sec-tit,.ovl-tit').forEach(function(el){
+      if (el.children.length === 0 && el.textContent.indexOf(OLD) >= 0){
+        el.textContent = el.textContent.replace(OLD, NEW);
+      }
+    });
+  }
+  rename();
+  setInterval(rename, 800);
+
+  /* スクロールできる高さが足りているか、開いたときに念のため確かめる */
+  function ensure(){
+    ['pgArticleList','pgSeasonList','pgEcList','pgTourList','pgOsupplyList','pgThemeDetail'].forEach(function(id){
+      var pg = document.getElementById(id);
+      if (!pg || getComputedStyle(pg).display === 'none') return;
+      var c = pg.querySelector('.ovl-cont') || pg;
+      if (c.style.paddingBottom.indexOf('124px') < 0) c.style.paddingBottom = PAD;
+    });
+  }
+  setInterval(ensure, 900);
+})();

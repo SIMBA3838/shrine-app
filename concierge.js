@@ -7958,3 +7958,304 @@
   }
   setInterval(ensure, 900);
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：テーマで巡るベスト10 を記事ページに
+   ・1位〜4位／5位〜と2ページに分ける
+   ・各順位に実写を1枚ずつ（写真はウィキメディア・コモンズ）
+   （2026-07-31 / index.html は触らず concierge.js から上書き）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiThemeRank) return;
+  window.__wabiThemeRank = true;
+
+  function esc(s){
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  var W = 'https://upload.wikimedia.org/wikipedia/commons/thumb/';
+  function wiki(dir, file){
+    var f = encodeURIComponent(file);
+    return W + dir + '/' + f + '/1280px-' + f;
+  }
+
+  /* ── テーマA：一生に一度は見たい！圧巻の仏像・大仏 ─────────── */
+  var THEME_A = {
+    id: 'A',
+    title: '一生に一度は見たい！圧巻の仏像・大仏',
+    lead: '見上げるほどの大仏から、そっと微笑む半跏思惟像まで。'
+        + '日本各地には、一度は間近で向き合いたい仏像が静かに佇んでいます。'
+        + 'スケールの大きさ、彫刻としての美しさ、そして向き合ったときの心の動き——'
+        + 'その三つを軸に選んだ、珠玉のランキングをご紹介します。',
+    hero: 'https://upload.wikimedia.org/wikipedia/commons/7/7a/Daibutsu_of_Todaiji_4.jpg',
+    heroCap: '東大寺 盧舎那仏坐像（奈良の大仏）',
+    items: [
+      { rank:1, name:'東大寺', yomi:'とうだいじ', area:'奈良県奈良市',
+        season:'春（桜）、秋（紅葉）',
+        access:'近鉄奈良駅から徒歩約20分、またはバスで約5分',
+        see:'圧倒的スケールを誇る盧舎那仏（奈良の大仏）と南大門の金剛力士立像',
+        goshuin:'「華厳」などの力強い墨書きと朱印を大仏殿内で授与',
+        photo: wiki('a/a7', '東大寺_大仏殿（2024年）.jpg'),
+        cap:'東大寺 大仏殿',
+        text:'日本の仏教美術を象徴する奈良・東大寺。見上げるほど巨大な「奈良の大仏」こと盧舎那仏坐像は高さ約15メートルにも及び、見る者を圧倒するスケールと慈愛に満ちた表情で鎮座しています。大仏殿は世界最大級の木造建築であり、その空間に身を置くだけで悠久の歴史と静かなパワーを感じられるはずです。南大門に立つ大迫力の阿吽の金剛力士立像など、国宝級の彫刻も必見。一生に一度は間近で体感したい、日本が誇る仏像の最高峰と言える歴史的寺院です。' },
+
+      { rank:2, name:'高徳院', yomi:'こうとくいん', area:'神奈川県鎌倉市',
+        season:'秋（紅葉）、初夏（新緑）',
+        access:'江ノ島電鉄・長谷駅から徒歩約7分',
+        see:'青空の下に鎮座する阿弥陀如来坐像（鎌倉大仏）の美しいお姿',
+        goshuin:'「阿弥陀如来」の流麗な墨書きと大仏様の印',
+        photo: wiki('b/b6', '230128_Kamakura_Daibutsu_Japan01s3.jpg'),
+        cap:'高徳院 鎌倉大仏',
+        text:'鎌倉のシンボルとして親しまれる高徳院の「鎌倉大仏」。像高約11.3メートル、重量約121トンの阿弥陀如来坐像で、国宝に指定されています。奈良の大仏とは異なり、露座（屋根のない屋外）に鎮座しているのが最大の特徴です。青空や夕焼け、季節の木々を背景にたたずむお姿は、自然と調和した比類なき美しさを放っています。胎内拝観も可能で、高度な鋳造技術を内側から見学できるのも魅力。静かな鎌倉の空気と共に、心安らぐ仏様の慈悲を感じてください。' },
+
+      { rank:3, name:'興福寺', yomi:'こうふくじ', area:'奈良県奈良市',
+        season:'通年（国宝館は屋内展示のため天候問わずおすすめ）',
+        access:'近鉄奈良駅から徒歩約5分',
+        see:'憂いを帯びた美少年の表情で魅了する国宝・阿修羅像',
+        goshuin:'「令興福力」など複数種類を勧進所で授与',
+        photo: wiki('7/77', 'Kofukuji12st5s3200.jpg'),
+        cap:'興福寺 五重塔と東金堂',
+        text:'藤原氏の氏寺として栄えた古都奈良の名刹、興福寺。ここで必見なのが、国宝館に安置されている「阿修羅像」です。三つの顔と六つの腕を持つ異形の神でありながら、どこか憂いを帯びた少年のような繊細な表情は、見る者の心を強く惹きつけて離しません。天平時代の最高傑作とも称され、全国に熱狂的なファンを持つ仏像です。他にも千手観音菩薩立像や金剛力士立像など、仏教彫刻の宝庫。歴史の重みと芸術性の高さに、時間を忘れて魅入ってしまうこと間違いなしです。' },
+
+      { rank:4, name:'三十三間堂（蓮華王院）', yomi:'さんじゅうさんげんどう', area:'京都府京都市',
+        season:'通年（冬の静かな時期も趣があります）',
+        access:'京阪本線・七条駅から徒歩約7分',
+        see:'圧巻！1001体の千手観音立像と、巨大な千手観音坐像',
+        goshuin:'「大悲殿」の力強い墨書きを堂内で授与',
+        photo: wiki('a/a5', 'Sanjusangendo_2022.jpg'),
+        cap:'三十三間堂（蓮華王院 本堂）',
+        text:'全長約120メートルのお堂の中に、金色の仏像がズラリと並ぶ京都の三十三間堂。堂内に入った瞬間、目の前に広がる1001体もの千手観音立像群はまさに圧巻の一言です。「仏像の森」とも呼べる壮大なスケールと黄金の輝きは、極楽浄土を思わせる神秘的な空間を作り出しています。中央には巨像である千手観音坐像（国宝）が鎮座し、その前を風神・雷神像や二十八部衆立像が守護しています。「会いたい人に似た像が必ずある」と言い伝えられる、奇跡のような空間です。' },
+
+      { rank:5, name:'平等院', yomi:'びょうどういん', area:'京都府宇治市',
+        season:'春（藤の花）、秋（紅葉）',
+        access:'JR・京阪宇治駅から徒歩約10分',
+        see:'極楽浄土を体現した鳳凰堂と、定朝作の阿弥陀如来坐像',
+        goshuin:'「阿弥陀如来」「鳳凰堂」などを集印所で授与',
+        photo: wiki('b/ba', 'Phoenix_Hall_in_Byodo-in_Temple,_Ujirenge_Uji_city_2026.jpg'),
+        cap:'平等院 鳳凰堂',
+        text:'10円玉のデザインとしてもお馴染みの京都・宇治の平等院。池の中島に建つ優美な鳳凰堂は、平安時代の貴族が夢見た極楽浄土を見事に具現化しています。その堂内中央に鎮座するのが、平安時代を代表する仏師・定朝（じょうちょう）の確実な遺作である国宝「阿弥陀如来坐像」です。丸みを帯びた優和な表情と流れるような衣のひだは、日本の仏像彫刻の完成形とも言われる美しさ。極上の癒しと芸術性を堪能できる至高の空間です。' },
+
+      { rank:6, name:'広隆寺', yomi:'こうりゅうじ', area:'京都府京都市',
+        season:'通年（静かに鑑賞できる平日がおすすめ）',
+        access:'嵐電・太秦広隆寺駅すぐ',
+        see:'日本の彫刻として初の国宝指定。微笑みを浮かべる弥勒菩薩半跏思惟像',
+        goshuin:'「弥勒尊」の流れるような筆致を授与所で授与',
+        photo: wiki('a/ad', 'Kouryuji_Taishiden.jpg'),
+        cap:'広隆寺 太子殿',
+        text:'聖徳太子建立の日本最古の寺の一つと言われる京都の広隆寺。霊宝殿に安置されている「弥勒菩薩半跏思惟像」は、国宝第1号に指定されたことで知られる日本仏教美術の至宝です。右足を左膝に乗せ、右手でそっと頬杖をついて思索にふけるお姿は、優美そのもの。口元に浮かべた「アルカイックスマイル（古典的微笑）」と呼ばれる謎めいた微笑みは、すべての悩みを包み込んでくれるような優しさに溢れています。心静かに向き合いたい仏様です。' },
+
+      { rank:7, name:'牛久大仏', yomi:'うしくだいぶつ', area:'茨城県牛久市',
+        season:'春（桜や芝桜の季節）、秋（コスモス）',
+        access:'JR常磐線・牛久駅からバスで約30分',
+        see:'ギネス世界記録認定！高さ120mの青銅製立像の圧倒的巨大さ',
+        goshuin:'「光雲無碍」など複数種類を大仏胎内などで授与',
+        photo: wiki('0/01', 'Ushiku_Daibutsu_-_Great_Buddha_in_Japan.jpg'),
+        cap:'牛久大仏',
+        text:'遠くからでもその巨大さに度肝を抜かれる茨城県の牛久大仏。全高120メートル（像高100メートル、台座20メートル）を誇り、「青銅製立像」としてはギネス世界記録に認定されている世界最大級の大仏です。奈良の大仏が手のひらに乗ってしまうほどのスケールは、まさに現代の奇跡。大仏様の胎内に入ることもでき、エレベーターで地上85メートルの展望窓まで登れば、関東平野を一望できます。足元の広大な庭園には季節の花々が咲き誇り、大仏様との美しいコントラストを楽しめます。' },
+
+      { rank:8, name:'中宮寺', yomi:'ちゅうぐうじ', area:'奈良県生駒郡斑鳩町',
+        season:'春（山吹の季節）、秋（斑鳩の里の紅葉）',
+        access:'JR法隆寺駅からバスで約5分、「法隆寺前」下車徒歩約8分',
+        see:'スフィンクス、モナ・リザと並ぶ「世界三大微笑像」菩薩半跏像',
+        goshuin:'「如意輪観音」の繊細で美しい墨書き',
+        photo: wiki('4/44', 'Chuguji_Hondo_2008.jpg'),
+        cap:'中宮寺 本堂',
+        text:'法隆寺に隣接する尼寺、中宮寺。こちらに安置されている国宝「菩薩半跏像（伝如意輪観音）」は、エジプトのスフィンクス、レオナルド・ダ・ヴィンチのモナ・リザと並び、「世界三大微笑像」とも称される傑作です。黒光りするしなやかなお体と、右足を左膝に乗せて静かに微笑むお姿は、飛鳥時代の彫刻の最高峰。人々をいかにして救おうかと深い思索にふけりながらも、どこか優しく親しみやすい雰囲気を漂わせています。仏様と1対1で向き合えるような親密な時間が流れます。' },
+
+      { rank:9, name:'日本寺', yomi:'にほんじ', area:'千葉県安房郡鋸南町',
+        season:'春〜秋（ハイキングに最適な気候の時期）',
+        access:'JR内房線・保田駅から徒歩約45分、または車で約10分、ロープウェイ利用も可',
+        see:'磨崖仏としては日本最大！岩肌に彫られた大迫力の「薬師瑠璃光如来」',
+        goshuin:'「薬師如来」の力強い墨書きと印',
+        photo: wiki('3/32', 'Nihonji_Buddha.JPG'),
+        cap:'鋸山 日本寺大仏（薬師瑠璃光如来）',
+        text:'千葉県の鋸山（のこぎりやま）の広大な斜面に境内が広がる日本寺。ハイキングコースとしても人気のこの山中に鎮座するのが、総高31メートルを誇る「日本寺大仏（薬師瑠璃光如来）」です。奈良や鎌倉の大仏を凌ぐ大きさであり、自然の岩肌を彫り抜いて作られた磨崖仏（まがいぶつ）としては日本最大級のスケール。大自然に溶け込むように座すそのお姿は、圧倒的な存在感と野趣あふれる迫力に満ちています。境内には1500体もの羅漢像が並ぶ「千五百羅漢」もあり、見どころ満載のお寺です。' }
+    ]
+  };
+
+  var THEMES = {};
+  THEMES[THEME_A.id] = THEME_A;
+  window.WABI_THEME_RANK = THEMES;
+
+  /* ── スタイル ─────────────────────────────────────────── */
+  var css = document.createElement('style');
+  css.textContent = [
+    ".wtr{display:none;position:fixed;inset:0;z-index:720;background:#FAF8F4;overflow-y:auto;overflow-x:hidden;",
+      "-webkit-overflow-scrolling:touch;font-family:'Shippori Mincho','Noto Serif JP',serif;color:#2D2D2D;}",
+    '.wtr-hd{position:sticky;top:0;z-index:6;background:rgba(250,248,244,.96);backdrop-filter:blur(8px);',
+      'border-bottom:1px solid #EFE9DE;display:flex;align-items:center;gap:8px;padding:14px 16px;',
+      'max-width:500px;margin:0 auto;}',
+    '.wtr-hd .b{font-size:22px;line-height:1;width:30px;cursor:pointer;}',
+    '.wtr-hd .t{flex:1;text-align:center;font-size:15px;font-weight:700;letter-spacing:.05em;',
+      'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+    '.wtr-hd .sp{width:30px;}',
+
+    '.wtr-hero{position:relative;max-width:500px;margin:0 auto;aspect-ratio:16/10;',
+      'background:#e9e3d8 center/cover no-repeat;}',
+    '.wtr-hero .bdg{position:absolute;top:14px;left:14px;background:#5D3A7A;color:#fff;',
+      'font-size:11px;font-weight:700;letter-spacing:.12em;padding:6px 13px;border-radius:999px;}',
+    ".wtr-hcap{max-width:500px;margin:7px auto 0;padding:0 18px;font-size:11px;color:#9a9086;",
+      "font-family:'Noto Serif JP',serif;text-align:right;}",
+
+    '.wtr-in{max-width:500px;margin:0 auto;padding:20px 18px calc(130px + env(safe-area-inset-bottom));}',
+    '.wtr-ttl{font-size:22px;font-weight:800;line-height:1.5;margin:6px 0 14px;}',
+    ".wtr-lead{font-family:'Noto Serif JP',serif;font-size:13.5px;line-height:2.05;color:#4a4540;",
+      'background:#fff;border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.05);padding:17px;margin-bottom:8px;}',
+    '.wtr-page{font-size:11.5px;color:#8a8378;text-align:center;margin:16px 0 2px;letter-spacing:.08em;}',
+
+    /* 順位カード */
+    '.wtr-card{background:#fff;border-radius:22px;box-shadow:0 8px 26px rgba(0,0,0,.06);',
+      'overflow:hidden;margin:18px 0;}',
+    '.wtr-im{position:relative;width:100%;aspect-ratio:4/3;background:#e9e3d8 center/cover no-repeat;}',
+    '.wtr-no{position:absolute;top:12px;left:12px;display:flex;align-items:baseline;gap:2px;',
+      'background:rgba(42,32,24,.72);color:#fff;padding:6px 14px 7px;border-radius:999px;}',
+    '.wtr-no b{font-size:20px;font-weight:800;line-height:1;}',
+    '.wtr-no span{font-size:11px;}',
+    '.wtr-no.g{background:linear-gradient(135deg,#C9A24A,#E0C57E);color:#3a2c14;}',
+    ".wtr-icap{position:absolute;right:10px;bottom:9px;background:rgba(0,0,0,.42);color:#fff;",
+      "font-size:10px;padding:3px 9px;border-radius:8px;font-family:'Noto Serif JP',serif;}",
+    '.wtr-bd{padding:16px 17px 18px;}',
+    '.wtr-nm{font-size:19px;font-weight:800;line-height:1.4;}',
+    ".wtr-ym{font-size:11.5px;color:#8a8378;margin-top:3px;font-family:'Noto Serif JP',serif;}",
+    '.wtr-meta{margin:13px 0 2px;border-top:1px solid #F1EBE0;}',
+    '.wtr-row{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid #F6F1E8;}',
+    ".wtr-row .k{flex:0 0 84px;font-size:11.5px;color:#8a8378;font-family:'Noto Serif JP',serif;padding-top:1px;}",
+    ".wtr-row .v{flex:1;font-size:12.5px;line-height:1.75;font-family:'Noto Serif JP',serif;color:#3a3630;}",
+    '.wtr-row:last-child{border-bottom:none;}',
+    ".wtr-tx{font-family:'Noto Serif JP',serif;font-size:13.5px;line-height:2.05;color:#3a3630;margin-top:14px;}",
+    '.wtr-map{display:inline-block;margin-top:13px;font-size:12px;color:#5D3A7A;',
+      'border:1px solid #E2D8EE;border-radius:999px;padding:7px 15px;text-decoration:none;}',
+
+    /* ページ送り */
+    '.wtr-pager{display:flex;gap:10px;margin:26px 0 4px;}',
+    '.wtr-pager button{flex:1;height:52px;border:1px solid #E7E1D6;border-radius:16px;background:#fff;',
+      "font-family:'Shippori Mincho',serif;font-size:14px;font-weight:700;color:#2D2D2D;cursor:pointer;}",
+    '.wtr-pager button.main{background:#5D3A7A;border-color:#5D3A7A;color:#fff;',
+      'box-shadow:0 8px 20px rgba(93,58,122,.22);}',
+    '.wtr-pager button:disabled{opacity:.35;}',
+    ".wtr-note{font-size:11.5px;color:#9a9086;line-height:1.9;margin-top:20px;text-align:center;",
+      "font-family:'Noto Serif JP',serif;}"
+  ].join('');
+  document.head.appendChild(css);
+
+  /* ── ページ本体 ───────────────────────────────────────── */
+  var pg = document.createElement('div');
+  pg.className = 'wtr'; pg.id = 'wabiThemeRank';
+  document.body.appendChild(pg);
+
+  var PER = 4;            // 1ページ目に載せる件数
+  var cur = null, page = 0;
+
+  function close(){ pg.style.display = 'none'; }
+  window.wabiCloseThemeRank = close;
+
+  function card(it){
+    var gold = it.rank <= 3 ? ' g' : '';
+    var q = encodeURIComponent(it.name + ' ' + it.area);
+    return '<div class="wtr-card">'
+      + '<div class="wtr-im" style="background-image:url(\'' + esc(it.photo) + '\')">'
+      +   '<span class="wtr-no' + gold + '"><b>' + it.rank + '</b><span>位</span></span>'
+      +   '<span class="wtr-icap">' + esc(it.cap) + '</span>'
+      + '</div>'
+      + '<div class="wtr-bd">'
+      +   '<div class="wtr-nm">' + esc(it.name) + '</div>'
+      +   '<div class="wtr-ym">' + esc(it.yomi) + '　/　' + esc(it.area) + '</div>'
+      +   '<div class="wtr-meta">'
+      +     '<div class="wtr-row"><span class="k">おすすめ時期</span><span class="v">' + esc(it.season) + '</span></div>'
+      +     '<div class="wtr-row"><span class="k">アクセス</span><span class="v">' + esc(it.access) + '</span></div>'
+      +     '<div class="wtr-row"><span class="k">見どころ</span><span class="v">' + esc(it.see) + '</span></div>'
+      +     '<div class="wtr-row"><span class="k">御朱印</span><span class="v">' + esc(it.goshuin) + '</span></div>'
+      +   '</div>'
+      +   '<div class="wtr-tx">' + esc(it.text) + '</div>'
+      +   '<a class="wtr-map" href="https://www.google.com/maps/search/?api=1&query=' + q
+      +     '" target="_blank" rel="noopener">地図で見る ›</a>'
+      + '</div></div>';
+  }
+
+  function render(){
+    var t = cur; if (!t) return;
+    var total = t.items.length;
+    var pages = Math.ceil(total / PER);
+    var from = page * PER, to = Math.min(from + PER, total);
+    var list = t.items.slice(from, to);
+
+    var h = '<div class="wtr-hd"><span class="b" id="wtrBack">‹</span>'
+          +   '<span class="t">' + esc(t.title) + '</span><span class="sp"></span></div>';
+
+    if (page === 0){
+      h += '<div class="wtr-hero" style="background-image:url(\'' + esc(t.hero) + '\')">'
+         +   '<span class="bdg">BEST ' + total + '</span></div>'
+         + '<div class="wtr-hcap">' + esc(t.heroCap) + '</div>';
+    }
+
+    h += '<div class="wtr-in">';
+    if (page === 0){
+      h += '<div class="wtr-ttl">' + esc(t.title) + '</div>'
+         + '<div class="wtr-lead">' + esc(t.lead) + '</div>';
+    }
+    h += '<div class="wtr-page">' + (from + 1) + '位 〜 ' + to + '位（' + (page + 1) + ' / ' + pages + 'ページ）</div>';
+    h += list.map(card).join('');
+
+    h += '<div class="wtr-pager">';
+    if (page > 0) h += '<button id="wtrPrev">‹ ' + (from - PER + 1) + '位〜を見る</button>';
+    if (page < pages - 1){
+      var n1 = to + 1, n2 = Math.min(to + PER, total);
+      h += '<button class="main" id="wtrNext">' + n1 + '位〜' + n2 + '位を見る ›</button>';
+    }
+    h += '</div>';
+
+    if (page === pages - 1){
+      h += '<div class="wtr-note">写真：ウィキメディア・コモンズ<br>'
+         + '拝観時間・御朱印の授与状況は変更される場合があります。<br>'
+         + 'お出かけの前に各寺院の公式情報をご確認ください。</div>';
+    }
+    h += '</div>';
+
+    pg.innerHTML = h;
+    document.getElementById('wtrBack').onclick = function(){
+      if (page > 0){ page = 0; render(); } else close();
+    };
+    var pv = document.getElementById('wtrPrev');
+    if (pv) pv.onclick = function(){ page--; render(); pg.scrollTop = 0; };
+    var nx = document.getElementById('wtrNext');
+    if (nx) nx.onclick = function(){ page++; render(); pg.scrollTop = 0; };
+    pg.scrollTop = 0;
+  }
+
+  function open(id){
+    var t = THEMES[id];
+    if (!t) return false;
+    ['pgShrineDetail','pgMap','pgRegister','pgAiRoute','pgAiResult','pgAreaSearch','pgPostDetail',
+     'pgTourList','pgSeasonList','pgEcList','pgOsupplyList','pgShukatsuList','pgArticleList',
+     'pgThemeDetail','wabiRoutePg','wabiRankMore','wxGuide','wxInvite','wxSignup','wcMypage',
+     'wcPost','wabiListPg','wabiFeedPg','wabiPostPg'].forEach(function(x){
+      var e = document.getElementById(x); if (e) e.style.display = 'none';
+    });
+    var mp = document.getElementById('wcMypage'); if (mp) mp.classList.remove('show');
+    cur = t; page = 0; render();
+    pg.style.display = 'block';
+    try { if (window.WabiExp) WabiExp.add('read_article'); } catch(e){}
+    return true;
+  }
+
+  // 既存の openThemeDetail を差し替え（用意のないテーマは今までどおり）
+  function hook(){
+    if (typeof window.openThemeDetail === 'function' && window.openThemeDetail.__wtr) return;
+    var orig = window.openThemeDetail;
+    var f = function(id){
+      if (open(id)) return;
+      if (typeof orig === 'function') return orig.apply(this, arguments);
+    };
+    f.__wtr = true;
+    window.openThemeDetail = f;
+  }
+  hook();
+  setInterval(hook, 900);
+
+  // 下部メニューを押したら閉じる
+  (function(){
+    var nav = document.getElementById('wabiNav');
+    if (nav) nav.addEventListener('click', close, true);
+  })();
+})();

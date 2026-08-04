@@ -9557,3 +9557,20 @@
 
   setInterval(tick, 250);
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：記事などの一番下が下部メニューに隠れる問題の修正
+   ・オーバーレイ各ページの下に余白を足して、末尾まで読めるようにする
+   （2026-08-04 / index.html は触らず concierge.js から追記）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiBottomPad2) return;
+  window.__wabiBottomPad2 = true;
+  var css = document.createElement('style');
+  css.textContent =
+    '#pgArticleDetail,#pgShrineDetail,#wabiRoutePg,#wabiFeedPg,#wabiListPg,'
+    + '#wabiPostPg,#wabiRankMore'
+    + '{padding-bottom:calc(124px + env(safe-area-inset-bottom)) !important;}';
+  document.head.appendChild(css);
+})();

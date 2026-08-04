@@ -9498,3 +9498,62 @@
     if (nav) nav.addEventListener('click', close, true);
   })();
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：オーバーレイ表示中に背面（トップページ）が見えてしまう問題の修正
+   ・巡拝ルート記事などを開いている間は body のスクロールを止める
+   ・端までスクロールしたときの「スクロールの連鎖」も止める
+   （2026-08-04 / index.html は触らず concierge.js から追記）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiScrollLock) return;
+  window.__wabiScrollLock = true;
+
+  var css = document.createElement('style');
+  css.textContent = [
+    '#wabiRoutePg,.wtr,#wabiPostPg,#wabiListPg,#wabiFeedPg,#wabiRankMore,',
+    '#pgShrineDetail,#pgArticleDetail,#pgThemeDetail,#wxGuide,#wxInvite,#wxSignup,#wcMypage,',
+    '#pgMap,#pgAiRoute,#pgAiResult,#pgSeasonList,#pgEcList,#pgArticleList,#pgTourList,',
+    '#pgAreaSearch,#pgRegister',
+    '{overscroll-behavior:contain;}',
+    'html.wabiLock,body.wabiLock{overflow:hidden !important;height:100% !important;}',
+    'html.wabiLock{background:#FAF8F4 !important;}'
+  ].join('');
+  document.head.appendChild(css);
+
+  var IDS = ['wabiRoutePg','wabiThemeRank','wabiPostPg','wabiListPg','wabiFeedPg','wabiRankMore',
+             'pgShrineDetail','pgArticleDetail','pgThemeDetail','wxGuide','wxInvite','wxSignup',
+             'wcMypage','pgMap','pgAiRoute','pgAiResult','pgSeasonList','pgEcList','pgArticleList',
+             'pgTourList','pgAreaSearch','pgRegister'];
+
+  var y = 0, locked = false;
+
+  function anyOpen(){
+    for (var i = 0; i < IDS.length; i++){
+      var e = document.getElementById(IDS[i]);
+      if (!e) continue;
+      var cs = getComputedStyle(e);
+      if (cs.display !== 'none' && cs.visibility !== 'hidden'
+          && e.getBoundingClientRect().height > 0) return true;
+    }
+    return false;
+  }
+
+  function tick(){
+    var open = anyOpen();
+    if (open && !locked){
+      y = window.scrollY || window.pageYOffset || 0;
+      document.documentElement.classList.add('wabiLock');
+      document.body.classList.add('wabiLock');
+      locked = true;
+    } else if (!open && locked){
+      document.documentElement.classList.remove('wabiLock');
+      document.body.classList.remove('wabiLock');
+      locked = false;
+      window.scrollTo(0, y);
+    }
+  }
+
+  setInterval(tick, 250);
+})();

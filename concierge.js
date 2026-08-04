@@ -8997,6 +8997,95 @@
     ]
   };
 
+
+  /* ── テーマM：日本の神社仏閣でのマナー10選 ─────────────── */
+  var THEME_M = {
+    id: 'M',
+    unit: '',
+    nomap: true,
+    heroBadge: 'MANNERS 10',
+    title: '神聖な場所を訪れるために。日本の神社仏閣でのマナー10選',
+    lead: 'Respectful Visit: Top 10 Etiquette Points for Visiting Japanese Shrines and Temples／'
+        + '日本の神社仏閣は、美しい建築や庭園だけでなく、深くスピリチュアルな場所です。'
+        + 'そこは神様や仏様が祀られている場所であり、何世紀にもわたって人々が祈りを捧げてきた場所です。'
+        + '外国人観光客の皆様が、より深く日本文化を体験し、地域の人々と敬意を持って接するために、'
+        + '最低限知っておいてほしい10のマナーを厳選しました。'
+        + 'これらを守ることで、あなたの旅はより豊かで、思い出深いものになるでしょう。',
+    hero: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Kehi-jingu_otorii-2.jpg/1280px-Kehi-jingu_otorii-2.jpg',
+    heroCap: '氣比神宮 大鳥居（福井県敦賀市）',
+    items: [
+      { rank:1, name:'服装：敬意の表れとしての「控えめさ」',
+        rows:[['English','Modesty as a sign of respect'],
+              ['ポイント','「肩」と「膝」を隠すことを意識しましょう']],
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Courtyard_of_Meiji_Shrine_20190717.jpg/1280px-Courtyard_of_Meiji_Shrine_20190717.jpg',
+        cap:'明治神宮 境内（東京都渋谷区）',
+        text:'神社仏閣は「祈りの場」です。露出の多い服装は避けましょう。特に「肩」と「膝」を隠すことを意識してください。タンクトップ、ミニスカート、ショートパンツは不適切とされる場合があります。／なぜ？　控えめな服装は、神聖な場所や、そこで働く神職・僧侶、そして他の参拝者に対する敬意の表れです。' },
+
+      { rank:2, name:'鳥居と山門：境界線を越える前に',
+        rows:[['English','The boundary line'],
+              ['ポイント','くぐる前に一礼（軽めの礼）をしてから入りましょう']],
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Kawagoe_Hikawa_Shrine%2C_Kawagoe_City%3B_December_2019_%2801%29.jpg/1280px-Kawagoe_Hikawa_Shrine%2C_Kawagoe_City%3B_December_2019_%2801%29.jpg',
+        cap:'川越氷川神社 大鳥居（埼玉県川越市）',
+        text:'神社の「鳥居（Torii）」とお寺の「山門（Sanmon）」は、神聖な領域と俗世の境界線です。くぐる前に、一礼（軽めの礼）をしてから入りましょう。／なぜ？　「お邪魔します」という挨拶と、神聖な場所に入る準備ができたことを示す行為です。' },
+
+      { rank:3, name:'参道の歩き方：神様・仏様の通り道',
+        rows:[['English','The path for the deity / Buddha'],
+              ['ポイント','中央（正中）は避けて、右端または左端を歩きましょう']],
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/%E7%99%BD%E5%B1%B1%E6%AF%94%E5%92%A9%E7%A5%9E%E7%A4%BE_01.jpg/1280px-%E7%99%BD%E5%B1%B1%E6%AF%94%E5%92%A9%E7%A5%9E%E7%A4%BE_01.jpg',
+        cap:'白山比咩神社 表参道（石川県白山市）',
+        text:'鳥居や山門から本殿へと続く道を「参道（Sando）」と呼びます。参道の「中央」を歩くのは避けましょう。代わりに、右端または左端を歩くのが好ましいです。／なぜ？　参道の中央（正中：Seichu）は、神様や仏様が通る道とされているためです。' },
+
+      { rank:4, name:'手水での清め：心身を清める儀式',
+        rows:[['English','Ritual purification'],
+              ['手順','①柄杓を右手で持ち左手を洗う ②持ち替えて右手を洗う ③左手に水を受けて口をすすぐ（柄杓に口をつけない） ④残った水で柄を洗う ⑤元の場所に戻す']],
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/%E6%89%8B%E6%B0%B4%E8%88%8E_-_panoramio_%282%29.jpg/1280px-%E6%89%8B%E6%B0%B4%E8%88%8E_-_panoramio_%282%29.jpg',
+        cap:'手水舎',
+        text:'多くの神社仏閣の入り口近くには「手水舎（Chozuya）」と呼ばれる、水が湧き出る場所があります。ここで、参拝前に心と体を清めます。／なぜ？　神様や仏様の前に立つ前に、汚れ（ケガレ）を落とすためです。なお、近年は柄杓を置かず、流水で手を清める形式の手水舎も増えています。' },
+
+      { rank:5, name:'参拝の作法（神社）：二礼二拍手一礼',
+        rows:[['English','Two bows, two claps, one bow'],
+              ['手順','①お賽銭を入れる ②鈴があれば鳴らす ③深く二回礼 ④胸の前で二回拍手 ⑤手を合わせて静かに祈る ⑥最後に深く一回礼']],
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/Haiden_of_Uesugi_Shrine.jpg/1280px-Haiden_of_Uesugi_Shrine.jpg',
+        cap:'上杉神社 拝殿（山形県米沢市）',
+        text:'神社での参拝は、一般的に「二礼二拍手一礼（Ni-rei Ni-hakushu Ichi-rei）」という特定の動作で行います。鈴を鳴らすのは神様をお呼びするためです。なお出雲大社など、四拍手の作法をとる神社もあります。掲示があればそれに従いましょう。' },
+
+      { rank:6, name:'参拝の作法（お寺）：静かな礼、拍手はしない',
+        rows:[['English','Silent bowing, no clapping'],
+              ['手順','①お賽銭を入れる ②鐘があれば突く（不可の寺も） ③線香やロウソクがあれば供える ④胸の前で手を合わせて静かに祈る（拍手はしない） ⑤最後に深く一回礼']],
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Asakusa_Senso-ji_2021-12_ac_%282%29.jpg/1280px-Asakusa_Senso-ji_2021-12_ac_%282%29.jpg',
+        cap:'浅草寺 本堂（東京都台東区）',
+        text:'お寺での参拝は、拍手をしません。静かに手を合わせる（合掌：Gassho）のが基本です。鐘は参拝の後に突くと「戻り鐘」といって縁起が良くないとされるため、突く場合は参拝の前に。お寺によっては鐘を突けない場合もあるので、掲示を確認してください。' },
+
+      { rank:7, name:'お賽銭：神様・仏様への贈り物',
+        rows:[['English','The offering'],
+              ['ポイント','硬貨は優しく入れましょう。額に決まりはありません']],
+        photo:'https://upload.wikimedia.org/wikipedia/commons/1/11/Japanese_offertory_box.jpg',
+        cap:'賽銭箱',
+        text:'参拝の際、お賽銭箱に硬貨を入れます。これは願いを叶えてもらうための「代金」ではなく、神様や仏様への「贈り物」や「感謝」です。／マナー：硬貨は優しく入れましょう。乱暴に投げつけるのは不適切です。額に決まりはありませんが、5円硬貨は「ご縁（良い繋がり）」があるとして縁起が良いとされています。' },
+
+      { rank:8, name:'御朱印と御守り：敬意を持った取り扱い',
+        rows:[['English','Respectful handling'],
+              ['ポイント','御朱印には専用の御朱印帳が必要です']],
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Isagawa-jinja_Shuin.jpg/1280px-Isagawa-jinja_Shuin.jpg',
+        cap:'御朱印（率川神社）',
+        text:'「御朱印（Goshuin）」は、参拝の証として授与される芸術的な墨書きと朱印です。「御守り（Omamori）」は、神様や仏様の力が宿るとされるお守りです。／マナー：御朱印をいただくには、専用の「御朱印帳（Goshuin-cho）」が必要です。御朱印は参拝を済ませてからいただきましょう。御朱印や御守りは神聖なものです。カバンの中に乱暴にしまったり、粗末に扱ったりしないでください。' },
+
+      { rank:9, name:'写真撮影：標識に従いましょう',
+        rows:[['English','Observe the signs'],
+              ['ポイント','本殿の内部や仏像は撮影禁止のことが多いです']],
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/%E6%9D%B1%E5%A4%A7%E5%AF%BA_%E5%A4%A7%E4%BB%8F%E6%AE%BF%EF%BC%882024%E5%B9%B4%EF%BC%89.jpg/1280px-%E6%9D%B1%E5%A4%A7%E5%AF%BA_%E5%A4%A7%E4%BB%8F%E6%AE%BF%EF%BC%882024%E5%B9%B4%EF%BC%89.jpg',
+        cap:'東大寺 大仏殿（奈良県奈良市）',
+        text:'日本の神社仏閣は美しい写真スポットですが、どこでも撮影して良いわけではありません。特に「本殿の内部」や「仏像」は撮影禁止であることが多いです。／マナー：撮影禁止の標識（No Photography）をよく確認しましょう。他の参拝者の迷惑になるような撮影（フラッシュ、三脚、通路を塞ぐなど）は避けましょう。' },
+
+      { rank:10, name:'静寂：静かで平和な雰囲気を保ちましょう',
+        rows:[['English','Maintain the peaceful atmosphere'],
+              ['ポイント','大声で話したり、走ったりしないでください']],
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Inner_Sando_of_Kashima_Shrine.jpg/1280px-Inner_Sando_of_Kashima_Shrine.jpg',
+        cap:'鹿島神宮 奥参道（茨城県鹿嶋市）',
+        text:'神社仏閣は、人々が静かに祈り、心を落ち着ける場所です。大声で話したり、走ったりしないでください。／なぜ？　誰かが人生の重要な岐路で祈っているかもしれません。誰もが静かに神様や仏様と向き合えるよう、配慮しましょう。' }
+    ]
+  };
+
   var THEMES = {};
   THEMES[THEME_A.id] = THEME_A;
   THEMES[THEME_D.id] = THEME_D;
@@ -9008,6 +9097,7 @@
   THEMES[THEME_J.id] = THEME_J;
   THEMES[THEME_K.id] = THEME_K;
   THEMES[THEME_L.id] = THEME_L;
+  THEMES[THEME_M.id] = THEME_M;
 
   /* トップの「テーマで巡るベスト10」一覧に新テーマのカードを追加する
      （index.html の window.THEMES へ追記し、必要なときだけ描き直す） */
@@ -9016,7 +9106,8 @@
       if (!Array.isArray(window.THEMES)) return;
       var extra = [
         { id:'K', rank:'BEST 10', theme:THEME_K, desc:'厳島・青島・白兎・伏見稲荷。海と島に宿る神々。' },
-        { id:'L', rank:'ITEM 10', theme:THEME_L, desc:'御朱印帳・お守り・絵馬。参拝がもっと楽しくなる10品。' }
+        { id:'L', rank:'ITEM 10', theme:THEME_L, desc:'御朱印帳・お守り・絵馬。参拝がもっと楽しくなる10品。' },
+        { id:'M', rank:'MANNERS', theme:THEME_M, desc:'鳥居のくぐり方、手水、二礼二拍手一礼。知っておきたい作法。' }
       ];
       var need = false;
       extra.forEach(function(e){

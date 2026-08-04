@@ -8910,6 +8910,93 @@
     ]
   };
 
+
+  /* ── テーマL：外国人観光客におすすめのアイテム10選 ────────── */
+  var THEME_L = {
+    id: 'L',
+    unit: '',
+    nomap: true,
+    heroBadge: 'ITEM 10',
+    title: '日本の神社仏閣を120%楽しむ！外国人観光客におすすめのアイテム10選',
+    lead: '日本の神社仏閣は、ただ見るだけでなく、その土地の歴史や文化を体感できる素晴らしい場所です。'
+        + '参拝の体験をより深く、そして思い出深いものにするために、'
+        + '「わびなび」が厳選したおすすめのアイテム10選をご紹介します。'
+        + 'これらを手に入れることで、あなたの旅はさらに特別なものになるでしょう。',
+    hero: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Goshuincho_with_five_shuin.jpg/1280px-Goshuincho_with_five_shuin.jpg',
+    heroCap: '御朱印帳と御朱印',
+    items: [
+      { rank:1, name:'御朱印帳（Goshuin-cho）',
+        rows:[['ひとこと','あなただけの「旅のアートピース」を作ろう'],
+              ['どこで','神社仏閣の授与所や、専門店・書店などで購入できます']],
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Goshuincho_with_five_shuin.jpg/1280px-Goshuincho_with_five_shuin.jpg',
+        cap:'御朱印帳（五つの御朱印）',
+        text:'参拝の証として授与される「御朱印（Goshuin）」を集めるための、専用の帳面です。和紙の質感や、神社仏閣ごとの美しいデザインは、それ自体が日本旅行の素晴らしいアートピースになります。／なぜおすすめ？　御朱印は、ただのスタンプではなく、あなたがその神聖な場所を訪れた証であり、芸術的な墨書きと朱印が施されます。自分だけの御朱印帳を完成させることは、日本旅行の大きな楽しみと、一生の思い出になります。' },
+
+      { rank:2, name:'お守り（Omamori）',
+        rows:[['ひとこと','神様・仏様の力を日常に持ち帰ろう'],
+              ['どこで','神社やお寺の授与所']],
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/Variousomamori.jpg/1280px-Variousomamori.jpg',
+        cap:'さまざまなお守り',
+        text:'神様や仏様の力が宿るとされる、小さな袋入りのアイテムです。健康、恋愛成就（縁結び）、交通安全、学業成就など、さまざまな願いに対応しています。神社やお寺の授与所でいただけます。／なぜおすすめ？　日本の神聖なパワーを日常生活に持ち帰ることができます。カバンにつけたり、財布に入れたりして、守られている安心感を感じられます。大切な人へのお土産にも最適です。' },
+
+      { rank:3, name:'おみくじ（Omikuji）',
+        rows:[['ひとこと','神様・仏様からの「あなたへのメッセージ」'],
+              ['どこで','境内の授与所やおみくじ箱']],
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/%E3%81%8A%E3%81%BF%E3%81%8F%E3%81%98_%2816284941554%29.jpg/1280px-%E3%81%8A%E3%81%BF%E3%81%8F%E3%81%98_%2816284941554%29.jpg',
+        cap:'境内のおみくじ',
+        text:'神様・仏様からのメッセージが書かれたクジです。大吉（Great good luck）から大凶（Great bad luck）まであり、今のあなたの運勢を占うことができます。最近は、多言語（英語、中国語など）に対応したおみくじも増えています。／なぜおすすめ？　単なる占いではなく、今のあなたがどう行動すべきかのアドバイスが書かれています。日本語のみの場合でも、翻訳アプリを使って神様の言葉を読み解く体験自体が、日本文化への深い理解につながるでしょう。' },
+
+      { rank:4, name:'絵馬（Ema）',
+        rows:[['ひとこと','あなたの願いを「日本の聖地」に奉納しよう'],
+              ['どこで','授与所で受け、絵馬掛けに奉納します']],
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Ema_at_Kamado-jinja.jpg/1280px-Ema_at_Kamado-jinja.jpg',
+        cap:'絵馬掛けに奉納された絵馬',
+        text:'願い事を書いて奉納するための、木製の板です。神社仏閣の境内には、多くの絵馬が掛けられており、人々の願いが満ちています。／なぜおすすめ？　あなたの願いが、日本の神様や仏様に届くかもしれません。自分の手で書く体験、そして神聖な場所に自分の願いを置いていく行為は、非常にスピリチュアルな思い出になります。' },
+
+      { rank:5, name:'お賽銭入れ・がま口（Money pouch）',
+        rows:[['ひとこと','参拝をスマートにする「和のアイテム」'],
+              ['どこで','門前町のお土産店や和雑貨店']],
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/Typical_saisenbako.jpg/1280px-Typical_saisenbako.jpg',
+        cap:'賽銭箱（お賽銭を納める箱）',
+        text:'日本の硬貨、特にお賽銭に使う5円玉（ご縁がありますように）などをスマートに持ち運ぶための和風のポーチです。特に、がま口タイプは、そのクラシックなフォルムと機能性で人気です。／なぜおすすめ？　日本の硬貨は種類が多く、参拝時に財布から探すのは大変です。お賽銭入れがあれば、スムーズに参拝できます。日本文化の美しさを日常で感じられる、実用的なお土産になります。' },
+
+      { rank:6, name:'手ぬぐい（Tenugui）',
+        rows:[['ひとこと','実用的で美しい「和のハンカチ」'],
+              ['どこで','門前町の和雑貨店、神社仏閣の授与所']],
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Tenugui.jpg/1280px-Tenugui.jpg',
+        cap:'手ぬぐい',
+        text:'日本の伝統的な木綿のハンカチ・タオルです。吸水性が良く、すぐ乾きます。神社仏閣オリジナルの柄や、美しい和柄は、タペストリーとして飾ることもできます。／なぜおすすめ？　参拝時の汗を拭うだけでなく、実用的なお土産になります。日本の美意識が凝縮された手ぬぐいは、使うたびに日本の風景を思い出させてくれるでしょう。' },
+
+      { rank:7, name:'和傘（Wagasa）',
+        rows:[['ひとこと','日本の風景を彩る「伝統の傘」'],
+              ['どこで','京都・金沢・岐阜などの和傘専門店']],
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Traditional_Japanese_umbrellas_%28wagasa%29_on_display_at_Nagai_Botanical_Garden%2C_January_2026_-_0910.jpg/1280px-Traditional_Japanese_umbrellas_%28wagasa%29_on_display_at_Nagai_Botanical_Garden%2C_January_2026_-_0910.jpg',
+        cap:'和傘',
+        text:'竹と和紙で作られた、日本の伝統的な傘です。その優雅なフォルムと、和紙を通した柔らかな光は、日本の街並みや境内での撮影に彩りを添えます。／なぜおすすめ？　持ち帰るのは少し大変ですが、日本の美を象徴するアイテムです。雨の日だけでなく、日傘としても使えます。日本の伝統工芸の素晴らしさを体感できる、リッチなお土産になります。' },
+
+      { rank:8, name:'お香（Incense）',
+        rows:[['ひとこと','心を落ち着ける「和の香り」'],
+              ['どこで','京都・堺・淡路島などのお香専門店']],
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/Senko.JPG/1280px-Senko.JPG',
+        cap:'線香',
+        text:'日本の伝統的な香りのアイテムです。神社仏閣の静寂な空気の中で漂う香りは、心を落ち着ける効果があります。美しい香炉とセットで、自分へのご褒美に。／なぜおすすめ？　日本の神社仏閣の静寂を、自宅で再現できます。日本の文化の深さを、五感（特に嗅覚）で感じることができる、洗練されたお土産になります。' },
+
+      { rank:9, name:'和菓子（Wagashi）',
+        rows:[['ひとこと','参拝後に五感で楽しむ「日本文化」'],
+              ['どこで','門前町の和菓子店、老舗の茶屋']],
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Seioubo_Japanese_traditional_sweets.jpg/1280px-Seioubo_Japanese_traditional_sweets.jpg',
+        cap:'和菓子',
+        text:'日本の伝統的なお菓子です。参拝後に門前町で味わう和菓子は、旅の疲れを癒してくれます。美しい見た目と繊細な味わいは、まさに五感で楽しむ日本文化です。／なぜおすすめ？　参拝の体験を、味覚でも完成させることができます。和菓子はその土地の文化や季節を反映しており、日本の美学を感じられます。お土産用も豊富で、日本の味を共有できます。' },
+
+      { rank:10, name:'御朱印（Goshuin）',
+        rows:[['ひとこと','旅の「最大の記念」であり、あなたが訪れた証'],
+              ['どこで','神社仏閣の授与所（御朱印帳が必要です）']],
+        photo:'https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/Shuin_Ginkaku-ji_%E9%8A%80%E9%96%A3%E5%AF%BA.jpg/1280px-Shuin_Ginkaku-ji_%E9%8A%80%E9%96%A3%E5%AF%BA.jpg',
+        cap:'御朱印（銀閣寺）',
+        text:'これ自体が旅の最大の記念であり、あなたがその場所を訪れた証です。御朱印帳に直接、または書き置きでいただく、芸術的な墨書きと朱印です。／なぜおすすめ？　これまでのアイテムすべてを「統合」する存在です。御朱印を集めることは、日本の神社仏閣を深く巡り、神様や仏様と向き合ったことの証明になります。あなたの日本旅行の、最も個人的で貴重なコレクションになります。' }
+    ]
+  };
+
   var THEMES = {};
   THEMES[THEME_A.id] = THEME_A;
   THEMES[THEME_D.id] = THEME_D;
@@ -8920,25 +9007,37 @@
   THEMES[THEME_I.id] = THEME_I;
   THEMES[THEME_J.id] = THEME_J;
   THEMES[THEME_K.id] = THEME_K;
+  THEMES[THEME_L.id] = THEME_L;
 
   /* トップの「テーマで巡るベスト10」一覧に新テーマのカードを追加する
      （index.html の window.THEMES へ追記し、必要なときだけ描き直す） */
   function addThemeCard(){
     try {
       if (!Array.isArray(window.THEMES)) return;
-      if (!window.THEMES.some(function(x){ return x.id === 'K'; })){
-        window.THEMES.push({
-          id: 'K', rank: 'BEST 10',
-          title: THEME_K.title,
-          desc: '厳島・青島・白兎・伏見稲荷。海と島に宿る神々。',
-          img: THEME_K.hero,
-          fallback: THEME_K.items[9].photo,
-          lead: THEME_K.lead
+      var extra = [
+        { id:'K', rank:'BEST 10', theme:THEME_K, desc:'厳島・青島・白兎・伏見稲荷。海と島に宿る神々。' },
+        { id:'L', rank:'ITEM 10', theme:THEME_L, desc:'御朱印帳・お守り・絵馬。参拝がもっと楽しくなる10品。' }
+      ];
+      var need = false;
+      extra.forEach(function(e){
+        if (!window.THEMES.some(function(x){ return x.id === e.id; })){
+          window.THEMES.push({
+            id: e.id, rank: e.rank,
+            title: e.theme.title,
+            desc: e.desc,
+            img: e.theme.hero,
+            fallback: e.theme.items[e.theme.items.length - 1].photo,
+            lead: e.theme.lead
+          });
+        }
+      });
+      var g = document.getElementById('themeGrid');
+      if (g && g.children.length){
+        extra.forEach(function(e){
+          if (g.innerHTML.indexOf("openThemeDetail('" + e.id + "')") < 0) need = true;
         });
       }
-      var g = document.getElementById('themeGrid');
-      if (g && g.children.length && g.innerHTML.indexOf("openThemeDetail('K')") < 0
-          && typeof window.renderThemeGrid === 'function'){
+      if (need && typeof window.renderThemeGrid === 'function'){
         window.renderThemeGrid('themeGrid');
       }
     } catch(e){}
@@ -8980,6 +9079,7 @@
     '.wtr-no{position:absolute;top:12px;left:12px;display:flex;align-items:baseline;gap:2px;',
       'background:rgba(42,32,24,.72);color:#fff;padding:6px 14px 7px;border-radius:999px;}',
     '.wtr-no b{font-size:20px;font-weight:800;line-height:1;}',
+    '.wtr-no b.sm{font-size:13px;letter-spacing:.04em;}',
     '.wtr-no span{font-size:11px;}',
     '.wtr-no.g{background:linear-gradient(135deg,#C9A24A,#E0C57E);color:#3a2c14;}',
     ".wtr-icap{position:absolute;right:10px;bottom:9px;background:rgba(0,0,0,.42);color:#fff;",
@@ -9024,29 +9124,58 @@
   window.wabiCloseThemeRank = close;
 
   function card(it){
+    var t = cur || {};
+    var unit = (t.unit === undefined) ? '位' : t.unit;
     var gold = it.rank <= 3 ? ' g' : '';
-    var q = encodeURIComponent(it.name + ' ' + it.area);
+    var q = encodeURIComponent(it.name + ' ' + (it.area || ''));
     var im = it.photo
       ? '<div class="wtr-im" style="background-image:url(\'' + esc(it.photo) + '\')">'
-      : '<div class="wtr-im" data-pq="' + esc(it.pq || (it.name + ' ' + it.area)) + '">';
+      : '<div class="wtr-im" data-pq="' + esc(it.pq || (it.name + ' ' + (it.area || ''))) + '">';
+    var no = it.badge
+      ? '<span class="wtr-no' + gold + '"><b class="sm">' + esc(it.badge) + '</b></span>'
+      : '<span class="wtr-no' + gold + '"><b>' + it.rank + '</b><span>' + esc(unit) + '</span></span>';
+
+    var rows = it.rows;
+    if (!rows){
+      rows = [];
+      if (it.season)  rows.push(['おすすめ時期', it.season]);
+      if (it.access)  rows.push(['アクセス', it.access]);
+      if (it.see)     rows.push(['見どころ', it.see]);
+      if (it.goshuin) rows.push(['御朱印', it.goshuin]);
+    }
+    var meta = rows.length
+      ? '<div class="wtr-meta">' + rows.map(function(r){
+          return '<div class="wtr-row"><span class="k">' + esc(r[0]) + '</span>'
+               + '<span class="v">' + esc(r[1]) + '</span></div>';
+        }).join('') + '</div>'
+      : '';
+
+    var ym = (it.yomi || it.area)
+      ? '<div class="wtr-ym">' + esc(it.yomi || '')
+        + ((it.yomi && it.area) ? '　/　' : '') + esc(it.area || '') + '</div>'
+      : '';
+
+    var map = t.nomap ? ''
+      : '<a class="wtr-map" href="https://www.google.com/maps/search/?api=1&query=' + q
+        + '" target="_blank" rel="noopener">地図で見る ›</a>';
+
     return '<div class="wtr-card">'
       + im
-      +   '<span class="wtr-no' + gold + '"><b>' + it.rank + '</b><span>位</span></span>'
+      +   no
       +   '<span class="wtr-icap">' + esc(it.cap) + '</span>'
       + '</div>'
       + '<div class="wtr-bd">'
       +   '<div class="wtr-nm">' + esc(it.name) + '</div>'
-      +   '<div class="wtr-ym">' + esc(it.yomi) + '　/　' + esc(it.area) + '</div>'
-      +   '<div class="wtr-meta">'
-      +     '<div class="wtr-row"><span class="k">おすすめ時期</span><span class="v">' + esc(it.season) + '</span></div>'
-      +     '<div class="wtr-row"><span class="k">アクセス</span><span class="v">' + esc(it.access) + '</span></div>'
-      +     '<div class="wtr-row"><span class="k">見どころ</span><span class="v">' + esc(it.see) + '</span></div>'
-      +     '<div class="wtr-row"><span class="k">御朱印</span><span class="v">' + esc(it.goshuin) + '</span></div>'
-      +   '</div>'
+      +   ym
+      +   meta
       +   '<div class="wtr-tx">' + esc(it.text) + '</div>'
-      +   '<a class="wtr-map" href="https://www.google.com/maps/search/?api=1&query=' + q
-      +     '" target="_blank" rel="noopener">地図で見る ›</a>'
+      +   map
       + '</div></div>';
+  }
+
+  function labelOf(it){
+    var unit = (cur && cur.unit !== undefined) ? cur.unit : '位';
+    return it.badge ? it.badge : (it.rank + unit);
   }
 
   function render(){
@@ -9062,7 +9191,7 @@
 
     if (page === 0){
       h += '<div class="wtr-hero" style="background-image:url(\'' + esc(t.hero) + '\')">'
-         +   '<span class="bdg">BEST ' + total + '</span></div>'
+         +   '<span class="bdg">' + esc(t.heroBadge || ('BEST ' + total)) + '</span></div>'
          + '<div class="wtr-hcap">' + esc(t.heroCap) + '</div>';
     }
 
@@ -9071,13 +9200,13 @@
       h += '<div class="wtr-ttl">' + esc(t.title) + '</div>'
          + '<div class="wtr-lead">' + esc(t.lead) + '</div>';
     }
-    h += '<div class="wtr-page">' + (from + 1) + '位 〜 ' + to + '位（' + (page + 1) + ' / ' + pages + 'ページ）</div>';
+    h += '<div class="wtr-page">' + labelOf(list[0]) + ' 〜 ' + labelOf(list[list.length - 1]) + '（' + (page + 1) + ' / ' + pages + 'ページ）</div>';
     h += list.map(card).join('');
 
     h += '<div class="wtr-pager">';
-    if (page > 0) h += '<button id="wtrPrev">‹ 1位〜' + FIRST + '位に戻る</button>';
+    if (page > 0) h += '<button id="wtrPrev">‹ ' + labelOf(t.items[0]) + '〜' + labelOf(t.items[FIRST - 1]) + 'に戻る</button>';
     if (pages > 1 && page === 0){
-      h += '<button class="main" id="wtrNext">' + (FIRST + 1) + '位〜' + total + '位を見る ›</button>';
+      h += '<button class="main" id="wtrNext">' + labelOf(t.items[FIRST]) + '〜' + labelOf(t.items[total - 1]) + 'を見る ›</button>';
     }
     h += '</div>';
 

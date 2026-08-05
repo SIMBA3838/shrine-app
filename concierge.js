@@ -9580,3 +9580,61 @@
     + '{padding-bottom:calc(124px + env(safe-area-inset-bottom)) !important;}';
   document.head.appendChild(css);
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：オーバーレイの後ろにトップページが見えてしまう問題の修正（第2弾）
+   ・iPhoneのアドレスバーが伸縮すると画面の高さが変わり、
+     inset:0 で作った全画面ページの下に隙間ができて背面が見えていた
+     → 高さを 100dvh（実際の表示領域）に合わせる
+   ・保険として、全オーバーレイの背面に不透明の下地（#wabiBackdrop）を敷く
+   ・マイページの登場アニメが「6px下にずれたまま」止まることがあったため
+     透明度だけのアニメに変更
+   （2026-08-05 / index.html は触らず concierge.js から追記）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiBackdrop) return;
+  window.__wabiBackdrop = true;
+
+  var IDS = ['wcMypage','wabiRoutePg','wabiThemeRank','wabiPostPg','wabiListPg','wabiFeedPg',
+             'wabiRankMore','pgShrineDetail','pgArticleDetail','pgThemeDetail','wxGuide','wxInvite',
+             'wxSignup','pgMap','pgAiRoute','pgAiResult','pgSeasonList','pgEcList','pgArticleList',
+             'pgTourList','pgAreaSearch','pgRegister','wcPost'];
+  var SEL = IDS.map(function(i){ return '#' + i; }).join(',');
+
+  var css = document.createElement('style');
+  css.textContent = [
+    /* 画面の実際の高さに合わせる（アドレスバーの伸縮対策） */
+    SEL + '{height:100dvh !important;}',
+    /* 全オーバーレイの背面に敷く不透明の下地 */
+    '#wabiBackdrop{position:fixed;left:0;top:0;width:100%;height:100dvh;min-height:100vh;',
+      'background:#FAF8F4;z-index:99;display:none;pointer-events:none;}',
+    /* マイページの登場アニメは透明度だけに（ずれたまま止まるのを防ぐ） */
+    '#wcMypage.show{animation:wabiFadeOnly .45s ease !important;}',
+    '@keyframes wabiFadeOnly{from{opacity:0}to{opacity:1}}'
+  ].join('');
+  document.head.appendChild(css);
+
+  var bd = document.createElement('div');
+  bd.id = 'wabiBackdrop';
+  function attach(){
+    if (!document.body) return setTimeout(attach, 200);
+    if (!document.getElementById('wabiBackdrop')) document.body.insertBefore(bd, document.body.firstChild);
+  }
+  attach();
+
+  function anyOpen(){
+    for (var i = 0; i < IDS.length; i++){
+      var e = document.getElementById(IDS[i]);
+      if (!e) continue;
+      var c = getComputedStyle(e);
+      if (c.display !== 'none' && c.visibility !== 'hidden'
+          && e.getBoundingClientRect().height > 0) return true;
+    }
+    return false;
+  }
+
+  setInterval(function(){
+    try { bd.style.display = anyOpen() ? 'block' : 'none'; } catch(e){}
+  }, 250);
+})();

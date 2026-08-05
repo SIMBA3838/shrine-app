@@ -9638,3 +9638,12 @@
     try { bd.style.display = anyOpen() ? 'block' : 'none'; } catch(e){}
   }, 250);
 })();
+
+/* 会員登録・ログインのページだけ背景が透明だったので不透明にする */
+(function(){
+  if (window.__wabiRegBg) return;
+  window.__wabiRegBg = true;
+  var s = document.createElement('style');
+  s.textContent = '#pgRegister{background:#FAF8F4 !important;}';
+  document.head.appendChild(s);
+})();

@@ -1,6 +1,66 @@
 {
  "articles": [
   {
+   "id": "a14",
+   "title": "【武蔵国の古社】大宮氷川神社と調神社。二千年の杜と、狛犬ならぬ“狛うさぎ”",
+   "date": "2026-08-05",
+   "cat": "御朱印",
+   "type": "神社",
+   "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/Hikawa-jinja_%28Saitama%29%2C_keidai.jpg/1280px-Hikawa-jinja_%28Saitama%29%2C_keidai.jpg",
+   "excerpt": "大宮駅の喧噪を離れて東へ歩くと、ほどなく空気が変わります。両側から迫る欅（けやき）と杉の並木",
+   "status": "published"
+  },
+  {
+   "id": "a15",
+   "title": "【北陸の霊峰と海】白山比咩神社と氣多大社。杉木立に包まれる、加賀と能登の一之宮",
+   "date": "2026-08-05",
+   "cat": "神社",
+   "type": "神社",
+   "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/%E7%99%BD%E5%B1%B1%E6%AF%94%E5%92%A9%E7%A5%9E%E7%A4%BE_01.jpg/1280px-%E7%99%BD%E5%B1%B1%E6%AF%94%E5%92%A9%E7%A5%9E%E7%A4%BE_01.jpg",
+   "excerpt": "石段の脇に立つ杉の巨木を見上げると、幹の太さに思わず足が止まります。苔むした参道に射し込む光",
+   "status": "published"
+  },
+  {
+   "id": "a16",
+   "title": "【瀬戸内の海の社】厳島神社と大山祇神社。潮の香りと、樹齢二千六百年の楠",
+   "date": "2026-08-05",
+   "cat": "神社",
+   "type": "神社",
+   "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Itsukushima_Shrine_Torii_Gate_%2813890465459%29.jpg/1280px-Itsukushima_Shrine_Torii_Gate_%2813890465459%29.jpg",
+   "excerpt": "フェリーの甲板に立つと、潮の匂いとともに、海の上に浮かぶ朱色が近づいてきます。瀬戸内海には、",
+   "status": "published"
+  },
+  {
+   "id": "t13",
+   "title": "【京都の紅葉名刹】永観堂と東福寺。錦に染まる、念仏と禅のお寺",
+   "date": "2026-08-05",
+   "cat": "寺院",
+   "type": "寺院",
+   "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Eikan-do_Zenrin-ji%2C_November_2016_-01.jpg/1280px-Eikan-do_Zenrin-ji%2C_November_2016_-01.jpg",
+   "excerpt": "まだ夏の名残が残るこの季節に、秋の予定を立てる楽しみがあります。京都の紅葉は例年11月下旬が",
+   "status": "published"
+  },
+  {
+   "id": "t14",
+   "title": "【北鎌倉の禅寺】円覚寺と建長寺。谷戸に響く鐘の音と、坐禅の時間",
+   "date": "2026-08-05",
+   "cat": "寺院",
+   "type": "寺院",
+   "img": "https://upload.wikimedia.org/wikipedia/commons/e/e9/Engakuji_Sanmon_Kamakura.jpg",
+   "excerpt": "北鎌倉の駅を降りると、線路のすぐ向こうに山門が見えます。改札からわずか一分。それなのに、境内",
+   "status": "published"
+  },
+  {
+   "id": "t15",
+   "title": "【花の御寺】長谷寺と室生寺。牡丹の登廊と、女人高野の五重塔",
+   "date": "2026-08-05",
+   "cat": "寺院",
+   "type": "寺院",
+   "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/Hasedera_Sakurai_Nara_pref58s5s4272.jpg/1280px-Hasedera_Sakurai_Nara_pref58s5s4272.jpg",
+   "excerpt": "奈良の東、初瀬（はせ）の山あいに、屋根のついた石段がえんえんと続くお寺があります。399段。",
+   "status": "published"
+  },
+  {
    "id": "t12",
    "title": "【東京の下町仏閣】浅草から柴又へ。人情と歴史が交差する、下町のお寺めぐり",
    "date": "2026-06-17",

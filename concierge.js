@@ -5893,6 +5893,12 @@
 
   // ── ③ 下書きのままだった記事25本をサイトに載せる ────────────
   var ART_FILE = {
+    'a14': 'articles/神社/記事14_20260805_武蔵国の古社.html',
+    'a15': 'articles/神社/記事15_20260805_北陸の古社.html',
+    'a16': 'articles/神社/記事16_20260805_瀬戸内の海の社.html',
+    't13': 'articles/寺院/寺院記事13_20260805_kyoto_momiji.html',
+    't14': 'articles/寺院/寺院記事14_20260805_kitakamakura.html',
+    't15': 'articles/寺院/寺院記事15_20260805_hana_no_mitera.html',
     't12': 'articles/寺院/寺院記事12_20260617_shitamachi.html',
     't11': 'articles/寺院/寺院記事11_20260617_botan.html',
     't10': 'articles/寺院/寺院記事10_20260617_kinun.html',

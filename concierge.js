@@ -10446,3 +10446,5 @@
     var t = setInterval(function(){ if (apply() || ++n > 60) clearInterval(t); }, 500);
   }
 })();
+
+/* redeploy trigger 2026-08-06T13:52:57.383Z */

@@ -9647,3 +9647,81 @@
   s.textContent = '#pgRegister{background:#FAF8F4 !important;}';
   document.head.appendChild(s);
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：デザインシステム 第1段階
+   ・デザイントークン（色・余白・角丸・影）を1か所に定義
+   ・ボタンの高さと角丸を統一（タップしやすい大きさに）
+   ・セクションの余白を 32px / 左右20px に統一
+   ・生成り色を #FAF8F3 に一本化
+   ・おすすめ神社ランキングのカードを整える
+     （写真は1枚だけ・全カード同じ高さ・同じ写真サイズ）
+   （2026-08-05 / index.html は触らず concierge.js から追記）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiDS1) return;
+  window.__wabiDS1 = true;
+
+  var css = document.createElement('style');
+  css.id = 'wabiDesignSystem1';
+  css.textContent = [
+
+    /* ── トークン ─────────────────────────── */
+    ':root{',
+      '--paper:#FAF8F3;--surface:#FFFFFF;--surface-2:#F5F0E6;',
+      '--line:#ECE6DA;--line-strong:#D8D2C4;',
+      '--ink:#2D2A26;--ink-2:#6E6459;--ink-3:#9A9086;',
+      '--vermilion:#A83320;--purple:#3A1D5D;--gold:#C9A24A;',
+      '--s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:20px;',
+      '--s6:24px;--s7:32px;--s8:40px;--s9:48px;',
+      '--r-s:8px;--r-m:16px;--r-l:24px;--r-full:999px;',
+      '--sh-1:0 1px 2px rgba(58,42,24,.04), 0 2px 8px rgba(58,42,24,.04);',
+      '--sh-2:0 2px 4px rgba(58,42,24,.05), 0 8px 20px rgba(58,42,24,.06);',
+      '--sh-3:0 8px 32px rgba(58,42,24,.10);',
+    '}',
+
+    /* ── 生成りを1色に ─────────────────────── */
+    'html,body,#wabiBackdrop,#wabiRoutePg,.wtr,#wabiPostPg,#wabiListPg,',
+    '#wabiFeedPg,#wabiRankMore,#wcMypage,#pgRegister',
+    '{background-color:#FAF8F3 !important;}',
+
+    /* ── セクションの余白 ───────────────────── */
+    '.home-sec{padding:32px 20px 0 !important;}',
+    '.sec{padding:32px 20px 0 !important;}',
+
+    /* ── ボタン ───────────────────────────── */
+    '.hero-search-cta,.btn-search,.wcp-postbtn',
+    '{min-height:52px !important;border-radius:999px !important;',
+     'font-size:15px !important;font-weight:700 !important;}',
+    '.wabi-rk-btn,.wgd-btn{min-height:40px !important;border-radius:999px !important;',
+     'font-size:12px !important;}',
+    '.wl-btn{min-height:40px !important;}',
+    '.hero-search-pill,.hero-search-toggle{min-height:32px !important;border-radius:999px !important;}',
+    '.wtr-pager button{height:52px !important;border-radius:999px !important;}',
+    /* 押したときにわずかに沈む */
+    '.hero-search-cta:active,.btn-search:active,.wcp-postbtn:active,',
+    '.wabi-rk-btn:active,.wgd-btn:active,.wtr-pager button:active',
+    '{transform:scale(.98);transition:transform .12s ease-out;}',
+
+    /* ── おすすめ神社ランキングのカード ───────── */
+    /* 写真は「1枚だけ」。下の小さな写真の帯は出さない */
+    '#list .rcard .pstrip,.rcard .pstrip,.pstrip{display:none !important;}',
+    /* カードの見た目を統一 */
+    '.rcard{border-radius:16px !important;border:1px solid #ECE6DA !important;',
+     'box-shadow:0 1px 2px rgba(58,42,24,.04),0 2px 8px rgba(58,42,24,.04) !important;}',
+    '.rcard.r1{border:1px solid #C9A24A !important;background:#fff !important;',
+     'box-shadow:0 0 0 1px rgba(201,168,76,.22),0 2px 10px rgba(58,42,24,.06) !important;}',
+    /* 名前・タグ・住所の高さを揃えて、写真の位置を全カードで合わせる */
+    '.rhd{min-height:130px !important;align-items:flex-start !important;}',
+    /* 写真は余計な枠・影を外して、比率を揃える */
+    '.pgallery{border:none !important;background:transparent !important;',
+     'box-shadow:none !important;padding:0 !important;border-radius:0 !important;}',
+    '.pgallery-main{aspect-ratio:4/3 !important;border-radius:0 !important;}',
+
+    /* ── 動きが苦手な方への配慮 ───────────────── */
+    '@media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important;}}'
+
+  ].join('');
+  document.head.appendChild(css);
+})();

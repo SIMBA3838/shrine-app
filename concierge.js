@@ -10447,3 +10447,22 @@
   }
 })();
 
+
+/* __wabiRankRefresh : 初期表示でも「11位〜◯位を見る」が出るように、
+   index.html 側の初回描画のあとに filter() を数回だけ呼び直す */
+(function(){
+  if (window.__wabiRankRefresh) return;
+  window.__wabiRankRefresh = true;
+  var times = [900, 2000, 3500, 6000];
+  function run(){
+    try {
+      if (!window.__wabiMaxFilter) return;
+      if (document.querySelector('.wabi-more-rank')) return;
+      var l = document.getElementById('list');
+      if (!l || !l.querySelector('.rcard')) return;
+      if (typeof filter === 'function') filter();
+    } catch(e){}
+  }
+  times.forEach(function(ms){ setTimeout(run, ms); });
+  if (document.readyState !== 'complete') window.addEventListener('load', function(){ setTimeout(run, 600); });
+})();

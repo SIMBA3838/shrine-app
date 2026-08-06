@@ -10201,3 +10201,89 @@
     setInterval(watch, 1500);
   } catch(e){}
 })();
+
+
+/* ════════════════════════════════════════════════════════════
+   わびなび：おすすめ記事のカードをツアー特集と同じ大きさに
+   （2026-08-06 / index.html は触らず concierge.js から追記）
+   ════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiArtCard) return;
+  window.__wabiArtCard = true;
+  var css = document.createElement('style');
+  css.id = 'wabiArtCard';
+  css.textContent = [
+    '.art-item{height:121px !important;min-height:121px !important;background:#fff !important;',
+      'border-radius:16px !important;overflow:hidden !important;gap:0 !important;align-items:stretch !important;',
+      'box-shadow:0 1px 2px rgba(58,42,24,.04),0 2px 8px rgba(58,42,24,.04) !important;}',
+    '.art-thumb{width:152px !important;height:121px !important;flex:0 0 152px !important;',
+      'border-radius:0 !important;aspect-ratio:auto !important;overflow:hidden !important;}',
+    '.art-thumb img{width:152px !important;height:121px !important;border-radius:0 !important;',
+      'aspect-ratio:auto !important;object-fit:cover !important;}',
+    '.art-body{padding:14px 16px !important;overflow:hidden !important;}',
+    '.art-title{font-size:15px !important;line-height:1.5 !important;display:-webkit-box !important;',
+      '-webkit-line-clamp:3 !important;-webkit-box-orient:vertical !important;overflow:hidden !important;}',
+    '.art-list{gap:12px !important;}'
+  ].join('');
+  document.head.appendChild(css);
+})();
+
+
+/* ════════════════════════════════════════════════════════════
+   わびなび：自分で設定した名前・アイコンを最優先で表示する
+   ・LINEとGoogleでログインし直しても、自分で決めた表示名と写真を保つ
+   ・「LINEの名前に戻す」を選んだときはその選択を尊重する
+   （2026-08-06 / index.html は触らず concierge.js から追記）
+   ════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiMineProfile) return;
+  window.__wabiMineProfile = true;
+
+  var LS_NM = 'wabiName', LS_AV = 'wabiAvatar';
+  var MY_NM = 'wabiNameMine', MY_AV = 'wabiAvatarMine', LS_UID = 'wabiUidLast';
+
+  function g(k){ try { return localStorage.getItem(k) || ''; } catch(e){ return ''; } }
+  function s(k, v){ try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch(e){} }
+  function uid(){
+    try { var u = JSON.parse(localStorage.getItem('wabiUser') || 'null'); return (u && u.id) || ''; }
+    catch(e){ return ''; }
+  }
+
+  var switchedAt = 0;
+
+  function tick(){
+    var cur = uid(), last = g(LS_UID);
+    if (cur !== last){ s(LS_UID, cur); switchedAt = Date.now(); }
+
+    if (switchedAt && (Date.now() - switchedAt < 6000)){
+      /* ログインし直した直後：自分で決めた名前・写真を戻す */
+      if (g(MY_NM) && g(LS_NM) !== g(MY_NM)) s(LS_NM, g(MY_NM));
+      if (g(MY_AV) && g(LS_AV) !== g(MY_AV)) s(LS_AV, g(MY_AV));
+    } else {
+      /* 普段：自分で変えた内容を控えておく（「元に戻す」で空にした場合も追従） */
+      if (g(LS_NM) !== g(MY_NM)) s(MY_NM, g(LS_NM));
+      if (g(LS_AV) !== g(MY_AV)) s(MY_AV, g(LS_AV));
+    }
+
+    /* 表示への反映（ヘッダーとマイページ） */
+    var nm = g(LS_NM), av = g(LS_AV);
+    var btn = document.getElementById('wlBtn');
+    if (btn && nm){
+      var want = nm.length > 6 ? nm.slice(0, 6) + '…' : nm;
+      if ((btn.textContent || '').trim() !== want){
+        var img = btn.querySelector('img');
+        var src = av || (img ? img.src : '');
+        btn.innerHTML = (src ? '<img src="' + src + '" style="width:20px;height:20px;border-radius:50%;object-fit:cover">' : '') + want;
+      }
+    }
+    var mn = document.querySelector('#wcMypage .mp-name');
+    if (mn && nm && mn.textContent.replace(/\s*✎\s*$/, '').trim() !== nm){
+      mn.innerHTML = nm.replace(/[<>&]/g, '') + '<span class="wp-pen">✎</span>';
+    }
+    var avEl = document.querySelector('#wcMypage .mp-av img');
+    if (avEl && av && avEl.src !== av) avEl.src = av;
+  }
+
+  setInterval(tick, 600);
+  tick();
+})();

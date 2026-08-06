@@ -9920,3 +9920,183 @@
   bind();
   setInterval(bind, 800);
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：デザインシステム 第3段階（文字の整理）
+   ・小さすぎる文字（8.5〜10.5px）をすべて11pxに
+   ・見出しの階層を 22 / 18 / 15px に
+   ・本文を 15px・行間1.9 に
+   （2026-08-06 / index.html は触らず concierge.js から追記）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiDS3) return;
+  window.__wabiDS3 = true;
+  var css = document.createElement('style');
+  css.id = 'wabiDesignSystem3';
+  css.textContent = [
+    /* 最小サイズを11pxに */
+    '.spot-card-benefit-label,.apc-tag,.nl,.wabi-pr,.wc-ai,.wc-meta,.wc-add,.ar,.kbadge,',
+    '.theme-card-rank,.theme-card-desc,.apc-desc,.deity,.osupply-img-rank,.hero-search-pill,',
+    '.bn,.bv,.tour-img-badge,.ec-img-tag,.wgd-shop,.wcp-tags,.hero-feat-txt,.route-card-badge,',
+    '.wc-price,.wcb-sb,.wcb-tag,.wcb-bdg,.photo-count,.wc-sec-sub,.wcb-sub',
+    '{font-size:11px !important;}',
+    /* 見出しの階層 */
+    '.home-sec-tit,.wc-sec-tit{font-size:18px !important;line-height:1.55 !important;}',
+    '#pgArticleDetail h1{font-size:22px !important;line-height:1.5 !important;}',
+    '#pgArticleDetail h2{font-size:18px !important;line-height:1.55 !important;}',
+    '#pgArticleDetail h3{font-size:15px !important;line-height:1.6 !important;}',
+    '.wtr-ttl{font-size:22px !important;line-height:1.5 !important;}',
+    '.wtr-nm{font-size:17px !important;}',
+    /* 本文 15px・行間1.9 */
+    '#pgArticleDetail p,#pgArticleDetail li,.wtr-tx,.wtr-lead,.wrp-p',
+    '{font-size:15px !important;line-height:1.9 !important;}',
+    '.wtr-row .v{font-size:13px !important;line-height:1.75 !important;}',
+    '.wtr-row .k{font-size:12px !important;}'
+  ].join('');
+  document.head.appendChild(css);
+})();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：AIルート「すべて見る」— 各カードに2つのボタン
+   ・すべての候補に「地図で見る」と「＋ 追加」を並べる
+   ・AIのおすすめ枠にない候補も、自分で追加できるようにする
+     （追加したスポットはルートの行程とナビの経由地に反映される）
+   （2026-08-06 / index.html は触らず concierge.js から追記）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiAllSpots2) return;
+  window.__wabiAllSpots2 = true;
+
+  var LS = 'wabiAiExtraSpots';
+  function extras(){ try { var a = JSON.parse(localStorage.getItem(LS) || '[]'); return Array.isArray(a) ? a : []; } catch(e){ return []; } }
+  function saveExtras(a){ try { localStorage.setItem(LS, JSON.stringify(a)); } catch(e){} }
+  function hasExtra(nm){ return extras().some(function(x){ return x.name === nm; }); }
+  function addExtra(p){ var a = extras(); if (hasExtra(p.name)) return; a.push({ name:p.name, addr:p.vicinity || '' }); saveExtras(a); }
+  function delExtra(nm){ saveExtras(extras().filter(function(x){ return x.name !== nm; })); }
+
+  var css = document.createElement('style');
+  css.textContent = [
+    '.wap2-btns{flex:0 0 auto;display:flex;flex-direction:column;gap:6px;}',
+    '.wap2-btn{min-height:36px;border-radius:999px;border:1px solid #D8D2C4;background:#fff;color:#3A1D5D;',
+      'font-size:11px;font-weight:700;padding:0 12px;cursor:pointer;white-space:nowrap;',
+      "font-family:'Shippori Mincho',serif;}",
+    '.wap2-btn.on{background:#3A1D5D;color:#fff;border-color:#3A1D5D;}',
+    '.wap2-btn:active{transform:scale(.98);}',
+    '.wapx{margin:10px 16px 0;background:#fff;border-radius:16px;padding:12px 14px;',
+      'box-shadow:0 1px 2px rgba(58,42,24,.04),0 2px 8px rgba(58,42,24,.04);}',
+    ".wapx-t{font-size:11px;color:#9A9086;margin-bottom:8px;font-family:'Noto Serif JP',serif;}",
+    '.wapx-r{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;}',
+    '.wapx-r .x{margin-left:auto;color:#9A9086;cursor:pointer;font-size:16px;padding:0 4px;}'
+  ].join('');
+  document.head.appendChild(css);
+
+  /* ① 一覧の各行を「地図で見る」＋「＋ 追加」の2ボタンにする */
+  function upgradeRows(){
+    var pg = document.getElementById('wcAllPg');
+    if (!pg || getComputedStyle(pg).display === 'none') return;
+    pg.querySelectorAll('.wap-row').forEach(function(row){
+      if (row.getAttribute('data-w2')) return;
+      var old = row.querySelector('.wap-btn');
+      if (!old) return;
+      row.setAttribute('data-w2', '1');
+      var nm = (row.querySelector('.wap-nm') || {}).textContent || '';
+      var me = (row.querySelector('.wap-me') || {}).textContent || '';
+      var addr = me.split('\n').pop().trim();
+      var wrap = document.createElement('div');
+      wrap.className = 'wap2-btns';
+
+      var mapBtn = document.createElement('button');
+      mapBtn.className = 'wap2-btn';
+      mapBtn.textContent = '地図で見る';
+      mapBtn.onclick = function(){
+        window.open('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(nm + ' ' + addr), '_blank');
+      };
+
+      var addBtn = document.createElement('button');
+      addBtn.className = 'wap2-btn';
+      var canRoute = old.getAttribute('data-has') === '1';
+      function label(){
+        var on = canRoute ? old.classList.contains('on') : hasExtra(nm);
+        addBtn.textContent = on ? '✓ 追加済み' : '＋ 追加';
+        addBtn.classList.toggle('on', on);
+      }
+      addBtn.onclick = function(){
+        if (canRoute){ old.click(); }
+        else {
+          if (hasExtra(nm)){ delExtra(nm); if (typeof showToast === 'function') showToast('ルートから外しました'); }
+          else { addExtra({ name:nm, vicinity:addr }); if (typeof showToast === 'function') showToast('🌿 「' + nm + '」をルートに追加しました'); }
+        }
+        setTimeout(label, 60);
+      };
+      label();
+
+      wrap.appendChild(mapBtn);
+      wrap.appendChild(addBtn);
+      old.style.display = 'none';
+      row.appendChild(wrap);
+    });
+  }
+
+  /* ② 自分で追加したスポットを「現在のルート」と行程に反映する */
+  function paintExtras(){
+    var list = extras();
+
+    var box = document.getElementById('wcAddedBox');
+    if (box){
+      var old = box.querySelector('.wapx');
+      if (!list.length){ if (old) old.remove(); }
+      else {
+        var sig = list.map(function(x){ return x.name; }).join('|');
+        if (!old || old.getAttribute('data-sig') !== sig){
+          if (old) old.remove();
+          var d = document.createElement('div');
+          d.className = 'wapx';
+          d.setAttribute('data-sig', sig);
+          d.innerHTML = '<div class="wapx-t">＋ あなたが追加したスポット</div>'
+            + list.map(function(x){
+                return '<div class="wapx-r">📍 ' + x.name + '<span class="x" data-nm="' + x.name + '">✕</span></div>';
+              }).join('');
+          box.appendChild(d);
+          d.querySelectorAll('.x').forEach(function(b){
+            b.onclick = function(){ delExtra(b.getAttribute('data-nm')); paintExtras(); };
+          });
+        }
+      }
+    }
+
+    var tl = document.querySelector('#wcPrevBody .wc-tl');
+    if (tl && list.length){
+      list.forEach(function(x){
+        if (tl.querySelector('[data-wapx="' + x.name + '"]')) return;
+        var d = document.createElement('div');
+        d.className = 'wc-tl-i';
+        d.setAttribute('data-wapx', x.name);
+        d.innerHTML = '<div class="wc-tl-n">＋</div>'
+          + '<div class="wc-tl-th" style="background:#EFE9DE">📍</div>'
+          + '<div><div class="wc-tl-nm">' + x.name + '</div>'
+          + '<div class="wc-tl-mt">' + (x.addr || '自分で追加したスポット') + '</div></div>';
+        tl.appendChild(d);
+      });
+    }
+
+    /* ナビは画面に並んでいる順番どおりに経由地を組み立てる */
+    var navi = document.getElementById('wcNavi');
+    if (navi && !navi.getAttribute('data-wapx')){
+      navi.setAttribute('data-wapx', '1');
+      navi.onclick = function(){
+        var names = [].map.call(document.querySelectorAll('#wcPrevBody .wc-tl-nm'), function(n){
+          return String(n.textContent).replace(/[（(].*$/, '').trim();
+        }).filter(Boolean);
+        if (!names.length) return;
+        var url = 'https://www.google.com/maps/dir/?api=1&origin=' + encodeURIComponent(names[0])
+          + '&destination=' + encodeURIComponent(names[names.length - 1])
+          + (names.length > 2 ? '&waypoints=' + encodeURIComponent(names.slice(1, -1).join('|')) : '');
+        window.open(url, '_blank');
+      };
+    }
+  }
+
+  setInterval(function(){ try { upgradeRows(); paintExtras(); } catch(e){} }, 400);
+})();

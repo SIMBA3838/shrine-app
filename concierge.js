@@ -10100,3 +10100,38 @@
 
   setInterval(function(){ try { upgradeRows(); paintExtras(); } catch(e){} }, 400);
 })();
+
+
+/* ════════════════════════════════════════════════════════════
+   わびなび：第3段階の仕上げ
+   ・まだ小さかった文字を 11px に（ヘッダー内のものは 10px）
+   ・「すべて見る」の説明文を、全件追加できるに合わせて書き換え
+   （2026-08-06 / index.html は触らず concierge.js から追記）
+   ════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiDS3b) return;
+  window.__wabiDS3b = true;
+
+  var css = document.createElement('style');
+  css.id = 'wabiDesignSystem3b';
+  css.textContent = [
+    '.hero-search-pill.hero-search-pill,.route-card-desc,.route-card-meta,.wgd-pr,',
+    '.gs-suggest-label,.gs-suggest-post-meta,.hero-search-row-label,.api-small-btn,',
+    '.hero-search-note,.ai-preview-label,.big-cta-sec-label,.wc-sec-sub.wc-sec-sub',
+    '{font-size:11px !important;}',
+    '.site-hd-sub,.site-hd-btn-label{font-size:10px !important;}'
+  ].join('');
+  document.head.appendChild(css);
+
+  /* 「すべて見る」の説明文を書き換える */
+  setInterval(function(){
+    try {
+      var n = document.querySelector('#wcAllPg .wap-note');
+      if (!n) return;
+      var t = n.textContent || '';
+      if (t.indexOf('AIが選んだ') < 0) return;
+      n.textContent = t.split('。')[0] + '。気になるスポットは「＋ 追加」でルートに加えられます。'
+        + '場所の確認は「地図で見る」から。';
+    } catch(e){}
+  }, 500);
+})();

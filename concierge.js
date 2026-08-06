@@ -10135,3 +10135,69 @@
     } catch(e){}
   }, 500);
 })();
+
+
+/* ════════════════════════════════════════════════════════════
+   わびなび：デザインシステム 第4・5段階
+   ・記事の「豆知識」の黄色 → 生成りの沈んだ面＋金の細罫
+   ・会員登録ページの紫のグラデーション → 生成り
+   ・検索チップの選択中 → 金から墨色へ
+   ・下部メニューの文字を 11px に
+   ・ページの登場・カードの登場・押下の動きを揃える
+   （2026-08-06 / index.html は触らず concierge.js から追記）
+   ════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiDS45) return;
+  window.__wabiDS45 = true;
+
+  var css = document.createElement('style');
+  css.id = 'wabiDesignSystem45';
+  css.textContent = [
+    /* 豆知識 */
+    '#pgArticleDetail blockquote{background:#F5F0E6 !important;border-left:2px solid #C9A24A !important;',
+      'border-radius:0 12px 12px 0 !important;padding:14px 18px !important;}',
+    /* 会員登録 */
+    '#pgRegister,#pgRegister.reg-bg{background:#FAF8F3 !important;background-image:none !important;}',
+    /* チップの選択中 */
+    '.hero-search-pill.on,.hero-search-toggle.on',
+      '{background:#2D2A26 !important;color:#fff !important;border-color:#2D2A26 !important;}',
+    /* 下部メニュー */
+    '#wabiNav span{font-size:11px !important;}',
+    /* ページの登場 */
+    '@keyframes wabiIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}',
+    '#wabiRoutePg,.wtr,#wabiPostPg,#wabiListPg,#wabiFeedPg,#wabiRankMore,#pgShrineDetail,',
+    '#pgArticleDetail,#pgThemeDetail,#wcAllPg,#wxGuide,#wxInvite',
+      '{animation:wabiIn .2s cubic-bezier(.2,.8,.2,1);}',
+    /* カードの登場（画面に入ったとき一度だけ） */
+    '@keyframes wabiRise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}',
+    '.wabi-rise{animation:wabiRise .32s cubic-bezier(.2,.8,.2,1) both;}',
+    /* 押したとき */
+    '.rcard:active,.theme-card:active,.route-card:active,.wev-card:active,',
+    '.wtr-card:active,.wc-card:active,.art-card:active',
+      '{transform:scale(.985);transition:transform .12s ease-out;}'
+  ].join('');
+  document.head.appendChild(css);
+
+  /* 画面に入ったカードを一度だけふわっと出す
+     （最初から見えている状態を崩さないので、万が一動かなくても内容は見えます） */
+  try {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!('IntersectionObserver' in window)) return;
+    var io = new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if (!e.isIntersecting) return;
+        e.target.classList.add('wabi-rise');
+        io.unobserve(e.target);
+      });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    function watch(){
+      document.querySelectorAll('.theme-card,.route-card,.wev-card,.art-card').forEach(function(el){
+        if (el.getAttribute('data-rise')) return;
+        el.setAttribute('data-rise', '1');
+        io.observe(el);
+      });
+    }
+    watch();
+    setInterval(watch, 1500);
+  } catch(e){}
+})();

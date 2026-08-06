@@ -9725,3 +9725,19 @@
   ].join('');
   document.head.appendChild(css);
 })();
+
+/* デザインシステム 第1段階の仕上げ：あとから上書きされていた2つのボタンの角丸 */
+(function(){
+  if (window.__wabiDS1b) return;
+  window.__wabiDS1b = true;
+  function put(){
+    if (document.getElementById('wabiDS1b')) return;
+    var s = document.createElement('style');
+    s.id = 'wabiDS1b';
+    s.textContent = '.hero-search-cta.hero-search-cta{border-radius:999px !important;}'
+      + '.hero-search-pill.hero-search-pill,.hero-search-toggle.hero-search-toggle{border-radius:999px !important;}';
+    document.head.appendChild(s);
+  }
+  put();
+  setInterval(function(){ var s=document.getElementById('wabiDS1b'); if(s) document.head.appendChild(s); }, 3000);
+})();

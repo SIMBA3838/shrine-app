@@ -10287,3 +10287,162 @@
   setInterval(tick, 600);
   tick();
 })();
+
+
+/* ════════════════════════════════════════════════════════════
+   わびなび：ランキングの掲載数をカテゴリごとに揃える
+   ・すべて／神社／お寺／御朱印 → 30位まで
+   ・縁結び／開運／学問／健康／自然景観／歴史・文化財 → 20位まで
+   そのために、実在する寺院25か所と天満宮7社を追加する。
+   評価と件数と緯度経度は Google の実データ。
+   あわせて、地域の表記が日本語のままだった10件をコード（kanto等）に直す。
+   （2026-08-06 / index.html は触らず concierge.js から追記）
+   ════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiMoreShrines) return;
+  window.__wabiMoreShrines = true;
+
+  function M(n){ return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(n); }
+  function T(rank, name, deity, addr, area, rating, rev, tags, badges, lat, lng){
+    return { rank:rank, type:'temple', name:name, deity:deity, addr:addr, map:M(name),
+             area:area, rating:rating, rev:rev, visited:false, tags:tags, badges:badges, lat:lat, lng:lng };
+  }
+  function S(rank, name, deity, addr, area, rating, rev, tags, badges, lat, lng){
+    return { rank:rank, type:'shrine', name:name, deity:deity, addr:addr, map:M(name),
+             area:area, rating:rating, rev:rev, visited:false, tags:tags, badges:badges, lat:lat, lng:lng };
+  }
+
+  var ADD = [
+    T(11,'中尊寺','阿弥陀如来','岩手県西磐井郡平泉町平泉衣関202','hokkaido',4.4,12419,
+      ['goshuin','rekishi','shizen'],['世界遺産','天台宗東北大本山'],39.0016,141.1028),
+    T(12,'瑞巌寺','聖観世音菩薩','宮城県宮城郡松島町松島町内91','hokkaido',4.4,6570,
+      ['goshuin','rekishi','shizen'],['国宝','伊達政宗ゆかり'],38.3720,141.0598),
+    T(13,'立石寺（山寺）','薬師如来','山形県山形市山寺4456-1','hokkaido',4.5,9351,
+      ['goshuin','rekishi','shizen','kenko'],['奥の細道','千段の石段'],38.3131,140.4346),
+    T(14,'日光山輪王寺','阿弥陀如来・千手観音・馬頭観音','栃木県日光市山内2300','kanto',4.3,2003,
+      ['goshuin','rekishi','shizen'],['世界遺産','三仏堂'],36.7552,139.6005),
+    T(15,'川崎大師 平間寺','厄除弘法大師','神奈川県川崎市川崎区大師町4-48','kanto',4.3,12789,
+      ['goshuin','kaiun','kenko','rekishi'],['真言宗智山派大本山','厄除け'],35.5347,139.7295),
+    T(16,'高幡不動尊 金剛寺','不動明王','東京都日野市高幡733','kanto',4.3,6128,
+      ['goshuin','kaiun','kenko','rekishi'],['関東三大不動','土方歳三ゆかり'],35.6620,139.4111),
+    T(17,'深大寺','阿弥陀三尊・白鳳仏','東京都調布市深大寺元町5-15-1','kanto',4.3,8560,
+      ['goshuin','enmusubi','shizen','rekishi'],['縁結び','国宝の釈迦如来倚像'],35.6675,139.5504),
+    T(18,'増上寺','阿弥陀如来','東京都港区芝公园4-7-35','kanto',4.5,12587,
+      ['goshuin','rekishi','kaiun'],['浄土宗大本山','徳川将軍家菩提寺'],35.6575,139.7483),
+    T(19,'池上本門寺','日蓮聖人','東京都大田区池上1-1-1','kanto',4.3,2859,
+      ['goshuin','rekishi'],['日蓮宗大本山','五重塔'],35.5788,139.7052),
+    T(20,'建長寺','地蔵菩薩','神奈川県鎌倉市山ノ内8','kanto',4.4,4742,
+      ['goshuin','rekishi','shizen'],['鎌倉五山第一位','日本最初の禅寺'],35.3315,139.5549),
+    T(21,'円覚寺','宝冠釈迦如来','神奈川県鎌倉市山ノ内409','kanto',4.4,4570,
+      ['goshuin','rekishi','shizen'],['鎌倉五山第二位','国宝舎利殿'],35.3377,139.5475),
+    T(22,'長谷寺（鎌倉）','十一面観世音菩薩','神奈川県鎌倉市長谷3-11-2','kanto',4.5,17020,
+      ['goshuin','rekishi','shizen'],['鎌倉の観音様','あじさい'],35.3125,139.5331),
+    T(23,'永平寺','釈迦牟尼仏','福井県吉田郡永平寺町志比5-15','chubu',4.5,8347,
+      ['goshuin','rekishi','shizen'],['曹洞宗大本山','道元禅師開創'],36.0566,136.3569),
+    T(24,'三十三間堂（蓮華王院）','千手観音','京都府京都市東山区三十三間堂廻町657','kinki',4.7,17292,
+      ['goshuin','rekishi'],['国宝','千一体の千手観音'],34.9879,135.7717),
+    T(26,'東寺（教王護国寺）','薬師如来','京都府京都市南区九条町1','kinki',4.5,19780,
+      ['goshuin','rekishi','kenko'],['世界遺産','日本一の五重塔'],34.9803,135.7477),
+    T(27,'仁和寺','阿弥陀如来','京都府京都市右京区御室大兹33','kinki',4.4,7883,
+      ['goshuin','rekishi','shizen'],['世界遺産','御室桜'],35.0311,135.7138),
+    T(28,'醤醐寺','薬師如来','京都府京都市伏見区醤醐東大路町22','kinki',4.4,6006,
+      ['goshuin','rekishi','shizen','kenko'],['世界遺産','秀吉の花見'],34.9511,135.8194),
+    T(29,'平等院','阿弥陀如来','京都府宇治市宇治蓮華116','kinki',4.5,22330,
+      ['goshuin','rekishi','shizen'],['世界遺産','鳳凰堂'],34.8893,135.8077),
+    T(30,'薬師寺','薬師三尊','奈良県奈良市西ノ京町457','kinki',4.4,5899,
+      ['goshuin','rekishi','kenko'],['世界遺産','薬師如来'],34.6686,135.7843),
+    T(31,'興福寺','釈迦如来','奈良県奈良市登大路町48','kinki',4.4,12921,
+      ['goshuin','rekishi'],['世界遺産','阿修羅像'],34.6832,135.8312),
+    T(32,'四天王寺','救世観音','大阪府大阪市天王寺区四天王寺1-11-18','kinki',4.4,13001,
+      ['goshuin','rekishi','kenko','kaiun'],['聖徳太子建立','日本仏法最初の官寺'],34.6545,135.5165),
+    T(33,'中山寺','十一面観世音菩薩','兵庫県宝塚市中山寺2-11-1','kinki',4.3,4437,
+      ['goshuin','kenko','enmusubi','rekishi'],['安産祈願','西国三十三所'],34.8216,135.3678),
+    T(34,'大聖院','波切不動明王','広島県廜日市市宮島町210','chugoku',4.6,5207,
+      ['goshuin','rekishi','kenko','shizen'],['宮島最古の寺','真言宗御室派大本山'],34.2920,132.3185),
+    T(35,'大願寺','厳島弁財天','広島県廜日市市宮島町3','chugoku',4.2,645,
+      ['goshuin','rekishi','kaiun'],['日本三大弁財天'],34.2955,132.3183),
+    T(36,'善通寺','薬師如来','香川県善通寺市善通寺町3-3-1','chugoku',4.4,3087,
+      ['goshuin','rekishi','kenko'],['弘法大師誕生地','四国霊場第七十五番'],34.2263,133.7762),
+    T(37,'石手寺','薬師如来','愛媛県松山市石手2-9-21','chugoku',4.1,2610,
+      ['goshuin','rekishi','kenko','kaiun'],['四国霊場第五十一番','国宝仁王門'],33.8479,132.7965),
+
+    S(71,'五條天神社','大己貴命・少彦名命（相殿 菅原道真公）','東京都台東区上野公园4-17','kanto',4.3,2124,
+      ['goshuin','kenko','gakumon','rekishi'],['医薬の祖神','上野公园'],35.7137,139.7723),
+    S(72,'平河天満宮','菅原道真公','東京都千代田区平河町1-7-5','kanto',4.2,479,
+      ['goshuin','gakumon','kaiun','rekishi'],['江戸城の鎮守','銅鳥居'],35.6824,139.7407),
+    S(73,'大生郷天満宮','菅原道真公','茨城県常総市大生郷町1234','kanto',4.0,479,
+      ['goshuin','gakumon','kaiun','rekishi'],['日本三大天神'],36.0607,139.9528),
+    S(74,'菅原院天満宮神社','菅原道真公','京都府京都市上京区烏丸通下立売下ル堀松町408','kinki',4.2,739,
+      ['goshuin','gakumon','kenko','rekishi'],['道真公生誕の地','癌封じの梅'],35.0196,135.7591),
+    S(75,'山田天満宮','菅原道真公','愛知県名古屋市北区山田町3-25','chubu',4.3,2316,
+      ['goshuin','gakumon','kaiun','kenko'],['名古屋三大天神','金神社'],35.1960,136.9383),
+    S(76,'白潟天満宮','菅原道真公','島根県松江市天神町59','chugoku',4.3,168,
+      ['goshuin','gakumon','kaiun'],['松江天神さん'],35.4617,133.0560),
+    S(77,'綱敷天満宮','菅原道真公','福岡県築上郡築上町大字高塚794-2','kyushu',4.2,472,
+      ['goshuin','gakumon','shizen','rekishi'],['花庭園の梅'],33.6605,131.0639)
+  ];
+
+  var AREA_FIX = { '関東':'kanto', '近畿':'kinki', '中部':'chubu', '中国四国':'chugoku',
+                   '北海道・東北':'hokkaido', '九州・沖縄':'kyushu', '中国・四国':'chugoku', '中部・北陸':'chubu' };
+
+  var MAX_BY = { all:30, goshuin:30, enmusubi:20, kaiun:20, gakumon:20,
+                 kenko:20, shizen:20, rekishi:20, shobai:20 };
+
+  function installFilter(){
+    if (window.__wabiMaxFilter) return;
+    if (typeof SHRINES === 'undefined' || typeof renderCard !== 'function') return;
+    if (!document.getElementById('areaSel') || !document.getElementById('sortSel')) return;
+    window.__wabiMaxFilter = true;
+    var prev = window.filter;
+    window.filter = function(){
+      try {
+        var areaSel = document.getElementById('areaSel');
+        var sortSel = document.getElementById('sortSel');
+        var area = areaSel.value, sort = sortSel.value;
+        if (area === 'nearby'){ if (typeof searchNearby === 'function') searchNearby(); return; }
+
+        var tag = (typeof currentTag !== 'undefined' && currentTag) ? currentTag : 'all';
+        var MAX = MAX_BY[tag] || 20;
+        var TOP = 10;
+
+        var f = SHRINES.slice();
+        if (typeof currentType !== 'undefined' && currentType) f = f.filter(function(s){ return (s.type || 'shrine') === currentType; });
+        if (area !== 'all') f = f.filter(function(s){ return s.area === area; });
+        if (tag !== 'all') f = f.filter(function(s){ return s.tags && s.tags.indexOf(tag) >= 0; });
+        if (sort === 'visited') f = f.filter(function(s){ return s.visited; });
+        if (sort === 'rating') f.sort(function(a, b){ return b.rating - a.rating; });
+        if (sort === 'rank')   f.sort(function(a, b){ return a.rank - b.rank; });
+
+        var lbl = areaSel.options[areaSel.selectedIndex].text;
+        var top = f.slice(0, MAX);
+        var shown = Math.min(top.length, TOP);
+        document.getElementById('resCount').textContent = lbl + ' ' + shown + '件';
+        document.getElementById('rmeta').innerHTML = lbl + ' <span>' + shown + '件</span> のおすすめ神社';
+        document.getElementById('list').innerHTML = top.length
+          ? top.map(function(s, i){ return renderCard(s, i + 1); }).join('')
+          : '<div style="text-align:center;color:#9A9086;padding:2rem 0;font-size:13px">このエリアの神社仏閣はまだありません</div>';
+      } catch(e){
+        if (prev) prev.apply(this, arguments);
+      }
+    };
+    try { window.filter(); } catch(e){}
+  }
+
+  function apply(){
+    if (typeof SHRINES === 'undefined' || !Array.isArray(SHRINES)) return false;
+    if (window.__wabiMoreDone) return true;
+    var have = {};
+    SHRINES.forEach(function(s){ have[s.name] = 1; });
+    ADD.forEach(function(x){ if (!have[x.name]) SHRINES.push(x); });
+    SHRINES.forEach(function(s){ if (AREA_FIX[s.area]) s.area = AREA_FIX[s.area]; });
+    window.__wabiMoreDone = true;
+    installFilter();
+    try { if (typeof filter === 'function') filter(); } catch(e){}
+    return true;
+  }
+
+  if (!apply()){
+    var n = 0;
+    var t = setInterval(function(){ if (apply() || ++n > 60) clearInterval(t); }, 500);
+  }
+})();

@@ -9741,3 +9741,182 @@
   put();
   setInterval(function(){ var s=document.getElementById('wabiDS1b'); if(s) document.head.appendChild(s); }, 3000);
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：デザインシステム 第2段階＋AIルートの「すべて見る」
+   ・すべてのカードの角丸を16px・影を1種類に統一
+   ・カード内の写真の比率を 4:3 に統一
+   ・AIルートの周辺スポット「すべて見る」を実装
+     （以前は「API接続後に対応予定です」と出るだけだった）
+   （2026-08-05 / index.html は触らず concierge.js から追記）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiDS2) return;
+  window.__wabiDS2 = true;
+
+  var css = document.createElement('style');
+  css.id = 'wabiDesignSystem2';
+  css.textContent = [
+    /* カードの角丸と影を統一 */
+    '.theme-card.theme-card,.route-card.route-card,.wev-card.wev-card,.ec-card.ec-card,',
+    '.tour-card.tour-card,.art-card.art-card,.wc-card.wc-card,.wfd-card.wfd-card,',
+    '.wtr-card.wtr-card,.wgd-card.wgd-card,.rcard.rcard,.wcb-card.wcb-card{',
+      'border-radius:16px !important;',
+      'box-shadow:0 1px 2px rgba(58,42,24,.04),0 2px 8px rgba(58,42,24,.04) !important;}',
+    /* 写真の比率を 4:3 に統一 */
+    '.theme-card.theme-card{aspect-ratio:4/3 !important;}',
+    '#list .rcard .pgallery-main,.pgallery-main.pgallery-main{aspect-ratio:4/3 !important;}',
+    '.art-thumb img,.art-thumb{aspect-ratio:4/3 !important;object-fit:cover !important;height:auto !important;}'
+  ].join('');
+  document.head.appendChild(css);
+})();
+
+/* ── AIルート：周辺スポットの「すべて見る」 ────────────────── */
+(function(){
+  if (window.__wabiAllSpots) return;
+  window.__wabiAllSpots = true;
+
+  var TYPE = {
+    'グルメ':'restaurant', 'カフェ・スイーツ':'cafe', '観光スポット':'tourist_attraction',
+    '体験・アクティビティ':'tourist_attraction', '宿泊施設':'lodging'
+  };
+
+  var css = document.createElement('style');
+  css.textContent = [
+    '#wcAllPg{position:fixed;inset:0;height:100dvh;z-index:340;background:#FAF8F3;display:none;',
+      'overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;',
+      "font-family:'Shippori Mincho','Noto Serif JP',serif;color:#2D2A26;",
+      'padding-bottom:calc(124px + env(safe-area-inset-bottom));}',
+    '.wap-hd{position:sticky;top:0;z-index:5;background:rgba(250,248,243,.96);backdrop-filter:blur(8px);',
+      'border-bottom:1px solid #ECE6DA;display:flex;align-items:center;gap:8px;padding:14px 20px;',
+      'max-width:500px;margin:0 auto;}',
+    '.wap-hd .b{font-size:22px;width:30px;cursor:pointer;line-height:1;}',
+    '.wap-hd .t{flex:1;text-align:center;font-size:15px;font-weight:700;letter-spacing:.04em;}',
+    '.wap-in{max-width:500px;margin:0 auto;padding:20px;}',
+    ".wap-note{font-size:12px;color:#9A9086;line-height:1.85;margin-bottom:16px;font-family:'Noto Serif JP',serif;}",
+    '.wap-row{display:flex;gap:12px;align-items:center;background:#fff;border-radius:16px;padding:12px;',
+      'margin-bottom:12px;box-shadow:0 1px 2px rgba(58,42,24,.04),0 2px 8px rgba(58,42,24,.04);}',
+    '.wap-im{width:96px;height:72px;border-radius:12px;flex:0 0 96px;background:#F5F0E6 center/cover no-repeat;}',
+    '.wap-bd{flex:1;min-width:0;}',
+    '.wap-nm{font-size:15px;font-weight:700;line-height:1.45;}',
+    ".wap-me{font-size:12px;color:#6E6459;margin-top:4px;line-height:1.6;font-family:'Noto Serif JP',serif;}",
+    '.wap-btn{flex:0 0 auto;min-height:40px;border-radius:999px;border:1px solid #D8D2C4;background:#fff;',
+      'color:#3A1D5D;font-size:12px;font-weight:700;padding:0 14px;cursor:pointer;white-space:nowrap;',
+      "font-family:'Shippori Mincho',serif;}",
+    '.wap-btn.on{background:#3A1D5D;color:#fff;border-color:#3A1D5D;}',
+    '.wap-btn:active{transform:scale(.98);}'
+  ].join('');
+  document.head.appendChild(css);
+
+  var pg = document.createElement('div');
+  pg.id = 'wcAllPg';
+  pg.innerHTML = '<div class="wap-hd"><span class="b" id="wapBack">‹</span>'
+    + '<span class="t" id="wapTit"></span><span style="width:30px"></span></div>'
+    + '<div class="wap-in" id="wapBody"></div>';
+  function attach(){
+    if (!document.body) return setTimeout(attach, 200);
+    if (!document.getElementById('wcAllPg')){
+      document.body.appendChild(pg);
+      document.getElementById('wapBack').onclick = function(){ pg.style.display = 'none'; };
+      var nav = document.getElementById('wabiNav');
+      if (nav) nav.addEventListener('click', function(){ pg.style.display = 'none'; }, true);
+    }
+  }
+  attach();
+
+  function baseRoute(){
+    var sub = document.querySelector('#wcInline .wc-sec-sub');
+    var nm = sub ? (sub.textContent.split('ベース：')[1] || '').replace(/[）)]\s*$/, '').trim() : '';
+    var rs = window._dynamicRoutes || window.AI_ROUTES || [];
+    for (var i = 0; i < rs.length; i++){ if (rs[i].name === nm) return rs[i]; }
+    return rs[0] || null;
+  }
+
+  function open(secEl){
+    if (!secEl) return;
+    var titEl = secEl.querySelector('.wc-sec-tit');
+    var tit = titEl ? titEl.textContent.trim() : '';
+    var type = TYPE[tit] || 'tourist_attraction';
+    var r = baseRoute();
+    if (!r || !r.spots || !r.spots[0] || !r.spots[0].lat){
+      if (typeof showToast === 'function') showToast('周辺の位置情報を取得できませんでした');
+      return;
+    }
+    if (!(window.google && google.maps && google.maps.places)){
+      if (typeof showToast === 'function') showToast('地図の読み込みを待っています。少しあとでお試しください');
+      return;
+    }
+    var s0 = r.spots[0];
+    var near = String(s0.name).replace(/[（(].*$/, '');
+    document.getElementById('wapTit').textContent = tit;
+    var body = document.getElementById('wapBody');
+    body.innerHTML = '<div class="wap-note">' + near + 'の周辺を探しています…</div>';
+    pg.style.display = 'block';
+    pg.scrollTop = 0;
+
+    var svc = new google.maps.places.PlacesService(document.createElement('div'));
+    svc.nearbySearch({ location: new google.maps.LatLng(s0.lat, s0.lng), radius: 1500, type: type },
+    function(res, st){
+      if (st !== google.maps.places.PlacesServiceStatus.OK || !res){
+        body.innerHTML = '<div class="wap-note">周辺の情報を取得できませんでした。'
+          + '時間をおいてもう一度お試しください。</div>';
+        return;
+      }
+      var list = res.filter(function(p){ return (p.user_ratings_total || 0) >= 5 && p.name !== s0.name; })
+        .sort(function(a, b){ return (b.rating || 0) - (a.rating || 0); })
+        .slice(0, 12);
+
+      var have = {};
+      document.querySelectorAll('#wcInline .wc-card .wc-name').forEach(function(n){
+        have[n.textContent.trim()] = n.closest('.wc-card');
+      });
+
+      var h = '<div class="wap-note">' + near + 'の周辺から' + list.length + '件。'
+        + '「＋ ルートに追加」はAIが選んだおすすめの候補に対応しています。'
+        + 'そのほかの候補は「地図で見る」からご確認ください。</div>';
+
+      list.forEach(function(p, i){
+        var ph = (p.photos && p.photos.length) ? p.photos[0].getUrl({ maxWidth: 300, maxHeight: 220 }) : '';
+        var card = have[p.name];
+        h += '<div class="wap-row">'
+          + '<div class="wap-im" style="' + (ph ? "background-image:url('" + ph + "')" : '') + '"></div>'
+          + '<div class="wap-bd"><div class="wap-nm">' + p.name + '</div>'
+          + '<div class="wap-me">★' + (p.rating || '-') + '（' + (p.user_ratings_total || 0) + '）'
+          + (p.vicinity ? '<br>' + p.vicinity : '') + '</div></div>'
+          + '<button class="wap-btn" data-i="' + i + '" data-has="' + (card ? '1' : '0') + '">'
+          + (card ? '＋ 追加' : '地図で見る') + '</button>'
+          + '</div>';
+      });
+      body.innerHTML = h;
+
+      body.querySelectorAll('.wap-btn').forEach(function(b){
+        b.onclick = function(){
+          var p = list[+b.getAttribute('data-i')];
+          if (b.getAttribute('data-has') === '1'){
+            var card = have[p.name];
+            var add = card && card.querySelector('.wc-add');
+            if (add){
+              add.click();
+              b.classList.toggle('on');
+              b.textContent = add.classList.contains('on') ? '✓ 追加済み' : '＋ 追加';
+            }
+          } else {
+            window.open('https://www.google.com/maps/search/?api=1&query='
+              + encodeURIComponent(p.name + ' ' + (p.vicinity || '')), '_blank');
+          }
+        };
+      });
+    });
+  }
+
+  function bind(){
+    document.querySelectorAll('#wcInline .wc-all').forEach(function(a){
+      if (a.getAttribute('data-wap')) return;
+      a.setAttribute('data-wap', '1');
+      a.onclick = function(e){ e.stopPropagation(); open(a.closest('.wc-sec')); };
+    });
+  }
+  bind();
+  setInterval(bind, 800);
+})();

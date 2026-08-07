@@ -10467,3 +10467,102 @@
   if (document.readyState !== 'complete') window.addEventListener('load', function(){ setTimeout(run, 600); });
 })();
 
+
+/* __wabiTopDS : TOPページを Design System v1.0 に合わせる（2026-08-07）
+   ・index.html は触らず、このブロックのCSSだけで仕上げる
+   ・適用範囲はTOPページのみ。body に wabi-top クラスがついている間だけ効く
+   ・他ページを順に仕上げるときは、同じやり方でページ別のブロックを追加する */
+(function(){
+  if (window.__wabiTopDS) return;
+  window.__wabiTopDS = true;
+
+  var CSS = [
+    "/* トークン */",
+    "body.wabi-top{--paper:#FAF8F3;--surface:#FFFFFF;--surface-2:#F5F0E6;--line:#ECE6DA;--line-strong:#D8D2C4;--ink:#2D2A26;--ink-2:#6E6459;--ink-3:#9A9086;--vermilion:#A83320;--purple:#3A1D5D;--gold:#C9A24A;--success:#5C7A5C;--sh1:0 1px 2px rgba(58,42,24,.04),0 2px 8px rgba(58,42,24,.04);--ease:cubic-bezier(.2,.8,.2,1)}",
+    "body.wabi-top #pgHome{font-family:\"Noto Serif JP\",\"Shippori Mincho\",serif}",
+    "/* 1. セクション見出し H2 18/700/.04em */",
+    "body.wabi-top #pgHome .home-sec-tit{font-size:18px !important;font-weight:700 !important;line-height:1.55 !important;letter-spacing:.04em !important;color:var(--ink) !important}",
+    "body.wabi-top #pgHome .home-sec-hd{margin-bottom:12px !important}",
+    "body.wabi-top #pgHome .home-sec-more{font-size:11px !important;font-weight:600 !important;letter-spacing:.08em !important;line-height:1.4 !important;color:var(--purple) !important}",
+    "body.wabi-top #pgHome .home-sec-tit .ico{background:var(--surface-2) !important;border-radius:8px !important;color:var(--ink-2) !important;box-shadow:none !important;border:0 !important}",
+    "body.wabi-top #pgHome .home-sec-tit .ico svg{stroke:var(--ink-2) !important;color:var(--ink-2) !important;fill:none !important}",
+    "/* 2. カードの土台：金の罫線を撤去し --line へ */",
+    "body.wabi-top #pgHome .rcard,body.wabi-top #pgHome .tour-card,body.wabi-top #pgHome .art-item,body.wabi-top #pgHome .wev-card,body.wabi-top #pgHome .wcp-card,body.wabi-top #pgHome .apc,body.wabi-top #pgHome .theme-card,body.wabi-top #pgHome .ec-card,body.wabi-top #pgHome .goods-card,body.wabi-top #pgHome .osupply-card{border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:var(--sh1) !important;background:var(--surface) !important}",
+    "/* 3. タグ・格バッジ */",
+    "body.wabi-top #pgHome .deity,body.wabi-top #pgHome .kbadge,body.wabi-top #pgHome .tag{border-radius:8px !important;font-size:11px !important;font-weight:600 !important;letter-spacing:.08em !important;line-height:1.4 !important;box-shadow:none !important}",
+    "body.wabi-top #pgHome .deity{background:var(--surface-2) !important;color:var(--ink-2) !important;border:0 !important}",
+    "body.wabi-top #pgHome .kbadge{background:var(--surface) !important;color:var(--ink) !important;border:1px solid var(--line-strong) !important}",
+    "/* 4. 文字サイズを8段階へ */",
+    "body.wabi-top #pgHome .cp,body.wabi-top #pgHome small,body.wabi-top #pgHome .wabi-more-rank{font-size:11px !important}",
+    "body.wabi-top #pgHome .wcp-sub,body.wabi-top #pgHome .sb,body.wabi-top #pgHome .pd,body.wabi-top #pgHome .tour-route,body.wabi-top #pgHome .ec-title{font-size:12px !important;line-height:1.7 !important}",
+    "body.wabi-top #pgHome .wl-btn,body.wabi-top #pgHome .theme-card-title{font-size:13px !important}",
+    "body.wabi-top #pgHome .rname,body.wabi-top #pgHome .tt,body.wabi-top #pgHome .tour-title{font-size:15px !important;font-weight:700 !important;line-height:1.6 !important}",
+    "/* 5. 神社カード：写真を上へ・4:3・順位バッジは写真の左上 */",
+    "body.wabi-top #pgHome .rcard{position:relative;overflow:hidden}",
+    "body.wabi-top #pgHome .rcard .pgallery{order:-1 !important;margin:0 !important;border-radius:0 !important}",
+    "body.wabi-top #pgHome .rcard .pgallery-main{aspect-ratio:4/3 !important;height:auto !important;min-height:0 !important;border-radius:0 !important;background:var(--surface-2) !important}",
+    "body.wabi-top #pgHome .rcard .pgallery-main img{width:100% !important;height:100% !important;object-fit:cover !important;object-position:center 30% !important}",
+    "body.wabi-top #pgHome .rcard .rhd{min-height:0 !important;height:auto !important;padding:16px !important}",
+    "body.wabi-top #pgHome .rcard .rbdg{position:absolute !important;top:12px !important;left:12px !important;z-index:3 !important;margin:0 !important}",
+    "body.wabi-top #pgHome .rcard .nblk{width:100% !important}",
+    "body.wabi-top #pgHome .rcard .nrow{display:block !important}",
+    "body.wabi-top #pgHome .rcard .rname{display:block !important}",
+    "body.wabi-top #pgHome .rcard .deity{display:inline-block !important;margin-top:6px !important}",
+    "body.wabi-top #pgHome .rcard .kakushiki{margin-top:6px !important}",
+    "body.wabi-top #pgHome .rcard .rarow{display:none !important}",
+    "body.wabi-top #pgHome .rcard .alink{color:var(--purple) !important;font-size:12px !important;line-height:1.7 !important;margin-top:8px !important;display:flex !important;align-items:flex-start !important;gap:4px !important}",
+    "body.wabi-top #pgHome .rcard .rftr{padding:0 16px 16px !important}",
+    "body.wabi-top #pgHome .rcard .rcnt{color:var(--ink-3) !important;font-size:12px !important;line-height:1.7 !important}",
+    "body.wabi-top #pgHome .rcard .rnum{color:var(--ink) !important;font-size:13px !important;font-weight:700 !important}",
+    "/* 6. 参拝バッジ（朱→苔／生成り） */",
+    "body.wabi-top #pgHome .bn{background:var(--surface-2) !important;color:var(--ink-3) !important;border-radius:8px !important;font-size:11px !important;letter-spacing:.08em !important;font-weight:600 !important}",
+    "body.wabi-top #pgHome .bv{background:#EDF2ED !important;color:var(--success) !important;border-radius:8px !important;font-size:11px !important;letter-spacing:.08em !important;font-weight:600 !important}",
+    "/* 7. ヘッダー・下部ナビ（生成り＋ぼかし） */",
+    "body.wabi-top .site-hd{background:rgba(250,248,243,.96) !important;-webkit-backdrop-filter:blur(8px) !important;backdrop-filter:blur(8px) !important;border-bottom:1px solid var(--line) !important;box-shadow:none !important;padding:8px 20px !important}",
+    "body.wabi-top .site-hd-sub{color:var(--ink-3) !important}",
+    "body.wabi-top #wabiNav{background:rgba(250,248,243,.92) !important;-webkit-backdrop-filter:blur(12px) !important;backdrop-filter:blur(12px) !important;border-top:1px solid var(--line) !important;box-shadow:none !important}",
+    "body.wabi-top #wabiNav .nav-lb,body.wabi-top #wabiNav span{font-size:11px !important;letter-spacing:.08em !important}",
+    "/* 8. チップ：選択中は紫（行動の色） */",
+    "body.wabi-top .hero-search-toggle,body.wabi-top .hero-search-pill{color:var(--ink-2) !important;border:1px solid var(--line-strong) !important;letter-spacing:.08em !important}",
+    "body.wabi-top .hero-search-toggle.on,body.wabi-top .hero-search-pill.on{background:var(--purple) !important;border-color:var(--purple) !important;color:#fff !important}",
+    "/* 9. 参拝のお供（PRカード） */",
+    "body.wabi-top #pgHome .osupply-title{font-size:13px !important;line-height:1.85 !important;color:var(--ink) !important;min-height:48px !important;display:-webkit-box !important;-webkit-line-clamp:2 !important;-webkit-box-orient:vertical !important;overflow:hidden !important}",
+    "body.wabi-top #pgHome .osupply-price{font-size:15px !important;font-weight:700 !important;color:var(--ink) !important}",
+    "body.wabi-top #pgHome .wabi-rk-btn{background:var(--purple) !important;color:#fff !important;border:0 !important;border-radius:999px !important;height:40px !important;min-height:40px !important;font-size:12px !important;font-weight:700 !important;letter-spacing:.08em !important;box-shadow:none !important}",
+    "body.wabi-top #pgHome .wabi-pr{background:rgba(255,255,255,.92) !important;color:var(--ink-3) !important;border-radius:8px !important;font-size:11px !important;font-weight:600 !important;letter-spacing:.08em !important;border:0 !important}",
+    "body.wabi-top #pgHome .osupply-img-rank{background:rgba(0,0,0,.42) !important;color:#fff !important;border-radius:8px !important;font-size:11px !important;font-weight:600 !important;letter-spacing:.08em !important;border:0 !important;box-shadow:none !important}",
+    "/* 10. 押下 */",
+    "body.wabi-top #pgHome .rcard:active,body.wabi-top #pgHome .tour-card:active,body.wabi-top #pgHome .art-item:active,body.wabi-top #pgHome .wev-card:active,body.wabi-top #pgHome .osupply-card:active{transform:scale(.985);transition:transform 120ms var(--ease)}",
+    "@media (prefers-reduced-motion:reduce){body.wabi-top #pgHome *{transition:none !important;animation:none !important}}"
+  ].join('\n');
+
+  var style = document.createElement('style');
+  style.id = 'wabiTopDS';
+  style.textContent = CSS;
+  (document.head || document.documentElement).appendChild(style);
+
+  // TOPページが見えている間だけ body.wabi-top をつける
+  function isTop(){
+    var home = document.getElementById('pgHome');
+    if (!home) return false;
+    if (getComputedStyle(home).display === 'none') return false;
+    // 他のページが上に開いていたらTOPではない
+    var overlays = ['pgMap','pgShrine','pgRoute','wcMypage','pgSeasonList','wabiPostPg','wabiRankMore'];
+    for (var i = 0; i < overlays.length; i++) {
+      var el = document.getElementById(overlays[i]);
+      if (el && getComputedStyle(el).display !== 'none' && el.offsetHeight > 0) return false;
+    }
+    return true;
+  }
+
+  function sync(){
+    try { document.body.classList.toggle('wabi-top', isTop()); } catch(e){}
+  }
+
+  sync();
+  // タブ切替やページ開閉に追従する
+  ['click','touchend','popstate'].forEach(function(ev){
+    window.addEventListener(ev, function(){ setTimeout(sync, 60); setTimeout(sync, 400); }, true);
+  });
+  setInterval(sync, 1000);
+})();

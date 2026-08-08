@@ -10566,3 +10566,29 @@
   });
   setInterval(sync, 1000);
 })();
+
+/* __wabiTopFix1 : TOPページの不具合修正（2026-08-08）
+   STEP3）最下部が下部メニューに近すぎる：余白 76px → 124px + セーフエリア（第4-2章）
+   STEP4）狭い端末で「未参拝」バッジが縦に潰れる：440px以下でだけ折り返しを許可
+   ※ 440px を超える幅では1バイトも変わらない */
+(function(){
+  if (window.__wabiTopFix1) return;
+  window.__wabiTopFix1 = true;
+
+  var CSS = [
+    "/* STEP3 ページ下部の余白：76px → 124px + セーフエリア */",
+    "body.wabi-top .app{padding-bottom:calc(124px + env(safe-area-inset-bottom)) !important}",
+    "/* STEP4 狭い端末でカード下部が潰れるのを防ぐ */",
+    "/*   440px 以下（iPhone全機種）のときだけ効く。幅の広い画面では何も変わらない */",
+    "@media (max-width:440px){",
+    "  body.wabi-top #pgHome .rcard .rftr{flex-wrap:wrap !important;gap:6px !important;align-items:center !important}",
+    "  body.wabi-top #pgHome .rcard .bn,body.wabi-top #pgHome .rcard .bv{white-space:nowrap !important;display:inline-block !important;flex:0 0 auto !important}",
+    "  body.wabi-top #pgHome .rcard .rcnt{white-space:nowrap !important}",
+    "}"
+  ].join('\n');
+
+  var style = document.createElement('style');
+  style.id = 'wabiTopFix1';
+  style.textContent = CSS;
+  (document.head || document.documentElement).appendChild(style);
+})();

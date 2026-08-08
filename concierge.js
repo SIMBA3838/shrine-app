@@ -10592,3 +10592,33 @@
   style.textContent = CSS;
   (document.head || document.documentElement).appendChild(style);
 })();
+
+/* __wabiTopFix2 : TOPページの朱・金の誤用を直す（2026-08-08）
+   対象は10か所。いずれもヒーロー領域の外側。
+   ヒーロー内の .btn-search（金のグラデーション）と .hero-search-cta（朱）は
+   ブランド表現に関わるため、SIMBAさんの判断を待って手をつけていない。
+   .tagbar（絞り込みバー）も、白にすると中のチップが見えなくなるため見送った。 */
+(function(){
+  if (window.__wabiTopFix2) return;
+  window.__wabiTopFix2 = true;
+
+  var CSS = [
+    "/* 朱は「数字・位置」だけ（ルール3）、金は5か所だけ（ルール2）、紫は「行動」だけ（ルール4） */",
+    "body.wabi-top #pgHome .secln{background:var(--line) !important;border-radius:0 !important}",
+    "body.wabi-top #pgHome .ec-price{color:var(--ink) !important}",
+    "body.wabi-top #pgHome .ec-img-tag{background:rgba(0,0,0,.42) !important;color:#fff !important;border-radius:8px !important;font-weight:600 !important;letter-spacing:.08em !important}",
+    "body.wabi-top #pgHome .wcp-av{background:var(--surface-2) !important;color:var(--ink-2) !important;border-color:var(--line) !important}",
+    "body.wabi-top #pgHome .community-box{border:1px solid var(--line) !important;box-shadow:var(--sh1) !important}",
+    "body.wabi-top #pgHome .tour-img-badge{background:rgba(0,0,0,.42) !important;color:#fff !important;border-radius:8px !important;font-weight:600 !important;letter-spacing:.08em !important}",
+    "body.wabi-top #pgHome .ai-preview-label{color:var(--ink-3) !important}",
+    "body.wabi-top .wl-btn{background:var(--purple) !important}",
+    "body.wabi-top #pgHome .wgd-pr{border-radius:8px !important}",
+    "/* 「11位〜30位を見る」を Secondary ボタン（S）にする */",
+    "body.wabi-top #pgHome .wabi-more-rank{border-radius:999px !important;color:var(--purple) !important;border:1px solid var(--line-strong) !important;background:var(--surface) !important;min-height:36px !important;display:inline-flex !important;align-items:center !important;justify-content:center !important;padding:0 18px !important;box-shadow:none !important}"
+  ].join('\n');
+
+  var style = document.createElement('style');
+  style.id = 'wabiTopFix2';
+  style.textContent = CSS;
+  (document.head || document.documentElement).appendChild(style);
+})();

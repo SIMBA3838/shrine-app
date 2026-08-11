@@ -10658,7 +10658,7 @@
 
     "/* C2：ツアーカードの写真を 4:3 に */",
     "body.wabi-top #pgHome .tour-card{align-items:stretch !important;min-height:90px !important}",
-    "body.wabi-top #pgHome .tour-img{flex:0 0 120px !important;width:120px !important;min-height:90px !important;border-radius:0 !important}",
+    "body.wabi-top #pgHome .tour-img{flex:0 0 auto !important;width:auto !important;aspect-ratio:4/3 !important;align-self:stretch !important;min-height:0 !important;border-radius:0 !important}",
     "body.wabi-top #pgHome .tour-img img{width:100% !important;height:100% !important;object-fit:cover !important;object-position:center 30% !important}",
 
     "/* 優先2：影は3種類だけ。カードは sh-1 */",

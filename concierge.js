@@ -10769,3 +10769,154 @@
 
   window.WabiIconTune = tuneIcons;   // 手で呼べるように
 })();
+
+
+/* __wabiPrefFilter : おすすめランキングを「都道府県」でも絞り込めるようにする（2026-08-12）
+   ・index.html は触らない。このブロックだけで実現する
+   ・エリア（関東・九州など）での絞り込みはそのまま残す
+
+   ★あわせて直した不具合★
+     areaSel / sortSel の onchange が **空** だったため、
+     選び直しても何も起きなかった（filter() を直接呼べば動いていた）。
+     ここで change に filter() を結び直す。
+
+   ★県の一覧は SHRINES から自動で作る★
+     47都道府県を固定で並べると、神社が1件も無い県が13も出てしまう。
+     実際に登録がある県だけを、エリアごとにまとめて出す（件数つき）。
+     データが増えれば選択肢も自動で増える。                              */
+(function(){
+  if (window.__wabiPrefFilter) return;
+  window.__wabiPrefFilter = true;
+
+  var PREF = ['北海道','青森県','岩手県','宮城県','秋田県','山形県','福島県',
+              '茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県',
+              '新潟県','富山県','石川県','福井県','山梨県','長野県','岐阜県','静岡県','愛知県','三重県',
+              '滋賀県','京都府','大阪府','兵庫県','奈良県','和歌山県',
+              '鳥取県','島根県','岡山県','広島県','山口県','徳島県','香川県','愛媛県','高知県',
+              '福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県'];
+
+  var AREA_LABEL = { hokkaido:'北海道・東北', kanto:'関東', chubu:'中部・北陸',
+                     kinki:'近畿', chugoku:'中国・四国', kyushu:'九州・沖縄' };
+  var AREA_ORDER = ['hokkaido','kanto','chubu','kinki','chugoku','kyushu'];
+
+  /* 住所の先頭から都道府県を取り出す。'三重県伊勢市…' → '三重県' */
+  function prefOf(s){
+    var a = (s && s.addr) ? String(s.addr) : '';
+    for (var i = 0; i < PREF.length; i++) {
+      if (a.indexOf(PREF[i]) === 0) return PREF[i];
+    }
+    return '';
+  }
+
+  /* ---- 県の選択肢を作る（登録がある県だけ） ---------------------- */
+  var builtCount = -1;
+  function buildOptions(){
+    var sel = document.getElementById('areaSel');
+    if (!sel || typeof SHRINES === 'undefined' || !Array.isArray(SHRINES)) return false;
+    if (builtCount === SHRINES.length) return true;   // 変化なし
+
+    // いったん自分が足したものを消して作り直す（あとから神社が増えるため）
+    Array.prototype.slice.call(sel.querySelectorAll('optgroup[data-wabi-pref]'))
+      .forEach(function(g){ g.parentNode.removeChild(g); });
+
+    var byArea = {};
+    SHRINES.forEach(function(s){
+      var p = prefOf(s);
+      if (!p) return;
+      var a = s.area || '';
+      if (!byArea[a]) byArea[a] = {};
+      byArea[a][p] = (byArea[a][p] || 0) + 1;
+    });
+
+    AREA_ORDER.forEach(function(a){
+      var m = byArea[a];
+      if (!m) return;
+      var group = document.createElement('optgroup');
+      group.setAttribute('data-wabi-pref', '1');
+      group.label = (AREA_LABEL[a] || a) + '｜都道府県で選ぶ';
+      Object.keys(m).sort(function(x, y){ return PREF.indexOf(x) - PREF.indexOf(y); })
+        .forEach(function(p){
+          var o = document.createElement('option');
+          o.value = 'pref:' + p;
+          o.textContent = p + '（' + m[p] + '）';
+          group.appendChild(o);
+        });
+      sel.appendChild(group);
+    });
+    builtCount = SHRINES.length;
+    return true;
+  }
+
+  /* ---- 県で絞り込む filter ---------------------------------------- */
+  var installed = false;
+  function install(){
+    if (installed) return;
+    if (typeof renderCard !== 'function' || typeof SHRINES === 'undefined') return;
+    installed = true;
+
+    var prev = window.filter;
+    window.filter = function(){
+      var sel = document.getElementById('areaSel');
+      // 県が選ばれていないときは、これまでどおりの処理に任せる
+      if (!sel || String(sel.value).indexOf('pref:') !== 0) {
+        return prev && prev.apply(this, arguments);
+      }
+      try {
+        var pref = sel.value.slice(5);
+        var sortSel = document.getElementById('sortSel');
+        var sort = sortSel ? sortSel.value : 'rank';
+        var tag = (typeof currentTag !== 'undefined' && currentTag) ? currentTag : 'all';
+        var MAX = 30, TOP = 10;
+
+        var f = SHRINES.filter(function(s){ return prefOf(s) === pref; });
+        if (typeof currentType !== 'undefined' && currentType) {
+          f = f.filter(function(s){ return (s.type || 'shrine') === currentType; });
+        }
+        if (tag !== 'all') {
+          f = f.filter(function(s){ return s.tags && s.tags.indexOf(tag) >= 0; });
+        }
+        if (sort === 'visited') f = f.filter(function(s){ return s.visited; });
+        if (sort === 'rating')  f.sort(function(a, b){ return b.rating - a.rating; });
+        if (sort === 'rank')    f.sort(function(a, b){ return a.rank - b.rank; });
+
+        var top = f.slice(0, MAX);
+        var shown = Math.min(top.length, TOP);
+        var rc = document.getElementById('resCount');
+        var rm = document.getElementById('rmeta');
+        if (rc) rc.textContent = pref + ' ' + shown + '件';
+        if (rm) rm.innerHTML = pref + ' <span>' + shown + '件</span> のおすすめ神社';
+        document.getElementById('list').innerHTML = top.length
+          ? top.map(function(s, i){ return renderCard(s, i + 1); }).join('')
+          : '<div style="text-align:center;color:#9A9086;padding:2rem 0;font-size:13px">'
+            + pref + 'の神社仏閣はまだありません</div>';
+      } catch(e) {
+        if (prev) prev.apply(this, arguments);
+      }
+    };
+  }
+
+  /* ---- 選び直したら描き直す（ここが効いていなかった） -------------- */
+  function bind(){
+    ['areaSel', 'sortSel'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (!el || el.getAttribute('data-wabi-bound')) return;
+      el.setAttribute('data-wabi-bound', '1');
+      el.addEventListener('change', function(){
+        try { if (typeof window.filter === 'function') window.filter(); } catch(e){}
+      });
+    });
+  }
+
+  function run(){
+    bind();
+    install();
+    buildOptions();
+  }
+
+  if (document.readyState === 'complete') setTimeout(run, 100);
+  else window.addEventListener('load', function(){ setTimeout(run, 100); });
+  // 神社データはあとから増える（__wabiMoreShrines）ので、しばらく見張る
+  [400, 1200, 2500, 5000].forEach(function(ms){ setTimeout(run, ms); });
+
+  window.WabiPrefFilter = { rebuild: run, prefOf: prefOf };
+})();

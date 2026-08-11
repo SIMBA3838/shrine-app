@@ -10622,3 +10622,150 @@
   style.textContent = CSS;
   (document.head || document.documentElement).appendChild(style);
 })();
+
+
+/* __wabiTopFix3 : 保留していた A/B/C と 優先2（影）・優先3（アイコン）を実施（2026-08-11）
+   ・index.html は触らない。このブロックのCSS＋JSだけで仕上げる
+   ・適用範囲はTOPページのみ（body.wabi-top が付いている間だけ）
+
+   A  ヒーローCTA 朱 → 紫（DS 2-2 ルール3：主要ボタンは紫）
+   B  検索チップの選択色 → 紫（__wabiTopDS で実施済み。ここでは検索まわりの金の影を除去）
+   C1 ヒーロー画像 4:3 → 16:9（DS 7-1：ヒーローは16:9）
+   C2 ツアーカードの写真 → 4:3（DS 7-1：カード内の写真は4:3）
+   優先2 影を3種類（sh-1 / sh-2 / sh-3）に統一。金色・朱色の影を全廃
+   優先3 アイコンの実効線幅を 1.00 / 1.25 / 1.50px に揃える            */
+(function(){
+  if (window.__wabiTopFix3) return;
+  window.__wabiTopFix3 = true;
+
+  var CSS = [
+    /* --- 影のトークン（DS 付録A） --------------------------------- */
+    "body.wabi-top{",
+    "  --sh-1:0 1px 2px rgba(58,42,24,.04),0 2px 8px rgba(58,42,24,.04);",
+    "  --sh-2:0 2px 4px rgba(58,42,24,.05),0 8px 20px rgba(58,42,24,.06);",
+    "  --sh-3:0 8px 32px rgba(58,42,24,.10)}",
+
+    "/* A：ヒーローCTA 朱→紫。角丸14px は DS の6値に無いので999pxへ */",
+    "body.wabi-top .hero-search-cta{background:var(--purple) !important;border-radius:999px !important;box-shadow:var(--sh-2) !important;border:0 !important}",
+    "body.wabi-top .hero-search-cta:active{transform:scale(.985);box-shadow:var(--sh-1) !important}",
+
+    "/* B：検索まわりの金・朱の影を除去（選択色の紫は __wabiTopDS で実施済み） */",
+    "body.wabi-top .hero-search-toggle,body.wabi-top .hero-search-pill,body.wabi-top .hero-search-input-wrap{box-shadow:none !important}",
+    "body.wabi-top .hero-search-toggle.on,body.wabi-top .hero-search-pill.on{box-shadow:none !important}",
+
+    "/* C1：ヒーロー画像 4:3 → 16:9 */",
+    "body.wabi-top .hero-bg-wrap{aspect-ratio:16/9 !important;background-size:cover !important;background-position:center 30% !important;border-radius:0 !important}",
+
+    "/* C2：ツアーカードの写真を 4:3 に */",
+    "body.wabi-top #pgHome .tour-card{align-items:stretch !important;min-height:90px !important}",
+    "body.wabi-top #pgHome .tour-img{flex:0 0 120px !important;width:120px !important;min-height:90px !important;border-radius:0 !important}",
+    "body.wabi-top #pgHome .tour-img img{width:100% !important;height:100% !important;object-fit:cover !important;object-position:center 30% !important}",
+
+    "/* 優先2：影は3種類だけ。カードは sh-1 */",
+    "body.wabi-top #pgHome .rcard,body.wabi-top #pgHome .tour-card,body.wabi-top #pgHome .art-item,",
+    "body.wabi-top #pgHome .wev-card,body.wabi-top #pgHome .wcp-card,body.wabi-top #pgHome .apc,",
+    "body.wabi-top #pgHome .theme-card,body.wabi-top #pgHome .ec-card,body.wabi-top #pgHome .goods-card,",
+    "body.wabi-top #pgHome .osupply-card,body.wabi-top #pgHome .community-box{box-shadow:var(--sh-1) !important}",
+
+    "/* 浮いているものだけ sh-2 / sh-3 */",
+    "body.wabi-top .wabi-fab,body.wabi-top .map-fab{box-shadow:var(--sh-2) !important}",
+    "body.wabi-top .wrc,body.wabi-top .wp-sheet,body.wabi-top .wx-menu{box-shadow:var(--sh-3) !important}",
+
+    "/* 小さな部品に影はつけない（DS 16-4：影を重ねない） */",
+    "body.wabi-top #pgHome .deity,body.wabi-top #pgHome .kbadge,body.wabi-top #pgHome .tag,",
+    "body.wabi-top #pgHome .bn,body.wabi-top #pgHome .bv,body.wabi-top #pgHome .rbdg,",
+    "body.wabi-top #pgHome .tour-img-badge,body.wabi-top #pgHome .wabi-pr,",
+    "body.wabi-top #pgHome .osupply-img-rank,body.wabi-top #pgHome .cp,",
+    "body.wabi-top #pgHome .wabi-more-rank,body.wabi-top #pgHome .home-sec-tit .ico,",
+    "body.wabi-top #pgHome .wl-btn,body.wabi-top #pgHome .wabi-rk-btn{box-shadow:none !important}",
+
+    "/* 金色・朱色の影を使っている残りを打ち消す */",
+    "body.wabi-top #pgHome .pgallery,body.wabi-top #pgHome .pgallery-main,",
+    "body.wabi-top #pgHome .secln,body.wabi-top #pgHome .ec-img-tag{box-shadow:none !important}"
+  ].join('\n');
+
+  var style = document.createElement('style');
+  style.id = 'wabiTopFix3';
+  style.textContent = CSS;
+  (document.head || document.documentElement).appendChild(style);
+
+  /* ------------------------------------------------------------------
+     優先3：アイコンの線の太さを揃える
+
+     ★なぜ viewBox そのものを揃えないか★
+       index.html には viewBox が13種類（0 0 14 14 が40個、0 0 18 18 が27個…）
+       混在している。viewBox を 0 0 24 24 に書き換えるには、
+       中の座標をすべて計算し直す必要があり、index.html を大きく触ることになる。
+       わびなびは「index.html は触らない」方針なので、それは採らない。
+
+     ★代わりに何をするか★
+       見た目の目的は「線の太さが画面上で揃うこと」である。
+       画面上の実際の太さは
+             stroke-width × （表示px ÷ viewBoxの単位数）
+       で決まる。そこで表示サイズから逆算して stroke-width を入れ直す。
+
+       DS 第6章の実効線幅
+         12px以下      → 1.00px
+         13〜20px      → 1.25px
+         21px以上      → 1.50px
+
+     ★触らないもの（DS 19章の例外）★
+       E3 鳥居・三重塔・朱印（サービス記号）／E4 ブランドロゴ／E5 外部提供アイコン
+  ------------------------------------------------------------------ */
+  var SKIP = /wabi-logo|brand-logo|torii|pagoda|shuin|gm-|google/i;
+
+  function targetStroke(px){
+    if (px <= 12) return 1.00;
+    if (px <= 20) return 1.25;
+    return 1.50;
+  }
+
+  function tuneIcons(root){
+    var host = root || document.getElementById('pgHome');
+    if (!host) return 0;
+    var list = host.querySelectorAll('svg[viewBox]');
+    var done = 0;
+    for (var i = 0; i < list.length; i++){
+      var svg = list[i];
+      if (svg.__wabiTuned) continue;
+      var cls = (svg.getAttribute('class') || '') + ' ' + ((svg.parentNode && svg.parentNode.getAttribute)
+                ? (svg.parentNode.getAttribute('class') || '') : '');
+      if (SKIP.test(cls)) { svg.__wabiTuned = true; continue; }
+
+      var box = (svg.getAttribute('viewBox') || '').trim().split(/\s+/);
+      var units = parseFloat(box[2]);
+      if (!units || !isFinite(units)) { svg.__wabiTuned = true; continue; }
+
+      var rect = svg.getBoundingClientRect();
+      var px = Math.max(rect.width, rect.height);
+      if (!px) continue;                       // まだ描かれていない。次の巡回で拾う
+
+      var want = targetStroke(px) * units / px;
+      // 極端な値にはしない
+      if (want < 0.4) want = 0.4;
+      if (want > 3.2) want = 3.2;
+      svg.style.strokeWidth = String(Math.round(want * 100) / 100);
+      svg.__wabiTuned = true;
+      done++;
+    }
+    return done;
+  }
+
+  // 描画が落ち着いてから。以後は増えた分だけ拾う
+  function run(){ try { tuneIcons(); } catch (e) {} }
+  if (document.readyState === 'complete') setTimeout(run, 300);
+  else window.addEventListener('load', function(){ setTimeout(run, 300); });
+  setTimeout(run, 1200);
+  setTimeout(run, 2500);
+
+  var home = document.getElementById('pgHome');
+  if (home && window.MutationObserver){
+    var timer = null;
+    new MutationObserver(function(){
+      clearTimeout(timer);
+      timer = setTimeout(run, 250);
+    }).observe(home, { childList: true, subtree: true });
+  }
+
+  window.WabiIconTune = tuneIcons;   // 手で呼べるように
+})();

@@ -74,6 +74,34 @@
   .simba-btn{background:var(--purple);color:#fff;font-weight:700;font-size:13.5px;padding:9px 20px;border-radius:22px;letter-spacing:.03em;box-shadow:0 4px 14px rgba(75,46,131,.25);transition:background .2s,transform .2s;}
   .simba-btn:hover{background:var(--purple-d);transform:translateY(-1px);}
 
+  /* ---------- ユーザーメニュー / 設定ドロップダウン ---------- */
+  .user-block{display:flex;align-items:center;gap:6px;position:relative;}
+  .user-name{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:var(--text);cursor:pointer;padding:6px 10px 6px 6px;border-radius:20px;transition:background .2s;}
+  .user-name:hover{background:var(--bg);}
+  .user-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--vermilion),var(--gold));display:flex;align-items:center;justify-content:center;flex:none;}
+  .settings-menu{display:none;position:absolute;top:calc(100% + 8px);right:0;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 16px 32px rgba(43,20,10,.16);min-width:180px;padding:8px;z-index:50;}
+  .settings-menu.open{display:block;}
+  .settings-menu a{display:block;padding:9px 12px;font-size:13px;color:var(--text);border-radius:8px;font-weight:500;}
+  .settings-menu a:hover{background:var(--bg);color:var(--purple);}
+  .settings-menu-sep{height:1px;background:var(--border);margin:6px 4px;}
+
+  /* ---------- マイページ簡易オーバーレイ ---------- */
+  .mypage-overlay{display:none;position:fixed;inset:0;background:rgba(20,10,8,.5);z-index:200;align-items:center;justify-content:center;}
+  .mypage-overlay.open{display:flex;}
+  .mypage-card{background:#fff;border-radius:20px;width:360px;max-width:92vw;overflow:hidden;box-shadow:0 30px 60px rgba(0,0,0,.3);}
+  .mypage-hd{position:relative;background:linear-gradient(135deg,var(--vermilion),#8f3520);padding:32px 24px 26px;text-align:center;}
+  .mypage-avatar{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;}
+  .mypage-name{font-family:'Noto Serif JP',serif;font-size:17px;font-weight:700;color:#fff;}
+  .mypage-level{font-size:10.5px;color:#F3D9A0;margin-top:4px;letter-spacing:.15em;}
+  .mypage-stats{display:grid;grid-template-columns:repeat(3,1fr);text-align:center;padding:18px 10px;border-bottom:1px solid var(--border);}
+  .mypage-stats>div{border-right:1px solid var(--border);}
+  .mypage-stats>div:last-child{border-right:none;}
+  .mypage-stats .num{font-family:'Noto Serif JP',serif;font-size:22px;font-weight:700;color:var(--vermilion);}
+  .mypage-stats .lbl{font-size:10.5px;color:var(--subtext);margin-top:2px;}
+  .mypage-recent{padding:18px 22px 24px;}
+  .mypage-recent-tit{font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;}
+  .mypage-recent-empty{text-align:center;color:#bbb;font-size:12px;padding:20px 0;}
+
   /* ---------- hero ---------- */
   .hero{position:relative;min-height:460px;display:flex;align-items:center;
     background:linear-gradient(180deg,rgba(18,10,8,.28),rgba(18,10,8,.62)),
@@ -105,6 +133,14 @@
   .ai-cta-big{background:linear-gradient(135deg,var(--purple),#5c3aa0);color:#fff;font-weight:700;font-size:16px;padding:17px 40px;border-radius:14px;display:flex;align-items:center;gap:10px;box-shadow:0 12px 28px rgba(75,46,131,.4),0 0 0 3px rgba(200,166,90,.25);letter-spacing:.02em;}
   .ai-cta-big:hover{background:var(--purple-d);}
   .ai-cta-note{text-align:center;font-size:11.5px;color:var(--subtext);margin-top:12px;}
+  .search-status{text-align:center;font-size:12px;color:var(--subtext);margin-top:10px;min-height:16px;}
+  .search-result-card{position:relative;border-radius:var(--r-md);overflow:hidden;aspect-ratio:4/3.4;transition:transform .25s,box-shadow .25s;cursor:pointer;}
+  .search-result-card:hover{transform:translateY(-4px);box-shadow:0 16px 28px -12px rgba(43,20,10,.32);}
+  .search-result-card img{width:100%;height:100%;object-fit:cover;}
+  .search-result-card::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(20,10,5,.85) 0%,rgba(20,10,5,.05) 55%,transparent 100%);}
+  .search-result-info{position:absolute;bottom:10px;left:12px;right:12px;color:#fff;z-index:2;}
+  .search-result-info .r-name{font-size:13.5px;font-weight:700;}
+  .search-result-info .r-addr{font-size:10.5px;color:#EADFCB;margin-top:3px;}
 
   /* ---------- section shell ---------- */
   section.block{padding:68px 0;}
@@ -152,8 +188,8 @@
   .route-mini-body .r-meta{font-size:11px;color:var(--subtext);margin-top:4px;}
 
   /* ---------- ranking：TOP3強調＋補助 ---------- */
-  .rank-top3{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:20px;margin-bottom:22px;}
-  .rank-top-card{position:relative;border-radius:var(--r-lg);overflow:hidden;aspect-ratio:4/3.1;transition:transform .3s,box-shadow .3s;}
+  .rank-top3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:22px;}
+  .rank-top-card{position:relative;border-radius:var(--r-lg);overflow:hidden;height:280px;transition:transform .3s,box-shadow .3s;}
   .rank-top-card:hover{transform:translateY(-5px);box-shadow:0 22px 36px -14px rgba(43,20,10,.35);}
   .rank-top-card img{width:100%;height:100%;object-fit:cover;transition:transform .4s;}
   .rank-top-card:hover img{transform:scale(1.06);}
@@ -293,24 +329,53 @@
       <a href="#search">探す</a><a href="#articles">記事</a><a href="#events">イベント</a><a href="#events">ツアー</a>
     </nav>
     <div class="head-right">
-      <div class="icon-btn"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.6" y2="16.6"/></svg></div>
-      <a class="mypage-link" href="#">マイページ</a>
-      <div class="icon-btn" id="apiKeyBtn" title="Google Places APIキー設定" onclick="toggleApiPanel()">
-        <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      <div class="icon-btn" title="検索">
+        <svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.6" y2="16.6"/></svg>
+      </div>
+      <div class="user-block">
+        <div class="user-name" onclick="toggleMypage()" title="マイページを開く">
+          <div class="user-avatar"><svg class="ic" style="width:15px;height:15px;color:#fff" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></div>
+          参拝者　太郎
+        </div>
+        <div class="icon-btn" id="settingsBtn" onclick="toggleSettingsMenu()" title="設定">
+          <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          <div id="settingsMenu" class="settings-menu">
+            <a href="#">アカウント情報</a>
+            <a href="#">通知設定</a>
+            <a href="#">プライバシー設定</a>
+            <div class="settings-menu-sep"></div>
+            <a href="#" id="logoutLink">ログアウト</a>
+          </div>
+        </div>
       </div>
       <button class="simba-btn">SIMBA</button>
     </div>
   </div>
-  <div id="apiKeyPanel" style="display:none;background:#fff;border-top:1px solid var(--border);">
-    <div class="wrap" style="padding:14px clamp(24px,3vw,40px);display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-      <span style="font-size:12.5px;color:var(--subtext);white-space:nowrap;">Google Places APIキー（スマホ版と共通・この端末のブラウザに保存されます）：</span>
-      <input id="apiKeyInput" type="text" placeholder="AIzaSy…" style="flex:1 1 260px;min-width:220px;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;">
-      <button onclick="applyApiKey()" style="background:var(--purple);color:#fff;font-weight:700;font-size:13px;padding:9px 18px;border-radius:8px;">適用して写真を読み込む</button>
-      <span id="apiKeyStatus" style="font-size:11.5px;color:var(--subtext);"></span>
-    </div>
-  </div>
 </header>
 <div id="gmap-loader" style="display:none"></div>
+
+<!-- ============ マイページ（簡易） ============ -->
+<div id="mypageOverlay" class="mypage-overlay" onclick="if(event.target===this)toggleMypage()">
+  <div class="mypage-card">
+    <div class="mypage-hd">
+      <div class="mypage-avatar"><svg viewBox="0 0 36 36" width="32" height="32" fill="none"><circle cx="18" cy="13" r="7" stroke="#C8A65A" stroke-width="1.5"/><path d="M5 33c0-7 26-7 26 0" stroke="#C8A65A" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      <div class="mypage-name">参拝者　太郎</div>
+      <div class="mypage-level">PILGRIM LEVEL ★★★☆☆</div>
+      <div class="icon-btn" style="position:absolute;top:14px;right:14px;color:#fff;" onclick="toggleMypage()">
+        <svg class="ic" viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
+      </div>
+    </div>
+    <div class="mypage-stats">
+      <div><div class="num">3</div><div class="lbl">参拝数</div></div>
+      <div><div class="num">5</div><div class="lbl">行きたい</div></div>
+      <div><div class="num">7</div><div class="lbl">御朱印</div></div>
+    </div>
+    <div class="mypage-recent">
+      <div class="mypage-recent-tit">最近の参拝</div>
+      <div class="mypage-recent-empty">まだ記録がありません</div>
+    </div>
+  </div>
+</div>
 
 <!-- ============ HERO ============ -->
 <div class="hero" id="home">
@@ -334,18 +399,19 @@
     <div class="search-fields">
       <div class="field" style="flex:2 1 320px;">
         <svg class="ic" viewBox="0 0 24 24" style="color:#B8452A;width:16px;height:16px"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.6" y2="16.6"/></svg>
-        <input type="text" placeholder="神社名・お寺名・御朱印・地域などを検索（例：明治神宮、浅草寺、鎌倉）">
+        <input id="srchName" type="text" placeholder="神社名・お寺名・御朱印・地域などを検索（例：明治神宮、浅草寺、鎌倉）" onkeydown="if(event.key==='Enter')runSearch()">
       </div>
       <div class="field small">
         <svg class="ic" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>
-        <select><option>都道府県</option><option>京都府</option><option>東京都</option><option>三重県</option><option>神奈川県</option></select>
+        <select id="srchPref"><option value="">都道府県</option><option>北海道</option><option>青森県</option><option>岩手県</option><option>宮城県</option><option>秋田県</option><option>山形県</option><option>福島県</option><option>茨城県</option><option>栃木県</option><option>群馬県</option><option>埼玉県</option><option>千葉県</option><option>東京都</option><option>神奈川県</option><option>新潟県</option><option>富山県</option><option>石川県</option><option>福井県</option><option>山梨県</option><option>長野県</option><option>岐阜県</option><option>静岡県</option><option>愛知県</option><option>三重県</option><option>滋賀県</option><option>京都府</option><option>大阪府</option><option>兵庫県</option><option>奈良県</option><option>和歌山県</option><option>鳥取県</option><option>島根県</option><option>岡山県</option><option>広島県</option><option>山口県</option><option>徳島県</option><option>香川県</option><option>愛媛県</option><option>高知県</option><option>福岡県</option><option>佐賀県</option><option>長崎県</option><option>熊本県</option><option>大分県</option><option>宮崎県</option><option>鹿児島県</option><option>沖縄県</option></select>
       </div>
       <div class="field small">
         <svg class="ic" viewBox="0 0 24 24" style="width:16px;height:16px"><rect x="6" y="3" width="12" height="18" rx="1"/><line x1="9" y1="7" x2="15" y2="7"/></svg>
-        <select><option>御朱印の種類</option><option>限定</option><option>月替わり</option><option>切り絵</option></select>
+        <select id="srchType"><option value="">神社・お寺どちらも</option><option value="神社">神社中心</option><option value="寺">寺院中心</option></select>
       </div>
-      <button class="search-submit">検索する</button>
+      <button class="search-submit" onclick="runSearch()">検索する</button>
     </div>
+    <div id="searchStatus" class="search-status"></div>
     <div class="quick-links">
       <span class="ql-label">こちらからも探せます：</span>
       <a href="#">都道府県から</a><a href="#">神社／お寺から</a><a href="#">御朱印から</a><a href="#">テーマから</a>
@@ -358,6 +424,15 @@
     </div>
     <div class="ai-cta-note">行きたい場所・使える時間・交通手段を選ぶだけ。わびなびAIが最適な巡拝ルートを提案します。</div>
   </div>
+</div>
+
+<!-- ============ 検索結果 ============ -->
+<div class="wrap" id="searchResultsWrap" style="display:none;padding-top:40px;">
+  <div class="sec-head">
+    <div><div class="eyebrow">SEARCH RESULT</div><h2 id="searchResultsTitle">検索結果</h2></div>
+    <a class="more-link" href="#" onclick="closeSearchResults();return false;">閉じる ✕</a>
+  </div>
+  <div id="searchResultsGrid" class="grid-purpose" style="grid-template-columns:repeat(4,1fr);"></div>
 </div>
 
 <!-- ============ わびなびでできること（コンパクト） ============ -->
@@ -708,6 +783,81 @@ function toggleApiPanel(){
 }
 // ページ読み込み時：スマホ版で登録済みのキーがあれば自動で写真を取得
 if (API_KEY) { loadAllPhotos(); }
+
+// ============ 設定メニュー / マイページ（簡易） ============
+function toggleSettingsMenu(e){
+  if (e) e.stopPropagation();
+  document.getElementById('settingsMenu').classList.toggle('open');
+}
+document.addEventListener('click', function(e){
+  var menu = document.getElementById('settingsMenu');
+  var btn = document.getElementById('settingsBtn');
+  if (menu && menu.classList.contains('open') && !btn.contains(e.target)) {
+    menu.classList.remove('open');
+  }
+});
+document.getElementById('settingsBtn').addEventListener('click', function(e){ e.stopPropagation(); });
+document.getElementById('logoutLink').addEventListener('click', function(e){
+  e.preventDefault();
+  document.getElementById('settingsMenu').classList.remove('open');
+  alert('ログアウトしました（デモ）');
+});
+function toggleMypage(){
+  document.getElementById('mypageOverlay').classList.toggle('open');
+}
+
+// ============ 検索（Google Places・スマホ版と同じ仕組み） ============
+async function runSearch(){
+  var name = document.getElementById('srchName').value.trim();
+  var pref = document.getElementById('srchPref').value;
+  var type = document.getElementById('srchType').value;
+  var status = document.getElementById('searchStatus');
+  if (!name && !pref) {
+    status.textContent = '神社・お寺名か都道府県のどちらかを入力してください';
+    return;
+  }
+  if (!API_KEY) {
+    status.textContent = '検索を利用するには管理者によるGoogle API設定が必要です';
+    return;
+  }
+  var query = [name, pref, type].filter(Boolean).join(' ') + ' 神社 OR 寺';
+  status.textContent = '検索しています…';
+  try {
+    await loadGoogleMapsSDK(API_KEY);
+    if (!placesService) initPlacesService();
+    placesService.textSearch({ query: query, language: 'ja' }, function(results, st){
+      if (st !== google.maps.places.PlacesServiceStatus.OK || !results.length) {
+        status.textContent = '該当する神社・お寺が見つかりませんでした';
+        document.getElementById('searchResultsWrap').style.display = 'none';
+        return;
+      }
+      status.textContent = results.length + '件見つかりました';
+      renderSearchResults(results.slice(0, 12), name || pref);
+    });
+  } catch (e) {
+    console.error(e);
+    status.textContent = '検索に失敗しました';
+  }
+}
+function renderSearchResults(results, titleWord){
+  var grid = document.getElementById('searchResultsGrid');
+  document.getElementById('searchResultsTitle').textContent = '「' + titleWord + '」の検索結果';
+  grid.innerHTML = results.map(function(r){
+    var photo = (r.photos && r.photos.length) ? r.photos[0].getUrl({maxWidth:500,maxHeight:400}) : 'https://images.unsplash.com/photo-1758531588833-4e0ae03c2153?fm=jpg&q=70&w=500&auto=format&fit=crop';
+    var name = (r.name || '').replace(/</g,'&lt;');
+    var addr = (r.formatted_address || '').replace(/</g,'&lt;');
+    return '<div class="search-result-card" onclick="window.open(\'https://www.google.com/maps/place/?q=place_id:' + r.place_id + '\',\'_blank\')">'
+      + '<img loading="lazy" src="' + photo + '" alt="' + name + '">'
+      + '<div class="search-result-info"><div class="r-name">' + name + '</div><div class="r-addr">' + addr + '</div></div>'
+      + '</div>';
+  }).join('');
+  document.getElementById('searchResultsWrap').style.display = 'block';
+  document.getElementById('searchResultsWrap').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+function closeSearchResults(){
+  document.getElementById('searchResultsWrap').style.display = 'none';
+  document.getElementById('searchStatus').textContent = '';
+}
 
 // タブ / フィルター / チップの選択トグル（見た目のみ・後日データ接続）
 document.querySelectorAll('.search-tabs, .filters, .goshuin-chips').forEach(function(group){

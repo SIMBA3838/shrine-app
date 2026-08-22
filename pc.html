@@ -2,6 +2,18 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<script>
+(function(){
+  try {
+    var ua = navigator.userAgent || "";
+    var isMobileUA = /Mobi|Android|iPhone|iPod|iPad/i.test(ua);
+    var isMobile = window.innerWidth < 1024 || isMobileUA;
+    if (isMobile) {
+      location.replace('/' + location.search + location.hash);
+    }
+  } catch (e) {}
+})();
+</script>
 <title>わびなび｜神社と和文化のコミュニティ（PC版 ブラッシュアップ）</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

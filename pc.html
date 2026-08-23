@@ -1022,9 +1022,11 @@
 // ============ Google Places API 連携（スマホ版と同じ仕組み） ============
 // スマホ版(wabinavi.jp)で登録したAPIキーは localStorage に保存されているため、
 // 同じドメインで公開すればこのページも自動で同じキーを使用します。
-let API_KEY = localStorage.getItem('gplaces_key') || '';
-const photoCache = {};
-let placesService = null;
+// document.write でモバイル版から差し替わった際、window(グローバルスコープ)はそのまま
+// 引き継がれるため、モバイル版側で既に let/const 宣言済みの名前と衝突しないよう var を使う。
+var pcApiKey = localStorage.getItem('gplaces_key') || '';
+var pcPhotoCache = {};
+var pcPlacesService = null;
 
 function loadGoogleMapsSDK(key){
   return new Promise(function(resolve, reject){
@@ -1037,18 +1039,18 @@ function loadGoogleMapsSDK(key){
   });
 }
 function initPlacesService(){
-  placesService = new google.maps.places.PlacesService(document.getElementById('gmap-loader'));
+  pcPlacesService = new google.maps.places.PlacesService(document.getElementById('gmap-loader'));
 }
 function fetchShrinePhoto(name, addr){
   return new Promise(function(resolve){
-    if (photoCache[name] !== undefined) { resolve(photoCache[name]); return; }
-    placesService.textSearch({ query: name + ' ' + (addr || ''), language: 'ja' }, function(results, status){
-      if (status !== google.maps.places.PlacesServiceStatus.OK || !results.length) { photoCache[name] = null; resolve(null); return; }
-      placesService.getDetails({ placeId: results[0].place_id, fields: ['photos'], language: 'ja' }, function(place, st2){
+    if (pcPhotoCache[name] !== undefined) { resolve(pcPhotoCache[name]); return; }
+    pcPlacesService.textSearch({ query: name + ' ' + (addr || ''), language: 'ja' }, function(results, status){
+      if (status !== google.maps.places.PlacesServiceStatus.OK || !results.length) { pcPhotoCache[name] = null; resolve(null); return; }
+      pcPlacesService.getDetails({ placeId: results[0].place_id, fields: ['photos'], language: 'ja' }, function(place, st2){
         if (st2 === google.maps.places.PlacesServiceStatus.OK && place.photos && place.photos.length) {
           const url = place.photos[0].getUrl({ maxWidth: 900, maxHeight: 700 });
-          photoCache[name] = url; resolve(url);
-        } else { photoCache[name] = null; resolve(null); }
+          pcPhotoCache[name] = url; resolve(url);
+        } else { pcPhotoCache[name] = null; resolve(null); }
       });
     });
   });
@@ -1057,8 +1059,8 @@ async function loadAllPhotos(){
   const status = document.getElementById('apiKeyStatus');
   try {
     if (status) status.textContent = '写真を読み込んでいます…';
-    await loadGoogleMapsSDK(API_KEY);
-    if (!placesService) initPlacesService();
+    await loadGoogleMapsSDK(pcApiKey);
+    if (!pcPlacesService) initPlacesService();
     const imgs = Array.prototype.slice.call(document.querySelectorAll('img[data-shrine]'));
     await Promise.all(imgs.map(async function(img){
       const url = await fetchShrinePhoto(img.getAttribute('data-shrine'), img.getAttribute('data-addr'));
@@ -1073,20 +1075,20 @@ async function loadAllPhotos(){
 function applyApiKey(){
   const v = document.getElementById('apiKeyInput').value.trim();
   if (!v.startsWith('AIza')) { alert('正しいAPIキーを入力してください（AIzaSy で始まる文字列です）'); return; }
-  API_KEY = v;
+  pcApiKey = v;
   localStorage.setItem('gplaces_key', v);
-  Object.keys(photoCache).forEach(function(k){ delete photoCache[k]; });
-  placesService = null;
+  Object.keys(pcPhotoCache).forEach(function(k){ delete pcPhotoCache[k]; });
+  pcPlacesService = null;
   loadAllPhotos();
 }
 function toggleApiPanel(){
   const p = document.getElementById('apiKeyPanel');
   const show = p.style.display === 'none';
   p.style.display = show ? 'block' : 'none';
-  if (show) document.getElementById('apiKeyInput').value = API_KEY;
+  if (show) document.getElementById('apiKeyInput').value = pcApiKey;
 }
 // ページ読み込み時：スマホ版で登録済みのキーがあれば自動で写真を取得
-if (API_KEY) { loadAllPhotos(); }
+if (pcApiKey) { loadAllPhotos(); }
 
 // ============ 設定メニュー / マイページ（簡易） ============
 function toggleSettingsMenu(e){
@@ -1120,16 +1122,16 @@ async function runSearch(){
     status.textContent = '神社・お寺名か都道府県のどちらかを入力してください';
     return;
   }
-  if (!API_KEY) {
+  if (!pcApiKey) {
     status.textContent = '検索を利用するには管理者によるGoogle API設定が必要です';
     return;
   }
   var query = [name, pref, type].filter(Boolean).join(' ') + ' 神社 OR 寺';
   status.textContent = '検索しています…';
   try {
-    await loadGoogleMapsSDK(API_KEY);
-    if (!placesService) initPlacesService();
-    placesService.textSearch({ query: query, language: 'ja' }, function(results, st){
+    await loadGoogleMapsSDK(pcApiKey);
+    if (!pcPlacesService) initPlacesService();
+    pcPlacesService.textSearch({ query: query, language: 'ja' }, function(results, st){
       if (st !== google.maps.places.PlacesServiceStatus.OK || !results.length) {
         status.textContent = '該当する神社・お寺が見つかりませんでした';
         document.getElementById('searchResultsWrap').style.display = 'none';
@@ -1242,10 +1244,10 @@ function buildRoutesViaPlaces(query, selTime, selTrans, budget) {
   return new Promise(function(resolve, reject){
     var ensure = (window.google && window.google.maps && window.google.maps.places)
       ? Promise.resolve()
-      : loadGoogleMapsSDK(API_KEY);
+      : loadGoogleMapsSDK(pcApiKey);
     ensure.then(function(){
-      if (!placesService) initPlacesService();
-      placesService.textSearch({ query: query, language: 'ja', region: 'JP' }, function(results, status){
+      if (!pcPlacesService) initPlacesService();
+      pcPlacesService.textSearch({ query: query, language: 'ja', region: 'JP' }, function(results, status){
         if (status !== google.maps.places.PlacesServiceStatus.OK || !results || !results.length) {
           resolve(null); return;
         }
@@ -1258,9 +1260,9 @@ function buildRoutesViaPlaces(query, selTime, selTrans, budget) {
           tags: [], type: 'shrine', rating: origin.rating || 0
         };
         if (origin.photos && origin.photos.length) {
-          photoCache[origin.name] = origin.photos.slice(0,6).map(function(p){ return p.getUrl({maxWidth:800,maxHeight:600}); });
+          pcPhotoCache[origin.name] = origin.photos.slice(0,6).map(function(p){ return p.getUrl({maxWidth:800,maxHeight:600}); });
         }
-        placesService.nearbySearch({
+        pcPlacesService.nearbySearch({
           location: oLoc, radius: budget.nearbyRadiusM,
           type: 'place_of_worship', language: 'ja'
         }, function(near, st2){
@@ -1273,7 +1275,7 @@ function buildRoutesViaPlaces(query, selTime, selTrans, budget) {
               if (!isShrineOrTemple(p.name)) return;
               var c = { lat: loc.lat(), lng: loc.lng() };
               if (p.photos && p.photos.length) {
-                photoCache[p.name] = p.photos.slice(0,6).map(function(ph){ return ph.getUrl({maxWidth:800,maxHeight:600}); });
+                pcPhotoCache[p.name] = p.photos.slice(0,6).map(function(ph){ return ph.getUrl({maxWidth:800,maxHeight:600}); });
               }
               candidates.push({
                 shrine: { name: p.name, addr: p.vicinity || '', tags: [], type: 'shrine', rating: p.rating || 0, rev: p.user_ratings_total || 0 },
@@ -1616,7 +1618,7 @@ function startAiRoutePC(){
 
   // データ取得はすぐ開始（バックグラウンド）
   var resultPromise;
-  if (query && API_KEY) {
+  if (query && pcApiKey) {
     resultPromise = buildRoutesViaPlaces(query, selTime, selTrans, budget).catch(function(err){
       console.error('AI route error:', err);
       return null;
@@ -1653,7 +1655,7 @@ function renderAiRouteCardsPC(selTrans, selTime){
     return;
   }
   ct.innerHTML = routes.map(function(r, idx){
-    var img = (photoCache[r.spots[0].name] && photoCache[r.spots[0].name][0]) || r.img || 'https://images.unsplash.com/photo-1758531588833-4e0ae03c2153?w=600&q=70&auto=format&fit=crop';
+    var img = (pcPhotoCache[r.spots[0].name] && pcPhotoCache[r.spots[0].name][0]) || r.img || 'https://images.unsplash.com/photo-1758531588833-4e0ae03c2153?w=600&q=70&auto=format&fit=crop';
     var tags = (r.tags||[]).map(function(t){ return '<span class="tag">'+t+'</span>'; }).join('');
     return '<div class="ai-rcard-pc" onclick="showAiRouteDetail('+idx+')">'
       + '<div class="rphoto"><img loading="lazy" src="'+img+'" alt="'+r.name+'" onerror="this.onerror=null;this.src=\'https://images.unsplash.com/photo-1758531588833-4e0ae03c2153?w=600&q=70&auto=format&fit=crop\';">'
@@ -1700,7 +1702,7 @@ document.querySelectorAll('.search-tabs, .filters, .goshuin-chips').forEach(func
 // ============ 神社詳細パネル：PC版ランキングカードからの起動用ブリッジ ============
 // 実際のモバイル版と同じ openShrineDetail() / populateShrineDetail() をそのまま利用する。
 // ランキングカードはまだ簡易データ（名前・住所）しか持たないため、
-// クリック時に photoCache（Google Places APIで既に取得済みなら再取得しない）から実写真を補い、
+// クリック時に pcPhotoCache（Google Places APIで既に取得済みなら再取得しない）から実写真を補い、
 // 神社オブジェクトを組み立てて本物の詳細パネルへ渡す。
 function openShrineDetailPC(name, addr){
   var shrine = {
@@ -1720,20 +1722,20 @@ function openShrineDetailPC(name, addr){
 var currentSdShrine = null;
 var sdCurrentPhotos = [];
 
-// 神社の写真を複数集める（photoCache・SHRINES.photos両対応）
+// 神社の写真を複数集める（pcPhotoCache・SHRINES.photos両対応）
 function collectShrinePhotos(s){
   var photos = [];
   // 1. photoCacheから（完全一致）
-  if (typeof photoCache !== 'undefined' && photoCache[s.name] && photoCache[s.name].length) {
-    photos = photos.concat(photoCache[s.name]);
+  if (typeof pcPhotoCache !== 'undefined' && pcPhotoCache[s.name] && pcPhotoCache[s.name].length) {
+    photos = photos.concat(pcPhotoCache[s.name]);
   }
   // 2. photoCacheから（部分一致）
-  if (photos.length === 0 && typeof photoCache !== 'undefined') {
-    var keys = Object.keys(photoCache);
+  if (photos.length === 0 && typeof pcPhotoCache !== 'undefined') {
+    var keys = Object.keys(pcPhotoCache);
     for (var i = 0; i < keys.length; i++) {
       if (keys[i].indexOf(s.name) !== -1 || s.name.indexOf(keys[i]) !== -1) {
-        if (photoCache[keys[i]] && photoCache[keys[i]].length) {
-          photos = photos.concat(photoCache[keys[i]]);
+        if (pcPhotoCache[keys[i]] && pcPhotoCache[keys[i]].length) {
+          photos = photos.concat(pcPhotoCache[keys[i]]);
           break;
         }
       }
@@ -1750,18 +1752,18 @@ function collectShrinePhotos(s){
 // APIキーありの場合、詳細ページ用に写真を取得して差し込む
 function fetchShrinePhotosForDetail(s){
   if (!window.google || !window.google.maps || !window.google.maps.places) return;
-  if (!placesService) {
+  if (!pcPlacesService) {
     var div = document.createElement('div');
-    placesService = new google.maps.places.PlacesService(div);
+    pcPlacesService = new google.maps.places.PlacesService(div);
   }
   var query = s.name + (s.addr ? ' ' + s.addr.replace(/[0-9\-]/g,'').slice(0,8) : '');
-  placesService.findPlaceFromQuery({
+  pcPlacesService.findPlaceFromQuery({
     query: s.name + ' 神社',
     fields: ['place_id']
   }, function(results, status){
     if (status !== google.maps.places.PlacesServiceStatus.OK || !results || !results.length) {
       // 寺で再検索
-      placesService.findPlaceFromQuery({ query: s.name + ' 寺', fields: ['place_id'] }, function(r2, s2){
+      pcPlacesService.findPlaceFromQuery({ query: s.name + ' 寺', fields: ['place_id'] }, function(r2, s2){
         if (s2 === google.maps.places.PlacesServiceStatus.OK && r2 && r2.length) {
           fetchDetailPhotosById(r2[0].place_id, s);
         }
@@ -1772,10 +1774,10 @@ function fetchShrinePhotosForDetail(s){
   });
 }
 function fetchDetailPhotosById(placeId, s){
-  placesService.getDetails({ placeId: placeId, fields: ['photos'] }, function(place, status){
+  pcPlacesService.getDetails({ placeId: placeId, fields: ['photos'] }, function(place, status){
     if (status !== google.maps.places.PlacesServiceStatus.OK || !place || !place.photos || !place.photos.length) return;
     var urls = place.photos.slice(0, 8).map(function(ph){ return ph.getUrl({ maxWidth: 1000, maxHeight: 750 }); });
-    if (typeof photoCache !== 'undefined') photoCache[s.name] = urls;
+    if (typeof pcPhotoCache !== 'undefined') pcPhotoCache[s.name] = urls;
     // 現在表示中の神社と同じなら再描画
     if (currentSdShrine && currentSdShrine.name === s.name) {
       populateShrineDetail(s);
@@ -1900,7 +1902,7 @@ function populateShrineDetail(s){
     thumbs.style.display = 'none';
     thumbs.innerHTML = '';
     // APIキーがあれば写真を取得して後から差し込む
-    if (typeof API_KEY !== 'undefined' && API_KEY && window.google && window.google.maps && window.google.maps.places) {
+    if (typeof pcApiKey !== 'undefined' && pcApiKey && window.google && window.google.maps && window.google.maps.places) {
       fetchShrinePhotosForDetail(s);
     }
   }

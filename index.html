@@ -9,7 +9,7 @@
     var isMobileUA = /Mobi|Android|iPhone|iPod|iPad/i.test(ua);
     var isDesktop = window.innerWidth >= 1024 && !isMobileUA;
     if (isDesktop && !sessionStorage.getItem('wabinavi_force_mobile')) {
-      fetch('/pc.html').then(function(res){ return res.text(); }).then(function(html){
+      fetch('/pc.html?v=' + Date.now(), { cache: 'no-store' }).then(function(res){ return res.text(); }).then(function(html){
         document.open();
         document.write(html);
         document.close();

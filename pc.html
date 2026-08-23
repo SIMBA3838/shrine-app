@@ -177,6 +177,26 @@
   .ai-cta-big{background:linear-gradient(100deg,var(--purple) 0%,#6b3fa0 45%,#c2793f 100%);color:#fff;font-weight:700;font-size:19px;padding:22px 0;border-radius:16px;display:flex;align-items:center;justify-content:center;gap:14px;box-shadow:0 16px 34px rgba(75,46,131,.4);letter-spacing:.03em;width:100%;}
   .ai-cta-big:hover{filter:brightness(1.06);}
   .ai-cta-note{text-align:center;font-size:12px;color:var(--subtext);margin-top:14px;}
+
+  /* ========================================================
+     検索カード：A案デザイン仕様（文字サイズ・タグサイズを明示指定）
+     .search-card配下だけに効かせ、AIルートモーダルの見た目には影響させない
+     ======================================================== */
+  .search-panel{margin:-84px auto 0;}
+  .search-card{max-width:1180px;width:100%;margin:0 auto;padding:48px 56px 44px;border-radius:24px;}
+  .search-card-hd{margin-bottom:30px;}
+  .search-card-icon{width:60px;height:60px;}
+  .search-card .search-title{font-size:27px;font-weight:700;}
+  .search-card .search-card-sub{font-size:16px;color:var(--subtext);margin-top:7px;}
+  .search-card .field{height:56px;padding:0 18px;border-radius:15px;}
+  .search-card .field input{font-size:16px;}
+  .search-card .ai-field-label{font-size:15px;font-weight:700;margin-bottom:12px;letter-spacing:.02em;}
+  .search-card .ai-pill-row{gap:10px;}
+  .search-card .ai-pill{font-size:15.5px;font-weight:600;padding:0 22px;height:42px;display:inline-flex;align-items:center;border-radius:21px;}
+  .search-card .ai-pill.on{font-weight:700;}
+  .search-card .ai-cta-row{margin-top:30px;padding-top:28px;display:flex;justify-content:center;}
+  .search-card .ai-cta-big{width:86%;height:58px;padding:0;font-size:18px;font-weight:700;border-radius:16px;gap:14px;box-shadow:0 18px 36px rgba(75,46,131,.38);}
+  .search-card .ai-cta-note{font-size:13.5px;margin-top:16px;}
   .search-status{text-align:center;font-size:12px;color:var(--subtext);margin-top:10px;min-height:16px;}
   .search-result-card{position:relative;border-radius:var(--r-md);overflow:hidden;aspect-ratio:4/3.4;transition:transform .25s,box-shadow .25s;cursor:pointer;}
   .search-result-card:hover{transform:translateY(-4px);box-shadow:0 16px 28px -12px rgba(43,20,10,.32);}

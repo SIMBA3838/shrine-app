@@ -7,7 +7,10 @@
   try {
     var ua = navigator.userAgent || "";
     var isMobileUA = /Mobi|Android|iPhone|iPod|iPad/i.test(ua);
-    var isDesktop = window.innerWidth >= 1024 && !isMobileUA;
+    // iPhoneのChrome/Safariで「PC版で見る」を選択すると、UAは非モバイル扱いになるが
+    // 画面の見かけ上の横幅は980px前後にしかならない端末が多いため、
+    // UAが非モバイルの場合はしきい値を緩める。
+    var isDesktop = isMobileUA ? (window.innerWidth >= 1024) : (window.innerWidth >= 850);
     if (isDesktop && !sessionStorage.getItem('wabinavi_force_mobile')) {
       // PC版に差し替わるまでの一瞬、モバイル版が見えてしまう（チラつく）のを防ぐため、
       // 判定がPCだと分かった時点で即座に画面を非表示にする。

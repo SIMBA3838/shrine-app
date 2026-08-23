@@ -441,38 +441,6 @@
 <div id="aiRouteOverlay" class="ai-overlay" onclick="if(event.target===this)closeAiRouteModal()">
   <div class="ai-modal">
 
-    <!-- STEP1: 条件入力 -->
-    <div id="aiStepInput" class="ai-step">
-      <div class="ai-modal-hd">
-        <div class="ai-modal-tit">AIおすすめ巡拝ルートを作る</div>
-        <div class="icon-btn" style="color:#fff" onclick="closeAiRouteModal()"><svg class="ic" viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></div>
-      </div>
-      <div class="ai-modal-body">
-        <div class="ai-field-label">行きたい神社・お寺（任意）</div>
-        <div class="field" style="margin-bottom:18px;">
-          <svg class="ic" viewBox="0 0 24 24" style="color:#B8452A;width:16px;height:16px"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.6" y2="16.6"/></svg>
-          <input id="aiQueryInput" type="text" placeholder="例：明治神宮、伊勢神宮（空欄でもOK）">
-        </div>
-        <div class="ai-field-label">交通手段</div>
-        <div class="ai-pill-row" id="aiTransPills">
-          <button class="ai-pill on" data-v="徒歩">🚶 徒歩</button>
-          <button class="ai-pill" data-v="電車">🚃 電車</button>
-          <button class="ai-pill" data-v="車">🚗 車</button>
-          <button class="ai-pill" data-v="バス">🚌 バス</button>
-        </div>
-        <div class="ai-field-label" style="margin-top:18px;">所要時間</div>
-        <div class="ai-pill-row" id="aiTimePills">
-          <button class="ai-pill" data-v="3時間">3時間</button>
-          <button class="ai-pill on" data-v="5時間">5時間</button>
-          <button class="ai-pill" data-v="7時間">7時間</button>
-          <button class="ai-pill" data-v="2日">2日</button>
-        </div>
-        <button class="ai-cta-big" style="margin-top:26px;" onclick="startAiRoutePC()">
-          <svg class="ic" style="color:#fff" viewBox="0 0 24 24"><path d="M12 2l1.8 5.6L19 9l-5.2 1.4L12 16l-1.8-5.6L5 9l5.2-1.4L12 2z"/></svg>
-          AIでルートを作成する
-        </button>
-      </div>
-    </div>
 
     <!-- STEP2: ローディング -->
     <div id="aiStepLoading" class="ai-step" style="display:none;">
@@ -521,54 +489,41 @@
 <!-- ============ 統合検索パネル ============ -->
 <div class="search-panel" id="search">
   <div class="search-card">
-    <div class="search-title">行きたい神社・お寺を探す</div>
+    <div class="search-title">行きたい神社・お寺を入力</div>
     <div class="search-fields">
       <div class="field" style="flex:1 1 100%;">
         <svg class="ic" viewBox="0 0 24 24" style="color:#B8452A;width:18px;height:18px"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.6" y2="16.6"/></svg>
-        <input id="srchName" type="text" placeholder="神社名・お寺名・御朱印・地域などを検索" onkeydown="if(event.key==='Enter')runSearch()">
+        <input id="aiQueryInput" type="text" placeholder="例：明治神宮、浅草寺、鶴岡八幡宮">
       </div>
     </div>
-    <div class="search-fields" style="margin-top:12px;">
-      <div class="field small">
-        <svg class="ic" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>
-        <select id="srchPref"><option value="">都道府県：すべて</option><option>北海道</option><option>青森県</option><option>岩手県</option><option>宮城県</option><option>秋田県</option><option>山形県</option><option>福島県</option><option>茨城県</option><option>栃木県</option><option>群馬県</option><option>埼玉県</option><option>千葉県</option><option>東京都</option><option>神奈川県</option><option>新潟県</option><option>富山県</option><option>石川県</option><option>福井県</option><option>山梨県</option><option>長野県</option><option>岐阜県</option><option>静岡県</option><option>愛知県</option><option>三重県</option><option>滋賀県</option><option>京都府</option><option>大阪府</option><option>兵庫県</option><option>奈良県</option><option>和歌山県</option><option>鳥取県</option><option>島根県</option><option>岡山県</option><option>広島県</option><option>山口県</option><option>徳島県</option><option>香川県</option><option>愛媛県</option><option>高知県</option><option>福岡県</option><option>佐賀県</option><option>長崎県</option><option>熊本県</option><option>大分県</option><option>宮崎県</option><option>鹿児島県</option><option>沖縄県</option></select>
-      </div>
-      <div class="field small">
-        <svg class="ic" viewBox="0 0 24 24" style="width:16px;height:16px"><rect x="6" y="3" width="12" height="18" rx="1"/><line x1="9" y1="7" x2="15" y2="7"/></svg>
-        <select id="srchType"><option value="">種類：すべて</option><option value="神社">神社中心</option><option value="寺">寺院中心</option></select>
-      </div>
-      <div class="field small">
-        <svg class="ic" viewBox="0 0 24 24" style="width:16px;height:16px"><rect x="6" y="3" width="12" height="18" rx="1"/><line x1="9" y1="7" x2="15" y2="7"/></svg>
-        <select id="srchGoshuin"><option value="">御朱印：すべて</option><option>限定</option><option>月替わり</option><option>切り絵</option></select>
-      </div>
-      <div class="field small">
-        <svg class="ic" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M12 2l1.8 5.6L19 9l-5.2 1.4L12 16l-1.8-5.6L5 9l5.2-1.4L12 2z"/></svg>
-        <select id="srchTheme"><option value="">テーマ：すべて</option><option>開運</option><option>縁結び</option><option>金運</option><option>歴史・文化</option></select>
-      </div>
-      <button class="search-submit" onclick="runSearch()">
-        <svg class="ic" style="width:16px;height:16px;color:#fff" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.6" y2="16.6"/></svg>
-        検索する
-      </button>
+    <div class="ai-pill-row" id="aiTypePills" style="margin-top:16px;">
+      <button class="ai-pill on" data-v="神社中心">⛩ 神社中心</button>
+      <button class="ai-pill" data-v="両方">◆ 両方</button>
+      <button class="ai-pill" data-v="寺院中心">寺院中心</button>
     </div>
-    <div id="searchStatus" class="search-status"></div>
+    <div class="ai-field-label" style="margin-top:20px;">交通手段</div>
+    <div class="ai-pill-row" id="aiTransPills">
+      <button class="ai-pill on" data-v="徒歩">🚶 徒歩</button>
+      <button class="ai-pill" data-v="電車">🚃 電車</button>
+      <button class="ai-pill" data-v="車">🚗 車</button>
+      <button class="ai-pill" data-v="バス">🚌 バス</button>
+    </div>
+    <div class="ai-field-label" style="margin-top:18px;">所要時間</div>
+    <div class="ai-pill-row" id="aiTimePills">
+      <button class="ai-pill on" data-v="3時間">3時間</button>
+      <button class="ai-pill" data-v="5時間">5時間</button>
+      <button class="ai-pill" data-v="7時間">7時間</button>
+      <button class="ai-pill" data-v="2日">2日</button>
+    </div>
     <div class="ai-cta-row">
-      <button class="ai-cta-big" onclick="openAiRouteModal()">
+      <button class="ai-cta-big" onclick="startAiRoutePC()">
         <svg class="ic" style="color:#fff" viewBox="0 0 24 24"><path d="M12 2l1.8 5.6L19 9l-5.2 1.4L12 16l-1.8-5.6L5 9l5.2-1.4L12 2z"/></svg>
-        AIおすすめ巡拝ルートを作る
+        AIがおすすめルートを作成
         <svg class="ic" style="color:#fff" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </button>
     </div>
-    <div class="ai-cta-note">行きたい場所や時間、条件を選ぶだけ。AIがあなたに最適な巡拝ルートをお作りします。</div>
+    <div class="ai-cta-note">検索だけでもOK！おすすめスポットをチェックできます</div>
   </div>
-</div>
-
-<!-- ============ 検索結果 ============ -->
-<div class="wrap" id="searchResultsWrap" style="display:none;padding-top:40px;">
-  <div class="sec-head">
-    <div><div class="eyebrow">SEARCH RESULT</div><h2 id="searchResultsTitle">検索結果</h2></div>
-    <a class="more-link" href="#" onclick="closeSearchResults();return false;">閉じる ✕</a>
-  </div>
-  <div id="searchResultsGrid" class="grid-purpose" style="grid-template-columns:repeat(4,1fr);"></div>
 </div>
 
 <!-- ============ わびなびでできること（コンパクト） ============ -->
@@ -605,7 +560,7 @@
         <h2>わびなび<br>おすすめ巡拝ルート</h2>
         <p>行きたい神社・お寺、使える時間、交通手段を選ぶだけ。わびなびだけの、AIによる巡拝ルート作成です。</p>
         <div class="ai-route-btns">
-          <button class="btn-solid-gold" onclick="openAiRouteModal()">AIで作る</button>
+          <button class="btn-solid-gold" onclick="startAiRoutePC()">AIで作る</button>
           <button class="btn-ghost-white" onclick="document.getElementById('shrines').scrollIntoView({behavior:'smooth'})">ルートを見る</button>
         </div>
       </div>
@@ -1310,16 +1265,21 @@ function buildDynamicRoutes(base, baseCoord, candidates, selTime, selTrans, budg
 // ============ AIおすすめ巡拝ルート：PC用UI制御 ============
 function openAiRouteModal(){
   document.getElementById('aiRouteOverlay').classList.add('open');
-  showAiStep('aiStepInput');
+  showAiStep('aiStepLoading');
 }
 function closeAiRouteModal(){
   document.getElementById('aiRouteOverlay').classList.remove('open');
 }
 function showAiStep(id){
-  ['aiStepInput','aiStepLoading','aiStepList','aiStepDetail'].forEach(function(s){
+  ['aiStepLoading','aiStepList','aiStepDetail'].forEach(function(s){
     document.getElementById(s).style.display = (s === id) ? 'block' : 'none';
   });
 }
+document.getElementById('aiTypePills').addEventListener('click', function(e){
+  var b = e.target.closest('.ai-pill'); if (!b) return;
+  this.querySelectorAll('.ai-pill').forEach(function(p){ p.classList.remove('on'); });
+  b.classList.add('on');
+});
 document.getElementById('aiTransPills').addEventListener('click', function(e){
   var b = e.target.closest('.ai-pill'); if (!b) return;
   this.querySelectorAll('.ai-pill').forEach(function(p){ p.classList.remove('on'); });
@@ -1337,40 +1297,45 @@ function startAiRoutePC(){
   var query = document.getElementById('aiQueryInput').value.trim();
   var transEl = document.querySelector('#aiTransPills .ai-pill.on');
   var timeEl = document.querySelector('#aiTimePills .ai-pill.on');
-  var selTrans = transEl ? transEl.getAttribute('data-v') : '電車';
-  var selTime = timeEl ? timeEl.getAttribute('data-v') : '5時間';
+  var selTrans = transEl ? transEl.getAttribute('data-v') : '徒歩';
+  var selTime = timeEl ? timeEl.getAttribute('data-v') : '3時間';
   var budget = aiBudgetFor(selTime);
 
-  showAiStep('aiStepLoading');
+  openAiRouteModal();
   document.getElementById('aiLoadingSub').textContent = query ? ('「' + query + '」周辺の神社・お寺を探しています') : 'おすすめルートを準備しています';
 
-  if (!query) {
-    setTimeout(function(){
-      window._aiRoutesPC = AI_ROUTES;
-      renderAiRouteCardsPC(selTrans, selTime);
-      showAiStep('aiStepList');
-    }, 1200);
+  function fallbackToStatic(){
+    window._aiRoutesPC = AI_ROUTES;
+    renderAiRouteCardsPC(selTrans, selTime);
+    showAiStep('aiStepList');
+  }
+
+  if (!query || !API_KEY) {
+    setTimeout(fallbackToStatic, 1000);
     return;
   }
 
-  if (!API_KEY) {
-    setTimeout(function(){
-      window._aiRoutesPC = AI_ROUTES;
-      renderAiRouteCardsPC(selTrans, selTime);
-      showAiStep('aiStepList');
-    }, 1000);
-    return;
-  }
+  // 一定時間内に応答がなければ固定ルートへフォールバック（無限ローディング防止）
+  var settled = false;
+  var safetyTimer = setTimeout(function(){
+    if (settled) return;
+    settled = true;
+    fallbackToStatic();
+  }, 9000);
 
   buildRoutesViaPlaces(query, selTime, selTrans, budget).then(function(routes){
+    if (settled) return;
+    settled = true;
+    clearTimeout(safetyTimer);
     window._aiRoutesPC = (routes && routes.length) ? routes : AI_ROUTES;
     renderAiRouteCardsPC(selTrans, selTime);
     showAiStep('aiStepList');
   }).catch(function(err){
     console.error('AI route error:', err);
-    window._aiRoutesPC = AI_ROUTES;
-    renderAiRouteCardsPC(selTrans, selTime);
-    showAiStep('aiStepList');
+    if (settled) return;
+    settled = true;
+    clearTimeout(safetyTimer);
+    fallbackToStatic();
   });
 }
 

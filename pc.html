@@ -7,7 +7,8 @@
   try {
     var ua = navigator.userAgent || "";
     var isMobileUA = /Mobi|Android|iPhone|iPod|iPad/i.test(ua);
-    var isMobile = window.innerWidth < 1024 || isMobileUA;
+    // index.html側の判定と対称にする（iPhoneの「PC版で見る」は幅980px程度になるため）
+    var isMobile = isMobileUA ? (window.innerWidth < 1024) : (window.innerWidth < 850);
     if (isMobile) {
       location.replace('/' + location.search + location.hash);
     }

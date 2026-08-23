@@ -401,6 +401,40 @@
   }
 
   /* ========================================================
+     記事詳細パネル（モバイル版 index.html の実装をそのまま移植）
+     ======================================================== */
+  #pgArticleDetail, #pgArticleList {
+    --red:#3a1d5d;--gold:#c9a84c;--washi:#faf8f3;--kara:#e8e0d0;--ma:#0a1a0f;
+  }
+  .ovl-hd{background:#fff;padding:.95rem 1.25rem;display:flex;align-items:center;gap:10px;border-bottom:.5px solid #e8e0d0;position:sticky;top:0;z-index:10}
+  .ovl-back{cursor:pointer;color:var(--ma);font-size:24px;line-height:1}
+  .ovl-tit{font-family:'Shippori Mincho',serif;font-size:15px;font-weight:800;color:var(--ma);letter-spacing:.1em;flex:1}
+  .ovl-cont{padding:1.25rem;padding-bottom:5rem}
+  .article-detail{background:#fff;min-height:100vh}
+  .article-hero{width:100%;aspect-ratio:21/9;background:linear-gradient(135deg,#3a1d5d,#5d3a8a);position:relative;overflow:hidden}
+  .article-hero img{width:100%;height:100%;object-fit:cover;display:block}
+  .article-cont{padding:2.2rem 1.25rem 3rem;max-width:720px;margin:0 auto}
+  .article-cat{display:inline-block;background:var(--gold);color:#fff;font-size:11px;padding:4px 12px;border-radius:10px;font-family:'Shippori Mincho',serif;letter-spacing:.05em;margin-bottom:.9rem}
+  .article-title{font-family:'Shippori Mincho',serif;font-size:26px;font-weight:700;color:#222;line-height:1.5;margin-bottom:.9rem}
+  .article-meta{font-size:12.5px;color:#999;margin-bottom:1.8rem;display:flex;gap:14px;align-items:center;font-family:'Noto Serif JP',serif;padding-bottom:1.1rem;border-bottom:.5px solid #eee}
+  .article-body{font-family:'Noto Serif JP',serif;font-size:15.5px;line-height:2;color:#333}
+  .article-body h2{font-family:'Shippori Mincho',serif;font-size:19px;font-weight:700;color:var(--ma);margin:2rem 0 .9rem;padding-left:12px;border-left:3px solid var(--gold)}
+  .article-body p{margin-bottom:1.3rem}
+  .article-body img{width:100%;border-radius:10px;margin:1.1rem 0}
+  .article-body .lead{font-size:14.5px;color:#555;background:#faf6ee;padding:1.1rem 1.3rem;border-radius:10px;border-left:3px solid var(--gold);margin-bottom:1.6rem;line-height:1.9}
+  .ext-btn{display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(180deg,#a83320,#8a2417);color:#fff;border:1px solid var(--gold);border-radius:12px;padding:1.1rem;font-family:'Shippori Mincho',serif;font-size:14px;font-weight:600;letter-spacing:.08em;cursor:pointer;width:100%;margin-top:1.2rem;box-shadow:0 4px 14px -4px rgba(58,29,93,.4)}
+  .ovl-cont{max-width:900px;margin:0 auto;}
+  .art-list{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;}
+  .art-item{display:flex;gap:16px;cursor:pointer;align-items:flex-start;background:#fff;border-radius:14px;padding:14px;border:1px solid #eee;transition:transform .2s,box-shadow .2s;}
+  .art-item:hover{transform:translateY(-3px);box-shadow:0 12px 24px rgba(43,20,10,.1);}
+  .art-thumb{flex:0 0 150px;width:150px;aspect-ratio:16/10;border-radius:10px;overflow:hidden;background:linear-gradient(135deg,#3a1d5d,#5d3a8a);position:relative}
+  .art-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .art-thumb-ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--gold);font-family:'Shippori Mincho',serif;font-size:12px;text-align:center;padding:6px}
+  .art-body{flex:1;min-width:0;padding-top:4px}
+  .art-title{font-family:'Noto Serif JP',serif;font-size:15px;font-weight:600;color:#222;line-height:1.6;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .art-date{font-size:12px;color:#999;font-family:'Noto Serif JP',serif}
+
+  /* ========================================================
      神社詳細パネル（モバイル版 index.html の実装をそのまま移植）
      CSS変数はこのパネル配下だけに閉じ込め、PC本体のデザイントークンとは干渉させない
      ======================================================== */
@@ -656,6 +690,28 @@
   </div>
 </div>
 
+
+<!-- ============ 記事一覧パネル（モバイル版と共通） ============ -->
+<div id="pgArticleList" style="display:none;flex-direction:column;position:fixed;inset:0;z-index:100;overflow-y:auto;background:#faf6ee">
+  <div class="ovl-hd">
+    <div class="ovl-back" onclick="closeOverlay('pgArticleList')">‹</div>
+    <div class="ovl-tit">おすすめ記事</div>
+    <div style="width:24px"></div>
+  </div>
+  <div class="ovl-cont">
+    <div class="art-list" id="artListFull"></div>
+  </div>
+</div>
+
+<!-- ============ 記事詳細パネル（モバイル版と共通） ============ -->
+<div id="pgArticleDetail" style="display:none;flex-direction:column;position:fixed;inset:0;z-index:101;overflow-y:auto;background:#fff">
+  <div class="ovl-hd">
+    <div class="ovl-back" onclick="closeOverlay('pgArticleDetail')">‹</div>
+    <div class="ovl-tit">記事</div>
+    <div style="width:24px"></div>
+  </div>
+  <div id="articleDetailBody"></div>
+</div>
 
 <!-- ============ 神社詳細パネル（モバイル版と共通） ============ -->
 <div id="pgShrineDetail" style="display:none;flex-direction:column;position:fixed;inset:0;z-index:100;overflow-y:auto" class="sd-bg">
@@ -965,29 +1021,29 @@
   <div class="wrap">
     <div class="sec-head"><div><div class="eyebrow">ARTICLE</div><h2>おすすめ記事</h2><div class="desc">神社・御朱印・和文化に関するおすすめ記事</div></div><a class="more-link" href="#">もっと見る ＞</a></div>
     <div class="grid-rank9">
-      <div class="article9-card">
-        <div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1759339645664-9b9c15d70b56?fm=jpg&q=70&w=500&auto=format&fit=crop" alt="御朱印ガイド"></div>
-        <div class="a-body"><div class="a-title">はじめての御朱印ガイド　マナーと楽しみ方</div><div class="a-date">初心者向け</div></div>
+      <div class="article9-card" onclick="openArticle('sh01')">
+        <div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1480796927426-f609979314bd?w=500&q=80&auto=format&fit=crop" alt="春の御朱印"></div>
+        <div class="a-body"><div class="a-title">【桜と御朱印】春の訪れを告げる、美しき花手水と限定御朱印5選</div><div class="a-date">御朱印</div></div>
       </div>
-      <div class="article9-card">
-        <div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1752146506990-f9699e41f814?fm=jpg&q=70&w=500&auto=format&fit=crop" alt="絶景神社"></div>
-        <div class="a-body"><div class="a-title">一生に一度は行きたい日本の絶景神社10選</div><div class="a-date">絶景</div></div>
+      <div class="article9-card" onclick="openArticle('a01')">
+        <div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=500&q=80&auto=format&fit=crop" alt="5月の限定御朱印"></div>
+        <div class="a-body"><div class="a-title">【2026年・全国版】5月の限定御朱印40選！鯉のぼりや兜のカッコイイ御朱印を紹介</div><div class="a-date">御朱印</div></div>
       </div>
-      <div class="article9-card">
-        <div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1763120339579-d660fbebaa16?fm=jpg&q=70&w=500&auto=format&fit=crop" alt="参拝の作法"></div>
-        <div class="a-body"><div class="a-title">開運につながる参拝の作法</div><div class="a-date">開運</div></div>
+      <div class="article9-card" onclick="openArticle('a02')">
+        <div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1583089892943-e02e5b017b6a?w=500&q=80&auto=format&fit=crop" alt="釈迦如来"></div>
+        <div class="a-body"><div class="a-title">釈迦如来とは？仏教を作ったお釈迦様が悟りを開いた姿の仏様を徹底解説</div><div class="a-date">仏教</div></div>
       </div>
-      <div class="article9-card">
-        <div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1760333972888-852dd0072281?fm=jpg&q=70&w=500&auto=format&fit=crop" alt="季節限定御朱印"></div>
-        <div class="a-body"><div class="a-title">季節限定の御朱印特集</div><div class="a-date">御朱印</div></div>
+      <div class="article9-card" onclick="openArticle('a03')">
+        <div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1565967511849-76a60a516170?w=500&q=80&auto=format&fit=crop" alt="馬頭観音"></div>
+        <div class="a-body"><div class="a-title">馬頭観音とは？人々の煩悩を食べ尽くす馬の守り神を徹底解説</div><div class="a-date">仏像</div></div>
       </div>
-      <div class="article9-card">
-        <div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1758531588833-4e0ae03c2153?fm=jpg&q=70&w=500&auto=format&fit=crop" alt="伝統文化"></div>
-        <div class="a-body"><div class="a-title">神社と日本の伝統文化を学ぶ</div><div class="a-date">文化</div></div>
+      <div class="article9-card" onclick="openArticle('a04')">
+        <div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1583416750470-965b2707b355?w=500&q=80&auto=format&fit=crop" alt="円覚寺管長インタビュー"></div>
+        <div class="a-body"><div class="a-title">鎌倉・円覚寺横田南嶺管長に聞く「心が落ち着く御朱印めぐりの秘訣」</div><div class="a-date">インタビュー</div></div>
       </div>
-      <div class="article9-card">
-        <div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1752898514963-e36929a03859?fm=jpg&q=70&w=500&auto=format&fit=crop" alt="週末パワースポット巡り"></div>
-        <div class="a-body"><div class="a-title">週末で行けるパワースポット巡り</div><div class="a-date">旅行</div></div>
+      <div class="article9-card" onclick="openArticleList()" style="display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;background:var(--bg);">
+        <svg class="ic" style="width:30px;height:30px;color:var(--purple)" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        <div class="a-title" style="color:var(--purple);text-align:center;">もっと記事を見る</div>
       </div>
     </div>
   </div>
@@ -2039,6 +2095,132 @@ function sdAddToAiRoute(){
   var inp = document.getElementById('aiQueryInput');
   if (inp) inp.value = currentSdShrine.name;
   if (typeof startAiRoutePC === 'function') startAiRoutePC();
+}
+
+const PC_ARTICLES = [
+  {
+    id:'sh01',
+    title:'【桜と御朱印】春の訪れを告げる、美しき花手水と限定御朱印5選',
+    date:'2026-06-02',
+    cat:'御朱印',
+    img:'https://images.unsplash.com/photo-1480796927426-f609979314bd?w=600&q=80&auto=format&fit=crop',
+    excerpt:'やわらかな風とともに、境内に舞い散る桜の花びら。朱塗りの鳥居を背景に咲き誇る淡紅色の世界は、この季節だけが許してくれる、特別なひとときです。',
+    body:`<p class="lead">やわらかな風とともに、境内に舞い散る桜の花びら。朱塗りの鳥居を背景に咲き誇る淡紅色の世界は、この季節だけが許してくれる、特別なひとときです。全国の神社仏閣では、春になるとそれぞれの思いを込めた限定御朱印が授与されはじめます。今年の春は、桜の下で御朱印帳を開いてみませんか。</p>
+<img src="https://images.unsplash.com/photo-1480796927426-f609979314bd?w=800&q=80&auto=format&fit=crop" style="width:100%;border-radius:8px;margin:16px 0" alt="鳥居と桜">
+<h2>境内を彩る桜と、春だけの特別な御朱印たち</h2>
+<p>春の御朱印の最大の魅力は、その「一期一会」にあります。限定御朱印の多くは、桜の開花期間中のみ授与されるもの。花びらが散れば、その年の頒布は終わりを告げます。</p>
+<p><strong>① 上野東照宮（東京・台東区）</strong><br>桜の季節には金色の社殿と薄紅の桜が見事に調和します。この時期に授与される御朱印は、桜の朱印が重なり、まるで一枚の絵画のよう。</p>
+<p><strong>② 三嶋大社（静岡・三島市）</strong><br>「桜まつり」の期間中は、春らしい彩りの限定御朱印が登場します。JR三島駅から徒歩10分というアクセスのよさも魅力です。</p>
+<p><strong>③ 大石神社（京都・山科区）</strong><br>忠臣蔵で知られる大石内蔵助ゆかりの社。繊細な筆致で桜の花が描かれた季節限定の御朱印が頒布されます。</p>
+<p><strong>④ 北野天満宮（京都・上京区）</strong><br>枝垂れ桜が境内を覆うように咲く春、毎年デザインが変わる限定御朱印はコレクターにも人気です。</p>
+<p><strong>⑤ 花手水めぐり（全国各地）</strong><br>桜の花びらを浮かべた手水舎は、参拝前から心を清めてくれるような美しさ。全国に点在します。</p>
+<img src="https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=800&q=80&auto=format&fit=crop" style="width:100%;border-radius:8px;margin:16px 0" alt="御朱印">
+<h2>ご利益と歴史——桜と神社の深いつながり</h2>
+<p>桜と神道の関係は、古来より深く結ばれています。「さ」は田の神様を意味し、「くら」は神が宿る場所を指すという説があります。つまり桜の木は、古来より神様の宿り木として崇められてきた存在なのです。</p>
+<blockquote style="background:#fff9f0;border-left:4px solid #c8932a;padding:14px 18px;margin:16px 0;border-radius:4px;color:#5c3d00">💡 【豆知識】桜の花びらが5枚であることをご存知ですか？「五」という数字は陰陽五行説において「土」を表し、大地の恵みと豊穣を象徴します。</blockquote>
+<h2>アクセスと参拝のポイント</h2>
+<p><strong>参拝のベストタイム</strong>：平日の午前中、特に9時〜11時頃が最も人が少なく、ゆったりと御朱印を頂けます。</p>
+<p><strong>御初穂料の準備</strong>：御朱印の初穂料は通常300〜500円が目安です（限定御朱印は1,000円前後の場合もあります）。</p>
+<img src="https://images.unsplash.com/photo-1583416750470-965b2707b355?w=800&q=80&auto=format&fit=crop" style="width:100%;border-radius:8px;margin:16px 0" alt="参道">
+<h2>おわりに</h2>
+<p>春の境内に立ち、見上げた先に広がる桜の花びらとともに御朱印を頂く体験は、きっといつまでも心に残るものとなるでしょう。鳥居をくぐるその瞬間から、あなたの「わびなび」の旅がはじまります。</p>`
+  },
+  {
+    id:'a01',
+    title:'【2026年・全国版】5月の限定御朱印40選！鯉のぼりや兜のカッコイイ御朱印を紹介',
+    date:'2026-04-27',
+    cat:'御朱印',
+    img:'https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=600&q=80&auto=format&fit=crop',
+    excerpt:'端午の節句にちなんだ鯉のぼりや兜をモチーフにしたカッコイイ限定御朱印を全国から厳選してご紹介します。',
+    body:`<p class="lead">5月は端午の節句にちなんだ、勇壮で華やかな限定御朱印が全国の神社仏閣で授与される月です。鯉のぼりや兜をモチーフにしたデザインは、子どもの成長を願う方はもちろん、御朱印コレクターの方からも毎年大人気。本記事では、2026年5月限定の御朱印を全国から40件厳選してご紹介します。</p>
+<h2>関東エリアの注目御朱印</h2>
+<p>関東エリアでは、武運の神様として知られる神社を中心に、兜や甲冑をデザインに取り入れた力強い御朱印が多数登場します。特に鎌倉・鶴岡八幡宮の限定御朱印は、武家文化を象徴する黒と金の配色が見事で、毎年5月1日からの授与開始と同時に長蛇の列ができます。</p>
+<p>また、東京・神田明神では江戸の粋を感じる鯉のぼり柄の御朱印が登場。職人による手書きの墨書きと、鮮やかな朱印のコントラストが美しい一枚です。</p>
+<h2>関西エリアの注目御朱印</h2>
+<p>関西では、京都・八坂神社や奈良・春日大社など、世界遺産級の神社で華やかな限定御朱印が授与されます。特に注目したいのが、伏見稲荷大社の「五月雨稲荷」と銘打った限定御朱印。雨に濡れた千本鳥居をモチーフにした幻想的な一枚です。</p>
+<h2>授与期間と注意点</h2>
+<p>多くの限定御朱印は5月1日〜5月31日の期間限定授与となります。人気の御朱印は数量限定で配布終了となることもあるため、お目当ての御朱印がある方は早めの参拝をおすすめします。また、御朱印帳をお忘れなく。直書きではなく書置き対応の神社も増えていますので、事前に公式サイトでの確認をお勧めします。</p>
+<h2>まとめ</h2>
+<p>5月限定の御朱印は、季節の風物詩を感じられる特別な記念になります。お子様の健やかな成長を願いながら、ぜひ全国の神社仏閣を巡ってみてください。</p>`
+  },
+  {
+    id:'a02',
+    title:'釈迦如来とは？仏教を作ったお釈迦様が悟りを開いた姿の仏様を徹底解説',
+    date:'2025-03-17',
+    cat:'仏教',
+    img:'https://images.unsplash.com/photo-1583089892943-e02e5b017b6a?w=600&q=80&auto=format&fit=crop',
+    excerpt:'仏教の開祖であるお釈迦様が悟りを開いた姿を表す釈迦如来。その特徴やご利益、有名な仏像を解説。',
+    body:'<p class="lead">仏教の開祖、お釈迦様が悟りを開いた姿を表す釈迦如来。その教えと姿の特徴を詳しく解説します。</p><p>準備中の記事です。</p>'
+  },
+  {
+    id:'a03',
+    title:'馬頭観音とは？人々の煩悩を食べ尽くす馬の守り神を徹底解説',
+    date:'2024-12-23',
+    cat:'仏像',
+    img:'https://images.unsplash.com/photo-1565967511849-76a60a516170?w=600&q=80&auto=format&fit=crop',
+    excerpt:'観音菩薩の中でも特異な姿を持つ馬頭観音。馬の守り神としても信仰される仏様の魅力を紹介。',
+    body:'<p class="lead">観音菩薩の中でも怒りの相を持つ馬頭観音。その意味と信仰を解説します。</p><p>準備中の記事です。</p>'
+  },
+  {
+    id:'a04',
+    title:'鎌倉・円覚寺横田南嶺管長に聞く「心が落ち着く御朱印めぐりの秘訣」',
+    date:'2022-12-24',
+    cat:'インタビュー',
+    img:'https://images.unsplash.com/photo-1583416750470-965b2707b355?w=600&q=80&auto=format&fit=crop',
+    excerpt:'臨済宗円覚寺派管長・横田南嶺老師に、心を整える参拝の作法と御朱印めぐりの心得を伺いました。',
+    body:'<p class="lead">円覚寺管長・横田南嶺老師にお話を伺いました。</p><p>準備中の記事です。</p>'
+  }
+];
+
+// ============ 記事詳細パネル：PC版おすすめ記事カードからの起動用ブリッジ ============
+// モバイル版の実際の openArticle() をそのまま利用する。
+function closeOverlay(id){
+  var pg = document.getElementById(id);
+  if (!pg) return;
+  pg.style.display = 'none';
+}
+function openOverlay(id){
+  var pg = document.getElementById(id);
+  if (!pg) return;
+  pg.style.display = 'flex';
+  pg.scrollTop = 0;
+}
+function renderArticleList(target, limit){
+  var items = limit ? PC_ARTICLES.slice(0, limit) : PC_ARTICLES;
+  var html = items.map(function(a){
+    var d = a.date.split('-'); var dateStr = d[0]+'年'+d[1]+'月'+d[2]+'日';
+    return '<div class="art-item" onclick="openArticle(\''+a.id+'\')">' +
+      '<div class="art-thumb">' +
+        (a.img ? '<img src="'+a.img+'" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' : '') +
+        '<div class="art-thumb-ph" style="'+(a.img?'display:none':'')+'">'+a.cat+'</div>' +
+      '</div>' +
+      '<div class="art-body">' +
+        '<div class="art-title">'+a.title+'</div>' +
+        '<div class="art-date">'+dateStr+'</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  document.getElementById(target).innerHTML = html;
+}
+function openArticleList(){ renderArticleList('artListFull', null); openOverlay('pgArticleList'); }
+function openArticle(id){
+  var a = PC_ARTICLES.find(function(x){ return x.id === id; });
+  if (!a) return;
+  var d = a.date.split('-'); var dateStr = d[0]+'年'+d[1]+'月'+d[2]+'日';
+  var html = '<div class="article-detail">' +
+    '<div class="article-hero">' +
+      (a.img ? '<img src="'+a.img+'" alt="">' : '') +
+    '</div>' +
+    '<div class="article-cont">' +
+      '<div class="article-cat">'+a.cat+'</div>' +
+      '<div class="article-title">'+a.title+'</div>' +
+      '<div class="article-meta"><span>📅 '+dateStr+'</span><span>📂 '+a.cat+'</span></div>' +
+      '<div class="article-body">'+a.body+'</div>' +
+      '<button class="ext-btn" onclick="closeOverlay(\'pgArticleDetail\')">‹ 閉じる</button>' +
+    '</div>' +
+  '</div>';
+  document.getElementById('articleDetailBody').innerHTML = html;
+  openOverlay('pgArticleDetail');
 }
 
 </script>

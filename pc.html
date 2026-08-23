@@ -121,12 +121,12 @@
   .ai-route-cards{display:flex;flex-direction:column;gap:16px;}
   .ai-rcard-pc{border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;transition:transform .2s,box-shadow .2s;}
   .ai-rcard-pc:hover{transform:translateY(-3px);box-shadow:var(--shadow-card);}
-  .ai-rcard-pc .hero{position:relative;height:150px;}
-  .ai-rcard-pc .hero img{width:100%;height:100%;object-fit:cover;}
-  .ai-rcard-pc .hero::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(20,10,5,.82),transparent 60%);}
-  .ai-rcard-pc .hero-name{position:absolute;bottom:12px;left:14px;right:14px;color:#fff;font-family:'Noto Serif JP',serif;font-size:16px;font-weight:700;}
-  .ai-rcard-pc .hero-name .sub{display:block;font-size:11px;font-weight:400;color:#EADFCB;margin-top:2px;}
-  .ai-rcard-pc .chips{position:absolute;top:12px;left:14px;display:flex;gap:6px;}
+  .ai-rcard-pc .rphoto{position:relative;height:150px;overflow:hidden;}
+  .ai-rcard-pc .rphoto img{width:100%;height:100%;object-fit:cover;display:block;}
+  .ai-rcard-pc .rphoto::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(20,10,5,.82),transparent 60%);}
+  .ai-rcard-pc .rname{position:absolute;bottom:12px;left:14px;right:14px;color:#fff;font-family:'Noto Serif JP',serif;font-size:16px;font-weight:700;}
+  .ai-rcard-pc .rname .sub{display:block;font-size:11px;font-weight:400;color:#EADFCB;margin-top:2px;}
+  .ai-rcard-pc .rchips{position:absolute;top:12px;left:14px;display:flex;gap:6px;}
   .ai-rcard-pc .chip{background:rgba(255,255,255,.9);color:var(--text);font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:10px;}
   .ai-rcard-pc .body{padding:14px 16px 16px;}
   .ai-rcard-pc .desc{font-size:12.5px;color:var(--subtext);line-height:1.7;}
@@ -1385,9 +1385,9 @@ function renderAiRouteCardsPC(selTrans, selTime){
     var img = (photoCache[r.spots[0].name] && photoCache[r.spots[0].name][0]) || r.img || 'https://images.unsplash.com/photo-1758531588833-4e0ae03c2153?w=600&q=70&auto=format&fit=crop';
     var tags = (r.tags||[]).map(function(t){ return '<span class="tag">'+t+'</span>'; }).join('');
     return '<div class="ai-rcard-pc" onclick="showAiRouteDetail('+idx+')">'
-      + '<div class="hero"><img loading="lazy" src="'+img+'" alt="'+r.name+'">'
-      + '<div class="chips"><span class="chip">'+(r.transport||selTrans)+'</span><span class="chip">'+(r.time||selTime)+'</span></div>'
-      + '<div class="hero-name">'+r.name+(r.subtitle?'<span class="sub">'+r.subtitle+'</span>':'')+'</div>'
+      + '<div class="rphoto"><img loading="lazy" src="'+img+'" alt="'+r.name+'">'
+      + '<div class="rchips"><span class="chip">'+(r.transport||selTrans)+'</span><span class="chip">'+(r.time||selTime)+'</span></div>'
+      + '<div class="rname">'+r.name+(r.subtitle?'<span class="sub">'+r.subtitle+'</span>':'')+'</div>'
       + '</div>'
       + '<div class="body"><div class="desc">'+r.desc+'</div><div class="tags">'+tags+'</div></div>'
       + '</div>';

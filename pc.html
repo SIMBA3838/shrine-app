@@ -112,9 +112,9 @@
   .hero-inner p{color:#F5EFE5;font-size:15px;margin-top:18px;line-height:1.9;max-width:540px;margin-left:auto;margin-right:auto;text-shadow:0 1px 10px rgba(0,0,0,.35);}
 
   /* ---------- unified search panel ---------- */
-  .search-panel{max-width:var(--maxw);margin:-58px auto 0;padding:0 40px;position:relative;z-index:5;}
-  .search-card{background:#fff;border-radius:18px;padding:26px 28px;box-shadow:0 20px 50px rgba(43,20,10,.15);border:1px solid var(--border);}
-  .search-title{font-size:17px;font-weight:700;margin-bottom:4px;}
+  .search-panel{max-width:var(--maxw);margin:-70px auto 0;padding:0 40px;position:relative;z-index:5;}
+  .search-card{background:#fff;border-radius:22px;padding:34px 36px;box-shadow:0 26px 60px rgba(43,20,10,.18);border:1px solid var(--border);}
+  .search-title{font-family:'Noto Serif JP',serif;font-size:21px;font-weight:700;margin-bottom:18px;}
   .search-subtitle{font-size:12px;color:var(--subtext);margin-bottom:16px;}
   .search-tabs{display:flex;gap:6px;margin-bottom:14px;}
   .search-tabs button{font-size:13px;font-weight:600;color:var(--subtext);padding:8px 16px;border-radius:10px 10px 0 0;}
@@ -123,16 +123,16 @@
   .quick-links .ql-label{font-size:11.5px;color:var(--subtext);}
   .quick-links a{font-size:12px;color:var(--purple);font-weight:600;background:var(--bg);border:1px solid var(--border);padding:6px 13px;border-radius:16px;}
   .quick-links a:hover{background:#EFE7F5;}
-  .search-fields{display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
-  .field{flex:1 1 200px;display:flex;align-items:center;gap:9px;border:1px solid var(--border);border-radius:12px;padding:13px 14px;background:var(--bg);}
-  .field input,.field select{border:none;background:transparent;outline:none;font-size:13.5px;width:100%;font-family:inherit;color:var(--text);}
-  .field.small{flex:0 1 150px;}
-  .search-submit{background:var(--text);color:#fff;font-weight:700;font-size:14px;padding:14px 26px;border-radius:12px;white-space:nowrap;flex:none;}
+  .search-fields{display:flex;gap:14px;align-items:center;flex-wrap:wrap;}
+  .field{flex:1 1 200px;display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:12px;padding:16px 18px;background:var(--bg);}
+  .field input,.field select{border:none;background:transparent;outline:none;font-size:14.5px;width:100%;font-family:inherit;color:var(--text);}
+  .field.small{flex:1 1 190px;padding:13px 16px;}
+  .search-submit{background:var(--text);color:#fff;font-weight:700;font-size:14.5px;padding:15px 28px;border-radius:12px;white-space:nowrap;flex:1 1 150px;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .2s;}
   .search-submit:hover{background:#000;}
-  .ai-cta-row{display:flex;justify-content:center;margin-top:20px;padding-top:20px;border-top:1px dashed var(--border);}
-  .ai-cta-big{background:linear-gradient(135deg,var(--purple),#5c3aa0);color:#fff;font-weight:700;font-size:16px;padding:17px 40px;border-radius:14px;display:flex;align-items:center;gap:10px;box-shadow:0 12px 28px rgba(75,46,131,.4),0 0 0 3px rgba(200,166,90,.25);letter-spacing:.02em;}
-  .ai-cta-big:hover{background:var(--purple-d);}
-  .ai-cta-note{text-align:center;font-size:11.5px;color:var(--subtext);margin-top:12px;}
+  .ai-cta-row{display:flex;justify-content:center;margin-top:24px;padding-top:24px;border-top:1px dashed var(--border);}
+  .ai-cta-big{background:linear-gradient(100deg,var(--purple) 0%,#6b3fa0 45%,#c2793f 100%);color:#fff;font-weight:700;font-size:19px;padding:22px 0;border-radius:16px;display:flex;align-items:center;justify-content:center;gap:14px;box-shadow:0 16px 34px rgba(75,46,131,.4);letter-spacing:.03em;width:100%;}
+  .ai-cta-big:hover{filter:brightness(1.06);}
+  .ai-cta-note{text-align:center;font-size:12px;color:var(--subtext);margin-top:14px;}
   .search-status{text-align:center;font-size:12px;color:var(--subtext);margin-top:10px;min-height:16px;}
   .search-result-card{position:relative;border-radius:var(--r-md);overflow:hidden;aspect-ratio:4/3.4;transition:transform .25s,box-shadow .25s;cursor:pointer;}
   .search-result-card:hover{transform:translateY(-4px);box-shadow:0 16px 28px -12px rgba(43,20,10,.32);}
@@ -187,7 +187,29 @@
   .route-mini-body .r-name{font-size:13.5px;font-weight:700;}
   .route-mini-body .r-meta{font-size:11px;color:var(--subtext);margin-top:4px;}
 
-  /* ---------- ranking：TOP3強調＋補助 ---------- */
+  /* ---------- ranking：9枚グリッド (3x3) ---------- */
+  .grid-rank9{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+  .rank9-card{position:relative;border-radius:var(--r-md);overflow:hidden;aspect-ratio:4/3;transition:transform .25s,box-shadow .25s;}
+  .rank9-card:hover{transform:translateY(-4px);box-shadow:0 18px 30px -14px rgba(43,20,10,.32);}
+  .rank9-card img{width:100%;height:100%;object-fit:cover;transition:transform .4s;}
+  .rank9-card:hover img{transform:scale(1.06);}
+  .rank9-card::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(20,10,5,.8) 0%,rgba(20,10,5,.04) 55%,transparent 100%);}
+  .rank9-num{position:absolute;top:12px;left:12px;z-index:2;width:32px;height:32px;border-radius:50%;background:var(--gold);color:#fff;font-family:'Noto Serif JP',serif;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,.25);}
+  .rank9-num.n1{background:var(--vermilion);}
+  .rank9-num.n2,.rank9-num.n3{background:var(--purple);}
+  .rank9-info{position:absolute;bottom:12px;left:14px;right:14px;z-index:2;color:#fff;}
+  .rank9-info .r-name{font-size:14.5px;font-weight:700;}
+  .rank9-info .r-area{font-size:11px;color:#EADFCB;margin-top:3px;}
+
+  /* ---------- 記事：9枚グリッドと同サイズ・6枚 ---------- */
+  .article9-card{background:#fff;border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;transition:transform .25s,box-shadow .25s;}
+  .article9-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-card);}
+  .article9-card .thumb{aspect-ratio:4/3;overflow:hidden;}
+  .article9-card .thumb img{width:100%;height:100%;object-fit:cover;transition:transform .4s;}
+  .article9-card:hover .thumb img{transform:scale(1.06);}
+  .article9-card .a-body{padding:14px 16px 16px;}
+  .article9-card .a-title{font-size:13.5px;font-weight:700;line-height:1.6;}
+  .article9-card .a-date{font-size:11px;color:var(--vermilion);font-weight:600;margin-top:8px;}
   .rank-top3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:22px;}
   .rank-top-card{position:relative;border-radius:var(--r-lg);overflow:hidden;height:280px;transition:transform .3s,box-shadow .3s;}
   .rank-top-card:hover{transform:translateY(-5px);box-shadow:0 22px 36px -14px rgba(43,20,10,.35);}
@@ -390,39 +412,43 @@
 <div class="search-panel" id="search">
   <div class="search-card">
     <div class="search-title">行きたい神社・お寺を探す</div>
-    <div class="search-subtitle">神社名・お寺名・御朱印・地域などで検索できます</div>
-    <div class="search-tabs">
-      <button class="on">神社・お寺</button>
-      <button>御朱印</button>
-      <button>都道府県から探す</button>
-    </div>
     <div class="search-fields">
-      <div class="field" style="flex:2 1 320px;">
-        <svg class="ic" viewBox="0 0 24 24" style="color:#B8452A;width:16px;height:16px"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.6" y2="16.6"/></svg>
-        <input id="srchName" type="text" placeholder="神社名・お寺名・御朱印・地域などを検索（例：明治神宮、浅草寺、鎌倉）" onkeydown="if(event.key==='Enter')runSearch()">
+      <div class="field" style="flex:1 1 100%;">
+        <svg class="ic" viewBox="0 0 24 24" style="color:#B8452A;width:18px;height:18px"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.6" y2="16.6"/></svg>
+        <input id="srchName" type="text" placeholder="神社名・お寺名・御朱印・地域などを検索" onkeydown="if(event.key==='Enter')runSearch()">
       </div>
+    </div>
+    <div class="search-fields" style="margin-top:12px;">
       <div class="field small">
         <svg class="ic" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>
-        <select id="srchPref"><option value="">都道府県</option><option>北海道</option><option>青森県</option><option>岩手県</option><option>宮城県</option><option>秋田県</option><option>山形県</option><option>福島県</option><option>茨城県</option><option>栃木県</option><option>群馬県</option><option>埼玉県</option><option>千葉県</option><option>東京都</option><option>神奈川県</option><option>新潟県</option><option>富山県</option><option>石川県</option><option>福井県</option><option>山梨県</option><option>長野県</option><option>岐阜県</option><option>静岡県</option><option>愛知県</option><option>三重県</option><option>滋賀県</option><option>京都府</option><option>大阪府</option><option>兵庫県</option><option>奈良県</option><option>和歌山県</option><option>鳥取県</option><option>島根県</option><option>岡山県</option><option>広島県</option><option>山口県</option><option>徳島県</option><option>香川県</option><option>愛媛県</option><option>高知県</option><option>福岡県</option><option>佐賀県</option><option>長崎県</option><option>熊本県</option><option>大分県</option><option>宮崎県</option><option>鹿児島県</option><option>沖縄県</option></select>
+        <select id="srchPref"><option value="">都道府県：すべて</option><option>北海道</option><option>青森県</option><option>岩手県</option><option>宮城県</option><option>秋田県</option><option>山形県</option><option>福島県</option><option>茨城県</option><option>栃木県</option><option>群馬県</option><option>埼玉県</option><option>千葉県</option><option>東京都</option><option>神奈川県</option><option>新潟県</option><option>富山県</option><option>石川県</option><option>福井県</option><option>山梨県</option><option>長野県</option><option>岐阜県</option><option>静岡県</option><option>愛知県</option><option>三重県</option><option>滋賀県</option><option>京都府</option><option>大阪府</option><option>兵庫県</option><option>奈良県</option><option>和歌山県</option><option>鳥取県</option><option>島根県</option><option>岡山県</option><option>広島県</option><option>山口県</option><option>徳島県</option><option>香川県</option><option>愛媛県</option><option>高知県</option><option>福岡県</option><option>佐賀県</option><option>長崎県</option><option>熊本県</option><option>大分県</option><option>宮崎県</option><option>鹿児島県</option><option>沖縄県</option></select>
       </div>
       <div class="field small">
         <svg class="ic" viewBox="0 0 24 24" style="width:16px;height:16px"><rect x="6" y="3" width="12" height="18" rx="1"/><line x1="9" y1="7" x2="15" y2="7"/></svg>
-        <select id="srchType"><option value="">神社・お寺どちらも</option><option value="神社">神社中心</option><option value="寺">寺院中心</option></select>
+        <select id="srchType"><option value="">種類：すべて</option><option value="神社">神社中心</option><option value="寺">寺院中心</option></select>
       </div>
-      <button class="search-submit" onclick="runSearch()">検索する</button>
+      <div class="field small">
+        <svg class="ic" viewBox="0 0 24 24" style="width:16px;height:16px"><rect x="6" y="3" width="12" height="18" rx="1"/><line x1="9" y1="7" x2="15" y2="7"/></svg>
+        <select id="srchGoshuin"><option value="">御朱印：すべて</option><option>限定</option><option>月替わり</option><option>切り絵</option></select>
+      </div>
+      <div class="field small">
+        <svg class="ic" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M12 2l1.8 5.6L19 9l-5.2 1.4L12 16l-1.8-5.6L5 9l5.2-1.4L12 2z"/></svg>
+        <select id="srchTheme"><option value="">テーマ：すべて</option><option>開運</option><option>縁結び</option><option>金運</option><option>歴史・文化</option></select>
+      </div>
+      <button class="search-submit" onclick="runSearch()">
+        <svg class="ic" style="width:16px;height:16px;color:#fff" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.6" y2="16.6"/></svg>
+        検索する
+      </button>
     </div>
     <div id="searchStatus" class="search-status"></div>
-    <div class="quick-links">
-      <span class="ql-label">こちらからも探せます：</span>
-      <a href="#">都道府県から</a><a href="#">神社／お寺から</a><a href="#">御朱印から</a><a href="#">テーマから</a>
-    </div>
     <div class="ai-cta-row">
       <button class="ai-cta-big">
         <svg class="ic" style="color:#fff" viewBox="0 0 24 24"><path d="M12 2l1.8 5.6L19 9l-5.2 1.4L12 16l-1.8-5.6L5 9l5.2-1.4L12 2z"/></svg>
         AIおすすめ巡拝ルートを作る
+        <svg class="ic" style="color:#fff" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </button>
     </div>
-    <div class="ai-cta-note">行きたい場所・使える時間・交通手段を選ぶだけ。わびなびAIが最適な巡拝ルートを提案します。</div>
+    <div class="ai-cta-note">行きたい場所や時間、条件を選ぶだけ。AIがあなたに最適な巡拝ルートをお作りします。</div>
   </div>
 </div>
 
@@ -466,7 +492,7 @@
       <div class="ai-route-flag">わびなびだけのAI機能</div>
       <div class="ai-route-copy">
         <div class="eyebrow">WABINAVI AI ROUTE</div>
-        <h2>あなたに合った<br>巡拝ルートをAIが提案</h2>
+        <h2>わびなび<br>おすすめ巡拝ルート</h2>
         <p>行きたい神社・お寺、使える時間、交通手段を選ぶだけ。わびなびだけの、AIによる巡拝ルート作成です。</p>
         <div class="ai-route-btns">
           <button class="btn-solid-gold">AIで作る</button>
@@ -495,86 +521,43 @@
 <section class="block tight reveal" id="shrines" style="background:#fff;">
   <div class="wrap">
     <div class="sec-head">
-      <div><div class="eyebrow">RANKING</div><h2>おすすめ神社ランキング</h2><div class="desc">全国のわびなびユーザーに人気の神社・お寺</div></div>
+      <div><div class="eyebrow">RANKING</div><h2>おすすめ神社ランキング</h2><div class="desc">多くの参拝者に支持されている人気の神社</div></div>
       <a class="more-link" href="#">もっと見る ＞</a>
     </div>
     <div class="filters">
-      <button class="on">全国</button><button>都道府県</button><button>人気順</button>
+      <button class="on">全国</button><button>関東</button><button>関西</button><button>中部</button><button>北海道・東北</button><button>九州・沖縄</button>
     </div>
-    <div class="rank-top3">
-      <div class="rank-top-card">
-        <img loading="lazy" data-shrine="伊勢神宮 内宮" data-addr="三重県伊勢市" src="https://images.unsplash.com/photo-1758531588833-4e0ae03c2153?fm=jpg&q=70&w=900&auto=format&fit=crop" alt="伊勢神宮">
-        <div class="rank-top-num">1</div>
-        <div class="rank-top-info"><div class="r-name">伊勢神宮（内宮）</div><div class="r-area">三重県伊勢市</div><div class="rate-row">★★★★★ 4.7（18,920件）</div></div>
-      </div>
-      <div class="rank-top-card">
-        <img loading="lazy" data-shrine="出雲大社" data-addr="島根県出雲市" src="https://images.unsplash.com/photo-1759339645664-9b9c15d70b56?fm=jpg&q=70&w=700&auto=format&fit=crop" alt="出雲大社">
-        <div class="rank-top-num">2</div>
-        <div class="rank-top-info"><div class="r-name">出雲大社</div><div class="r-area">島根県出雲市</div><div class="rate-row">★★★★★ 4.6（8,320件）</div></div>
-      </div>
-      <div class="rank-top-card">
-        <img loading="lazy" data-shrine="明治神宮" data-addr="東京都渋谷区" src="https://images.unsplash.com/photo-1752146506990-f9699e41f814?fm=jpg&q=70&w=700&auto=format&fit=crop" alt="明治神宮">
-        <div class="rank-top-num">3</div>
-        <div class="rank-top-info"><div class="r-name">明治神宮</div><div class="r-area">東京都渋谷区</div><div class="rate-row">★★★★★ 4.6（12,450件）</div></div>
-      </div>
-    </div>
-    <div class="rank-sub-row">
-      <div class="rank-sub-card"><div class="thumb"><div class="num">4</div><img loading="lazy" data-shrine="伏見稲荷大社" data-addr="京都府" src="https://images.unsplash.com/photo-1760333972888-852dd0072281?fm=jpg&q=70&w=200&auto=format&fit=crop" alt="伏見稲荷大社"></div><div><div class="r-name">伏見稲荷大社</div><div class="r-area">京都府</div></div></div>
-      <div class="rank-sub-card"><div class="thumb"><div class="num">5</div><img loading="lazy" data-shrine="鶴岡八幡宮" data-addr="神奈川県鎌倉市" src="https://images.unsplash.com/photo-1763120339579-d660fbebaa16?fm=jpg&q=70&w=200&auto=format&fit=crop" alt="鶴岡八幡宮"></div><div><div class="r-name">鶴岡八幡宮</div><div class="r-area">神奈川県</div></div></div>
-      <div class="rank-sub-card"><div class="thumb"><div class="num">6</div><img loading="lazy" data-shrine="厳島神社" data-addr="広島県廿日市市" src="https://images.unsplash.com/photo-1752898514963-e36929a03859?fm=jpg&q=70&w=200&auto=format&fit=crop" alt="厳島神社"></div><div><div class="r-name">厳島神社</div><div class="r-area">広島県</div></div></div>
-      <div class="rank-sub-card"><div class="thumb"><div class="num">7</div><img loading="lazy" data-shrine="住吉大社" data-addr="大阪府大阪市" src="https://images.unsplash.com/photo-1758531588833-4e0ae03c2153?fm=jpg&q=70&w=200&auto=format&fit=crop" alt="住吉大社"></div><div><div class="r-name">住吉大社</div><div class="r-area">大阪府</div></div></div>
+    <div class="grid-rank9">
+      <div class="rank9-card"><img loading="lazy" data-shrine="伏見稲荷大社" data-addr="京都府" src="https://images.unsplash.com/photo-1760333972888-852dd0072281?fm=jpg&q=70&w=600&auto=format&fit=crop" alt="伏見稲荷大社"><div class="rank9-num n1">1</div><div class="rank9-info"><div class="r-name">伏見稲荷大社</div><div class="r-area">京都府</div></div></div>
+      <div class="rank9-card"><img loading="lazy" data-shrine="伊勢神宮 内宮" data-addr="三重県伊勢市" src="https://images.unsplash.com/photo-1758531588833-4e0ae03c2153?fm=jpg&q=70&w=600&auto=format&fit=crop" alt="伊勢神宮"><div class="rank9-num n2">2</div><div class="rank9-info"><div class="r-name">伊勢神宮（内宮）</div><div class="r-area">三重県伊勢市</div></div></div>
+      <div class="rank9-card"><img loading="lazy" data-shrine="明治神宮" data-addr="東京都渋谷区" src="https://images.unsplash.com/photo-1752146506990-f9699e41f814?fm=jpg&q=70&w=600&auto=format&fit=crop" alt="明治神宮"><div class="rank9-num n3">3</div><div class="rank9-info"><div class="r-name">明治神宮</div><div class="r-area">東京都</div></div></div>
+      <div class="rank9-card"><img loading="lazy" data-shrine="出雲大社" data-addr="島根県出雲市" src="https://images.unsplash.com/photo-1759339645664-9b9c15d70b56?fm=jpg&q=70&w=600&auto=format&fit=crop" alt="出雲大社"><div class="rank9-num">4</div><div class="rank9-info"><div class="r-name">出雲大社</div><div class="r-area">島根県</div></div></div>
+      <div class="rank9-card"><img loading="lazy" data-shrine="春日大社" data-addr="奈良県奈良市" src="https://images.unsplash.com/photo-1752898514963-e36929a03859?fm=jpg&q=70&w=600&auto=format&fit=crop" alt="春日大社"><div class="rank9-num">5</div><div class="rank9-info"><div class="r-name">春日大社</div><div class="r-area">奈良県</div></div></div>
+      <div class="rank9-card"><img loading="lazy" data-shrine="厳島神社" data-addr="広島県廿日市市" src="https://images.unsplash.com/photo-1763120339579-d660fbebaa16?fm=jpg&q=70&w=600&auto=format&fit=crop" alt="厳島神社"><div class="rank9-num">6</div><div class="rank9-info"><div class="r-name">厳島神社</div><div class="r-area">広島県</div></div></div>
+      <div class="rank9-card"><img loading="lazy" data-shrine="鶴岡八幡宮" data-addr="神奈川県鎌倉市" src="https://images.unsplash.com/photo-1760333972888-852dd0072281?fm=jpg&q=70&w=600&auto=format&fit=crop" alt="鶴岡八幡宮"><div class="rank9-num">7</div><div class="rank9-info"><div class="r-name">鶴岡八幡宮</div><div class="r-area">神奈川県</div></div></div>
+      <div class="rank9-card"><img loading="lazy" data-shrine="石清水八幡宮" data-addr="京都府八幡市" src="https://images.unsplash.com/photo-1758531588833-4e0ae03c2153?fm=jpg&q=70&w=600&auto=format&fit=crop" alt="石清水八幡宮"><div class="rank9-num">8</div><div class="rank9-info"><div class="r-name">石清水八幡宮</div><div class="r-area">京都府</div></div></div>
+      <div class="rank9-card"><img loading="lazy" data-shrine="住吉大社" data-addr="大阪府大阪市" src="https://images.unsplash.com/photo-1752146506990-f9699e41f814?fm=jpg&q=70&w=600&auto=format&fit=crop" alt="住吉大社"><div class="rank9-num">9</div><div class="rank9-info"><div class="r-name">住吉大社</div><div class="r-area">大阪府</div></div></div>
     </div>
   </div>
 </section>
 
-<!-- ============ テーマ別おすすめ（コンパクト） ============ -->
-<section class="block tight reveal" id="purpose">
+<!-- ============ 御朱印：全国のおすすめ御朱印 ============ -->
+<section class="block tight goshuin-section reveal" id="goshuin">
   <div class="wrap">
     <div class="sec-head">
-      <div><div class="eyebrow">PURPOSE</div><h2>目的から探す</h2><div class="desc">叶えたい願いや興味から、行きたい神社・お寺を見つけられます</div></div>
-      <a class="more-link" href="#">すべての目的を見る ＞</a>
+      <div><div class="eyebrow">GOSHUIN</div><h2>全国のおすすめ御朱印</h2><div class="desc">美しい御朱印や限定御朱印を探そう</div></div>
+      <a class="more-link" href="#">もっと見る ＞</a>
     </div>
-    <div class="grid-purpose">
-      <div class="theme-card">
-        <img loading="lazy" src="https://images.unsplash.com/photo-1758531588833-4e0ae03c2153?fm=jpg&q=70&w=400&auto=format&fit=crop" alt="開運">
-        <div class="theme-ic"><svg class="ic" style="width:18px;height:18px" viewBox="0 0 24 24"><path d="M12 2l1.8 5.6L19 9l-5.2 1.4L12 16l-1.8-5.6L5 9l5.2-1.4L12 2z"/></svg></div>
-        <div class="theme-title">開運</div>
-      </div>
-      <div class="theme-card">
-        <img loading="lazy" src="https://images.unsplash.com/photo-1759339645664-9b9c15d70b56?fm=jpg&q=70&w=400&auto=format&fit=crop" alt="金運">
-        <div class="theme-ic"><svg class="ic" style="width:18px;height:18px" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 10h4.5a2 2 0 010 4H9"/></svg></div>
-        <div class="theme-title">金運アップ</div>
-      </div>
-      <div class="theme-card">
-        <img loading="lazy" src="https://images.unsplash.com/photo-1752898514963-e36929a03859?fm=jpg&q=70&w=400&auto=format&fit=crop" alt="縁結び">
-        <div class="theme-ic"><svg class="ic" style="width:18px;height:18px" viewBox="0 0 24 24"><path d="M8 12a4 4 0 118 0 4 4 0 01-8 0zM6 12H2M22 12h-4"/></svg></div>
-        <div class="theme-title">縁結び</div>
-      </div>
-      <div class="theme-card">
-        <img loading="lazy" src="https://images.unsplash.com/photo-1760333972888-852dd0072281?fm=jpg&q=70&w=400&auto=format&fit=crop" alt="縁切り">
-        <div class="theme-ic"><svg class="ic" style="width:18px;height:18px" viewBox="0 0 24 24"><path d="M6 6l12 12M6 18L18 6"/></svg></div>
-        <div class="theme-title">縁切り</div>
-      </div>
-      <div class="theme-card">
-        <img loading="lazy" src="https://images.unsplash.com/photo-1763120339579-d660fbebaa16?fm=jpg&q=70&w=400&auto=format&fit=crop" alt="歴史・文化">
-        <div class="theme-ic"><svg class="ic" style="width:18px;height:18px" viewBox="0 0 24 24"><path d="M4 21V10l8-6 8 6v11M9 21v-6h6v6"/></svg></div>
-        <div class="theme-title">歴史・文化</div>
-      </div>
-      <div class="theme-card">
-        <img loading="lazy" src="https://images.unsplash.com/photo-1752146506990-f9699e41f814?fm=jpg&q=70&w=400&auto=format&fit=crop" alt="自然・景観">
-        <div class="theme-ic"><svg class="ic" style="width:18px;height:18px" viewBox="0 0 24 24"><path d="M3 20l6-9 4 5 3-4 5 8H3z"/></svg></div>
-        <div class="theme-title">自然・景観</div>
-      </div>
-      <div class="theme-card">
-        <img loading="lazy" src="https://images.unsplash.com/photo-1758531588833-4e0ae03c2153?fm=jpg&q=70&w=400&auto=format&fit=crop" alt="ペットと参拝">
-        <div class="theme-ic"><svg class="ic" style="width:18px;height:18px" viewBox="0 0 24 24"><circle cx="9" cy="8" r="1.4"/><circle cx="15" cy="8" r="1.4"/><circle cx="6" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/><path d="M7 18c0-3 2-5 5-5s5 2 5 5"/></svg></div>
-        <div class="theme-title">ペットと参拝</div>
-      </div>
-      <div class="theme-card">
-        <img loading="lazy" src="https://images.unsplash.com/photo-1759339645664-9b9c15d70b56?fm=jpg&q=70&w=400&auto=format&fit=crop" alt="学問">
-        <div class="theme-ic"><svg class="ic" style="width:18px;height:18px" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4zM7 10v5c0 1.5 2.5 3 5 3s5-1.5 5-3v-5"/></svg></div>
-        <div class="theme-title">学問</div>
-      </div>
+    <div class="grid-rank9">
+      <div class="rank9-card"><img loading="lazy" src="https://images.unsplash.com/photo-1760333972888-852dd0072281?fm=jpg&q=70&w=600&auto=format&fit=crop" alt="伏見稲荷大社 御朱印"><div class="goshuin-mini-seal">伏見<br>稲荷</div><div class="rank9-info"><div class="r-name">伏見稲荷大社</div><div class="r-area">京都府</div></div></div>
+      <div class="rank9-card"><img loading="lazy" src="https://images.unsplash.com/photo-1758531588833-4e0ae03c2153?fm=jpg&q=70&w=600&auto=format&fit=crop" alt="伊勢神宮 御朱印"><div class="goshuin-mini-seal">奉拝</div><div class="rank9-info"><div class="r-name">伊勢神宮（内宮）</div><div class="r-area">三重県</div></div></div>
+      <div class="rank9-card"><img loading="lazy" src="https://images.unsplash.com/photo-1752146506990-f9699e41f814?fm=jpg&q=70&w=600&auto=format&fit=crop" alt="明治神宮 御朱印"><div class="goshuin-mini-seal">明治<br>神宮</div><div class="rank9-info"><div class="r-name">明治神宮</div><div class="r-area">東京都</div></div></div>
+      <div class="rank9-card"><img loading="lazy" src="https://images.unsplash.com/photo-1759339645664-9b9c15d70b56?fm=jpg&q=70&w=600&auto=format&fit=crop" alt="出雲大社 御朱印"><div class="goshuin-mini-seal">縁結<br>び</div><div class="rank9-info"><div class="r-name">出雲大社</div><div class="r-area">島根県</div></div></div>
+      <div class="rank9-card"><img loading="lazy" src="https://images.unsplash.com/photo-1752898514963-e36929a03859?fm=jpg&q=70&w=600&auto=format&fit=crop" alt="春日大社 御朱印"><div class="goshuin-mini-seal">春日<br>大社</div><div class="rank9-info"><div class="r-name">春日大社</div><div class="r-area">奈良県</div></div></div>
+      <div class="rank9-card"><img loading="lazy" src="https://images.unsplash.com/photo-1763120339579-d660fbebaa16?fm=jpg&q=70&w=600&auto=format&fit=crop" alt="厳島神社 御朱印"><div class="goshuin-mini-seal">厳島</div><div class="rank9-info"><div class="r-name">厳島神社</div><div class="r-area">広島県</div></div></div>
+      <div class="rank9-card"><img loading="lazy" src="https://images.unsplash.com/photo-1760333972888-852dd0072281?fm=jpg&q=70&w=600&auto=format&fit=crop" alt="鶴岡八幡宮 御朱印"><div class="goshuin-mini-seal">鶴岡<br>八幡</div><div class="rank9-info"><div class="r-name">鶴岡八幡宮</div><div class="r-area">神奈川県</div></div></div>
+      <div class="rank9-card"><img loading="lazy" src="https://images.unsplash.com/photo-1758531588833-4e0ae03c2153?fm=jpg&q=70&w=600&auto=format&fit=crop" alt="石清水八幡宮 御朱印"><div class="goshuin-mini-seal">石清<br>水</div><div class="rank9-info"><div class="r-name">石清水八幡宮</div><div class="r-area">京都府</div></div></div>
+      <div class="rank9-card"><img loading="lazy" src="https://images.unsplash.com/photo-1752146506990-f9699e41f814?fm=jpg&q=70&w=600&auto=format&fit=crop" alt="住吉大社 御朱印"><div class="goshuin-mini-seal">住吉<br>大社</div><div class="rank9-info"><div class="r-name">住吉大社</div><div class="r-area">大阪府</div></div></div>
     </div>
   </div>
 </section>
@@ -608,82 +591,34 @@
 </section>
 
 <!-- ============ 御朱印：全国の御朱印を探す ============ -->
-<section class="block tight goshuin-section reveal" id="goshuin">
-  <div class="wrap">
-    <div class="sec-head">
-      <div><div class="eyebrow">GOSHUIN</div><h2>全国の御朱印を探す</h2><div class="desc">人気・限定・月替わり・季節限定の御朱印まで、わびなびが厳選してご紹介</div></div>
-      <a class="more-link" href="#">もっと見る ＞</a>
-    </div>
-    <div class="goshuin-chips">
-      <button class="on">人気の御朱印</button>
-      <button>限定御朱印</button>
-      <button>月替わり御朱印</button>
-      <button>季節限定</button>
-    </div>
-    <div class="grid-goshuin">
-      <div class="goshuin-photo-card">
-        <div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1763120339579-d660fbebaa16?fm=jpg&q=70&w=400&auto=format&fit=crop" alt="鶴岡八幡宮"><div class="goshuin-mini-seal">鎮座<br>記念</div></div>
-        <div class="goshuin-photo-body"><div class="g-name">鶴岡八幡宮</div><div class="g-title">限定御朱印</div><div class="g-type">限定</div></div>
-      </div>
-      <div class="goshuin-photo-card">
-        <div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1759339645664-9b9c15d70b56?fm=jpg&q=70&w=400&auto=format&fit=crop" alt="出雲大社"><div class="goshuin-mini-seal">卯月<br>詣</div></div>
-        <div class="goshuin-photo-body"><div class="g-name">出雲大社</div><div class="g-title">月替わり御朱印</div><div class="g-type">月替わり</div></div>
-      </div>
-      <div class="goshuin-photo-card">
-        <div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1752146506990-f9699e41f814?fm=jpg&q=70&w=400&auto=format&fit=crop" alt="明治神宮"><div class="goshuin-mini-seal">奉拝</div></div>
-        <div class="goshuin-photo-body"><div class="g-name">明治神宮</div><div class="g-title">通常御朱印</div><div class="g-type">人気</div></div>
-      </div>
-      <div class="goshuin-photo-card">
-        <div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1760333972888-852dd0072281?fm=jpg&q=70&w=400&auto=format&fit=crop" alt="伏見稲荷大社"><div class="goshuin-mini-seal">切り絵</div></div>
-        <div class="goshuin-photo-body"><div class="g-name">伏見稲荷大社</div><div class="g-title">切り絵御朱印</div><div class="g-type">季節限定</div></div>
-      </div>
-      <div class="goshuin-book-card">
-        <div class="bk-ic"><svg class="ic" style="color:#fff" viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="1"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/></svg></div>
-        <div class="bk-title">御朱印帳を探す</div>
-        <div class="bk-sub">お気に入りの一冊を<br>見つけましょう</div>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- ============ おすすめ記事 ============ -->
 <section class="block tight reveal" id="articles" style="background:#fff;">
   <div class="wrap">
-    <div class="sec-head"><div><div class="eyebrow">ARTICLE</div><h2>おすすめ記事</h2></div><a class="more-link" href="#">もっと見る ＞</a></div>
-    <div class="grid-article-2">
-      <div class="article-card">
-        <div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1759339645664-9b9c15d70b56?fm=jpg&q=70&w=400&auto=format&fit=crop" alt="大宮氷川神社"></div>
-        <div><div class="a-cat">武蔵国の古社</div><div class="a-title">大宮氷川神社と調神社。二千年の杜と、狛犬ならぬ“狛うさぎ”</div><div class="a-date">2026.08.05</div></div>
+    <div class="sec-head"><div><div class="eyebrow">ARTICLE</div><h2>おすすめ記事</h2><div class="desc">神社・御朱印・和文化に関するおすすめ記事</div></div><a class="more-link" href="#">もっと見る ＞</a></div>
+    <div class="grid-rank9">
+      <div class="article9-card">
+        <div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1759339645664-9b9c15d70b56?fm=jpg&q=70&w=500&auto=format&fit=crop" alt="御朱印ガイド"></div>
+        <div class="a-body"><div class="a-title">はじめての御朱印ガイド　マナーと楽しみ方</div><div class="a-date">初心者向け</div></div>
       </div>
-      <div class="article-card">
-        <div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1760333972888-852dd0072281?fm=jpg&q=70&w=400&auto=format&fit=crop" alt="白山比咩神社"></div>
-        <div><div class="a-cat">北陸の霊峰と海</div><div class="a-title">白山比咩神社と気多大社。杉木立に抱かれた、加賀と能登の一之宮</div><div class="a-date">2026.08.03</div></div>
+      <div class="article9-card">
+        <div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1752146506990-f9699e41f814?fm=jpg&q=70&w=500&auto=format&fit=crop" alt="絶景神社"></div>
+        <div class="a-body"><div class="a-title">一生に一度は行きたい日本の絶景神社10選</div><div class="a-date">絶景</div></div>
       </div>
-    </div>
-  </div>
-</section>
-
-<!-- ============ 補助コンテンツ：イベント・ツアー・グッズ ============ -->
-<section class="aux-section reveal" id="events">
-  <div class="wrap block tight">
-    <div class="sec-head">
-      <div><div class="eyebrow">MORE FOR YOUR VISIT</div><h2>お出かけ・参拝情報</h2></div>
-    </div>
-    <div class="grid-aux">
-      <div class="aux-col">
-        <h3><svg class="ic" style="width:15px;height:15px" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2"/><line x1="4" y1="10" x2="20" y2="10"/></svg>イベント</h3>
-        <div class="aux-item"><div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1763120339579-d660fbebaa16?fm=jpg&q=70&w=150&auto=format&fit=crop" alt="限定御朱印イベント"></div><div><div class="i-name">限定御朱印イベント</div><div class="i-sub">8/16〜8/20</div></div></div>
-        <div class="aux-item"><div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1759339645664-9b9c15d70b56?fm=jpg&q=70&w=150&auto=format&fit=crop" alt="夜間特別参拝"></div><div><div class="i-name">夜間特別参拝</div><div class="i-sub">7/28〜8/25</div></div></div>
+      <div class="article9-card">
+        <div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1763120339579-d660fbebaa16?fm=jpg&q=70&w=500&auto=format&fit=crop" alt="参拝の作法"></div>
+        <div class="a-body"><div class="a-title">開運につながる参拝の作法</div><div class="a-date">開運</div></div>
       </div>
-      <div class="aux-col">
-        <h3><svg class="ic" style="width:15px;height:15px" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="7" rx="1.5"/><path d="M5 11l1.5-5h11L19 11"/></svg>ツアー</h3>
-        <div class="aux-item"><div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1752146506990-f9699e41f814?fm=jpg&q=70&w=150&auto=format&fit=crop" alt="バスツアー"></div><div><div class="i-name">古都バスツアー<span class="pr-badge">PR</span></div><div class="i-sub">日帰り・9,900円〜</div></div></div>
-        <div class="aux-item"><div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1752898514963-e36929a03859?fm=jpg&q=70&w=150&auto=format&fit=crop" alt="2日間ツアー"></div><div><div class="i-name">御朱印集め2日間ツアー<span class="pr-badge">PR</span></div><div class="i-sub">1泊2日・38,000円〜</div></div></div>
+      <div class="article9-card">
+        <div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1760333972888-852dd0072281?fm=jpg&q=70&w=500&auto=format&fit=crop" alt="季節限定御朱印"></div>
+        <div class="a-body"><div class="a-title">季節限定の御朱印特集</div><div class="a-date">御朱印</div></div>
       </div>
-      <div class="aux-col">
-        <h3><svg class="ic" style="width:15px;height:15px" viewBox="0 0 24 24"><path d="M6 2h12v18l-6-3-6 3V2z"/></svg>御朱印グッズ</h3>
-        <div class="aux-item"><div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1758531588833-4e0ae03c2153?fm=jpg&q=70&w=150&auto=format&fit=crop" alt="御朱印帳"></div><div><div class="i-name">桜刺繍 御朱印帳<span class="pr-badge">PR</span></div><div class="i-sub">2,090円</div></div></div>
-        <div class="aux-item"><div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1760333972888-852dd0072281?fm=jpg&q=70&w=150&auto=format&fit=crop" alt="お守り袋"></div><div><div class="i-name">和柄 お守り袋<span class="pr-badge">PR</span></div><div class="i-sub">1,320円</div></div></div>
+      <div class="article9-card">
+        <div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1758531588833-4e0ae03c2153?fm=jpg&q=70&w=500&auto=format&fit=crop" alt="伝統文化"></div>
+        <div class="a-body"><div class="a-title">神社と日本の伝統文化を学ぶ</div><div class="a-date">文化</div></div>
+      </div>
+      <div class="article9-card">
+        <div class="thumb"><img loading="lazy" src="https://images.unsplash.com/photo-1752898514963-e36929a03859?fm=jpg&q=70&w=500&auto=format&fit=crop" alt="週末パワースポット巡り"></div>
+        <div class="a-body"><div class="a-title">週末で行けるパワースポット巡り</div><div class="a-date">旅行</div></div>
       </div>
     </div>
   </div>

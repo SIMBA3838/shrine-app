@@ -102,6 +102,44 @@
   .mypage-recent-tit{font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;}
   .mypage-recent-empty{text-align:center;color:#bbb;font-size:12px;padding:20px 0;}
 
+  /* ---------- AIおすすめ巡拝ルート モーダル ---------- */
+  .ai-overlay{display:none;position:fixed;inset:0;background:rgba(20,10,8,.6);z-index:300;align-items:center;justify-content:center;padding:24px;}
+  .ai-overlay.open{display:flex;}
+  .ai-modal{background:#fff;border-radius:20px;width:640px;max-width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 30px 70px rgba(0,0,0,.35);}
+  .ai-modal-hd{background:linear-gradient(100deg,var(--purple),#6b3fa0);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:2;}
+  .ai-modal-tit{font-family:'Noto Serif JP',serif;font-size:16px;font-weight:700;color:#fff;flex:1;}
+  .ai-modal-body{padding:28px 28px 32px;}
+  .ai-field-label{font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:10px;}
+  .ai-pill-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .ai-pill{border:1px solid var(--border);background:#fff;border-radius:20px;padding:9px 16px;font-size:13px;color:var(--text);font-weight:500;transition:all .2s;}
+  .ai-pill.on{background:var(--purple);border-color:var(--purple);color:#fff;font-weight:700;}
+  .ai-loading-wrap{padding:70px 30px;text-align:center;}
+  .ai-loading-spinner{width:52px;height:52px;border-radius:50%;border:4px solid var(--border);border-top-color:var(--purple);margin:0 auto 22px;animation:aiSpin 0.9s linear infinite;}
+  @keyframes aiSpin{to{transform:rotate(360deg);}}
+  .ai-loading-text{font-family:'Noto Serif JP',serif;font-size:15px;font-weight:700;color:var(--text);}
+  .ai-loading-sub{font-size:12px;color:var(--subtext);margin-top:8px;}
+  .ai-route-cards{display:flex;flex-direction:column;gap:16px;}
+  .ai-rcard-pc{border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;transition:transform .2s,box-shadow .2s;}
+  .ai-rcard-pc:hover{transform:translateY(-3px);box-shadow:var(--shadow-card);}
+  .ai-rcard-pc .hero{position:relative;height:150px;}
+  .ai-rcard-pc .hero img{width:100%;height:100%;object-fit:cover;}
+  .ai-rcard-pc .hero::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(20,10,5,.82),transparent 60%);}
+  .ai-rcard-pc .hero-name{position:absolute;bottom:12px;left:14px;right:14px;color:#fff;font-family:'Noto Serif JP',serif;font-size:16px;font-weight:700;}
+  .ai-rcard-pc .hero-name .sub{display:block;font-size:11px;font-weight:400;color:#EADFCB;margin-top:2px;}
+  .ai-rcard-pc .chips{position:absolute;top:12px;left:14px;display:flex;gap:6px;}
+  .ai-rcard-pc .chip{background:rgba(255,255,255,.9);color:var(--text);font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:10px;}
+  .ai-rcard-pc .body{padding:14px 16px 16px;}
+  .ai-rcard-pc .desc{font-size:12.5px;color:var(--subtext);line-height:1.7;}
+  .ai-rcard-pc .tags{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+  .ai-rcard-pc .tag{font-size:10.5px;background:var(--bg);color:var(--purple);border:1px solid var(--border);border-radius:10px;padding:3px 9px;}
+  .ai-spot-item{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);}
+  .ai-spot-item:last-child{border-bottom:none;}
+  .ai-spot-num{width:28px;height:28px;border-radius:50%;background:var(--purple);color:#fff;font-family:'Noto Serif JP',serif;font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none;}
+  .ai-spot-name{font-size:14px;font-weight:700;}
+  .ai-spot-meta{font-size:11.5px;color:var(--subtext);margin-top:4px;}
+  .ai-spot-benefit{display:inline-block;margin-top:6px;font-size:10.5px;background:var(--bg);color:var(--vermilion);border-radius:9px;padding:2px 9px;}
+  .ai-empty-msg{text-align:center;color:var(--subtext);font-size:13px;padding:40px 10px;line-height:1.9;}
+
   /* ---------- hero ---------- */
   .hero{position:relative;min-height:460px;display:flex;align-items:center;
     background:linear-gradient(180deg,rgba(18,10,8,.28),rgba(18,10,8,.62)),
@@ -399,6 +437,78 @@
   </div>
 </div>
 
+<!-- ============ AIおすすめ巡拝ルート モーダル ============ -->
+<div id="aiRouteOverlay" class="ai-overlay" onclick="if(event.target===this)closeAiRouteModal()">
+  <div class="ai-modal">
+
+    <!-- STEP1: 条件入力 -->
+    <div id="aiStepInput" class="ai-step">
+      <div class="ai-modal-hd">
+        <div class="ai-modal-tit">AIおすすめ巡拝ルートを作る</div>
+        <div class="icon-btn" style="color:#fff" onclick="closeAiRouteModal()"><svg class="ic" viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></div>
+      </div>
+      <div class="ai-modal-body">
+        <div class="ai-field-label">行きたい神社・お寺（任意）</div>
+        <div class="field" style="margin-bottom:18px;">
+          <svg class="ic" viewBox="0 0 24 24" style="color:#B8452A;width:16px;height:16px"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.6" y2="16.6"/></svg>
+          <input id="aiQueryInput" type="text" placeholder="例：明治神宮、伊勢神宮（空欄でもOK）">
+        </div>
+        <div class="ai-field-label">交通手段</div>
+        <div class="ai-pill-row" id="aiTransPills">
+          <button class="ai-pill on" data-v="徒歩">🚶 徒歩</button>
+          <button class="ai-pill" data-v="電車">🚃 電車</button>
+          <button class="ai-pill" data-v="車">🚗 車</button>
+          <button class="ai-pill" data-v="バス">🚌 バス</button>
+        </div>
+        <div class="ai-field-label" style="margin-top:18px;">所要時間</div>
+        <div class="ai-pill-row" id="aiTimePills">
+          <button class="ai-pill" data-v="3時間">3時間</button>
+          <button class="ai-pill on" data-v="5時間">5時間</button>
+          <button class="ai-pill" data-v="7時間">7時間</button>
+          <button class="ai-pill" data-v="2日">2日</button>
+        </div>
+        <button class="ai-cta-big" style="margin-top:26px;" onclick="startAiRoutePC()">
+          <svg class="ic" style="color:#fff" viewBox="0 0 24 24"><path d="M12 2l1.8 5.6L19 9l-5.2 1.4L12 16l-1.8-5.6L5 9l5.2-1.4L12 2z"/></svg>
+          AIでルートを作成する
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP2: ローディング -->
+    <div id="aiStepLoading" class="ai-step" style="display:none;">
+      <div class="ai-loading-wrap">
+        <div class="ai-loading-spinner"></div>
+        <div class="ai-loading-text">わびなびAIが巡拝ルートを考えています…</div>
+        <div class="ai-loading-sub" id="aiLoadingSub">条件を確認しています</div>
+      </div>
+    </div>
+
+    <!-- STEP3: ルート一覧 -->
+    <div id="aiStepList" class="ai-step" style="display:none;">
+      <div class="ai-modal-hd">
+        <div class="ai-modal-tit">おすすめ巡拝ルート</div>
+        <div class="icon-btn" style="color:#fff" onclick="closeAiRouteModal()"><svg class="ic" viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></div>
+      </div>
+      <div class="ai-modal-body">
+        <div id="aiRouteCardsPC" class="ai-route-cards"></div>
+      </div>
+    </div>
+
+    <!-- STEP4: ルート詳細 -->
+    <div id="aiStepDetail" class="ai-step" style="display:none;">
+      <div class="ai-modal-hd">
+        <div class="icon-btn" style="color:#fff" onclick="backToAiList()"><svg class="ic" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></div>
+        <div class="ai-modal-tit" id="aiDetailTitle">ルート詳細</div>
+        <div class="icon-btn" style="color:#fff" onclick="closeAiRouteModal()"><svg class="ic" viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></div>
+      </div>
+      <div class="ai-modal-body">
+        <div id="aiDetailBody"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <!-- ============ HERO ============ -->
 <div class="hero" id="home">
   <div class="hero-inner">
@@ -442,7 +552,7 @@
     </div>
     <div id="searchStatus" class="search-status"></div>
     <div class="ai-cta-row">
-      <button class="ai-cta-big">
+      <button class="ai-cta-big" onclick="openAiRouteModal()">
         <svg class="ic" style="color:#fff" viewBox="0 0 24 24"><path d="M12 2l1.8 5.6L19 9l-5.2 1.4L12 16l-1.8-5.6L5 9l5.2-1.4L12 2z"/></svg>
         AIおすすめ巡拝ルートを作る
         <svg class="ic" style="color:#fff" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
@@ -495,8 +605,8 @@
         <h2>わびなび<br>おすすめ巡拝ルート</h2>
         <p>行きたい神社・お寺、使える時間、交通手段を選ぶだけ。わびなびだけの、AIによる巡拝ルート作成です。</p>
         <div class="ai-route-btns">
-          <button class="btn-solid-gold">AIで作る</button>
-          <button class="btn-ghost-white">ルートを見る</button>
+          <button class="btn-solid-gold" onclick="openAiRouteModal()">AIで作る</button>
+          <button class="btn-ghost-white" onclick="document.getElementById('shrines').scrollIntoView({behavior:'smooth'})">ルートを見る</button>
         </div>
       </div>
       <div class="route-mini-grid">
@@ -793,6 +903,516 @@ function closeSearchResults(){
   document.getElementById('searchResultsWrap').style.display = 'none';
   document.getElementById('searchStatus').textContent = '';
 }
+
+
+var AI_ROUTES = [
+  {
+    id:'r1', name:'癒しと景色ルート',
+    transport:'車', time:'約6時間', totalMove:'総移動時間 約1時間30分',
+    desc:'自然や景色を楽しみながら心を整えるルートです',
+    tags:['絶景スポット多め','限定御朱印あり'],
+    img:'https://images.unsplash.com/photo-1545569310-c1d4ed14d12c?w=300&q=80&auto=format&fit=crop',
+    spots:[
+      {name:'善光寺',loc:'長野市',move:'出発地から約15分',benefit:'開運・厄除け',lat:36.6590,lng:138.1871},
+      {name:'戸隠神社 中社',loc:'長野市',move:'約30分',benefit:'心願成就・学業成就',lat:36.7567,lng:138.0689},
+      {name:'戸隠神社 奥社',loc:'長野市',move:'約20分',benefit:'開運・心願成就',lat:36.7728,lng:138.0556},
+      {name:'飯綱神社',loc:'飯綱町',move:'約25分',benefit:'商売繁盛・家内安全',lat:36.7900,lng:138.1550},
+      {name:'地蔵院（元善光寺）',loc:'飯田市',move:'約40分',benefit:'良縁・子宝祈願',lat:35.5050,lng:137.8380},
+      {name:'諏訪大社 上社本宮',loc:'諏訪市',move:'約50分',benefit:'五穀豊穣・開運',lat:36.0400,lng:138.1190},
+      {name:'手長神社',loc:'諏訪市',move:'約10分',benefit:'技芸上達・学業成就',lat:36.0505,lng:138.1088}
+    ]
+  },
+  {
+    id:'r2', name:'王道参拝ルート',
+    transport:'車', time:'約5時間30分', totalMove:'総移動時間 約1時間20分',
+    desc:'善光寺を中心に定番の神社仏閣をしっかり巡るルートです',
+    tags:['ご利益重視','御朱印充実'],
+    img:'https://images.unsplash.com/photo-1480796927426-f609979314bd?w=300&q=80&auto=format&fit=crop',
+    spots:[
+      {name:'善光寺',loc:'長野市',move:'出発地から約15分',benefit:'開運・厄除け',lat:36.6590,lng:138.1871},
+      {name:'湯福神社',loc:'長野市',move:'約15分',benefit:'健康長寿・病気平癒',lat:36.6680,lng:138.1895},
+      {name:'白馬八方尾根神社',loc:'白馬村',move:'約45分',benefit:'安全登山・必勝祈願',lat:36.7060,lng:137.7990},
+      {name:'諏訪大社 下社秋宮',loc:'下諏訪町',move:'約60分',benefit:'五穀豊穣・家内安全',lat:36.0785,lng:138.0885},
+      {name:'北向観音（常楽寺）',loc:'上田市',move:'約25分',benefit:'厄除け・無病息災',lat:36.3640,lng:138.1485},
+      {name:'生島足島神社',loc:'上田市',move:'約15分',benefit:'縁結び・交通安全',lat:36.3800,lng:138.1670},
+      {name:'信濃国分寺',loc:'上田市',move:'約20分',benefit:'病気平癒・健康長寿',lat:36.3870,lng:138.1830}
+    ]
+  },
+  {
+    id:'r3', name:'隠れ名所ルート',
+    transport:'車', time:'約6時間', totalMove:'総移動時間 約1時間40分',
+    desc:'地元の人も知らない穴場を巡る特別なルートです',
+    tags:['静かに巡れる','写真映えスポット'],
+    img:'https://images.unsplash.com/photo-1493997181344-712f2f19d87a?w=300&q=80&auto=format&fit=crop',
+    spots:[
+      {name:'生島足島神社',loc:'上田市',move:'出発地から約20分',benefit:'縁結び・交通安全',lat:36.3800,lng:138.1670},
+      {name:'海禅寺（海野宿）',loc:'東御市',move:'約15分',benefit:'学業成就・合格祈願',lat:36.3620,lng:138.2640},
+      {name:'別所温泉 北向観音',loc:'上田市',move:'約25分',benefit:'厄除け・安産',lat:36.3540,lng:138.1485},
+      {name:'前山寺',loc:'上田市',move:'約10分',benefit:'開運・学業成就',lat:36.3470,lng:138.1190},
+      {name:'信濃国分寺',loc:'上田市',move:'約20分',benefit:'病気平癒・健康長寿',lat:36.3870,lng:138.1830},
+      {name:'安楽寺',loc:'上田市',move:'約15分',benefit:'開運・厄除け',lat:36.3610,lng:138.1390},
+      {name:'中禅寺',loc:'上田市',move:'約10分',benefit:'家内安全・商売繁盛',lat:36.3510,lng:138.1340}
+    ]
+  }
+];
+
+
+function shrineDistKm(a, b) {
+  if (!a || !b) return 9999;
+  var R = 111;
+  var dLat = (a.lat - b.lat) * R;
+  var dLng = (a.lng - b.lng) * R * Math.cos(a.lat * Math.PI / 180);
+  return Math.sqrt(dLat * dLat + dLng * dLng);
+}
+function isShrineOrTemple(name) {
+  if (!name) return false;
+  var exclude = /(ホテル|旅館|INN|イン|駅|店|本店|支店|屋|ショップ|モール|センター|ストア|カフェ|レストラン|食堂|公園|駐車場|トイレ|バス停|案内所|資料館|博物館|美術館|会館|ビル|マンション|学校|病院|郵便局|銀行|コンビニ|スーパー|株式会社|有限会社)/;
+  if (exclude.test(name)) return false;
+  var include = /(神社|大社|神宮|八幡宮|天満宮|東照宮|稲荷|寺$|寺院|大師|不動尊?|観音|薬師|聖天|弁財天|弁天|権現|明神|大明神|稲荷神社|護国|別院|本願|大勧進|勧進|門跡)/;
+  if (include.test(name)) return true;
+  if (/(宮|院)$/.test(name) && !exclude.test(name)) return true;
+  return false;
+}
+function aiBudgetFor(selTime) {
+  if (selTime === '3時間') return { budgetMin: 180, visitMin: 40, maxSpots: 3, nearbyRadiusM: 8000 };
+  if (selTime === '5時間') return { budgetMin: 300, visitMin: 45, maxSpots: 4, nearbyRadiusM: 18000 };
+  if (selTime === '7時間') return { budgetMin: 420, visitMin: 45, maxSpots: 6, nearbyRadiusM: 30000 };
+  return { budgetMin: 600, visitMin: 50, maxSpots: 8, nearbyRadiusM: 50000, twoDay: true };
+}
+function buildRoutesViaPlaces(query, selTime, selTrans, budget) {
+  return new Promise(function(resolve, reject){
+    var ensure = (window.google && window.google.maps && window.google.maps.places)
+      ? Promise.resolve()
+      : loadGoogleMapsSDK(API_KEY);
+    ensure.then(function(){
+      if (!placesService) initPlacesService();
+      placesService.textSearch({ query: query, language: 'ja', region: 'JP' }, function(results, status){
+        if (status !== google.maps.places.PlacesServiceStatus.OK || !results || !results.length) {
+          resolve(null); return;
+        }
+        var origin = results[0];
+        var oLoc = origin.geometry && origin.geometry.location;
+        if (!oLoc) { resolve(null); return; }
+        var baseCoord = { lat: oLoc.lat(), lng: oLoc.lng() };
+        var base = {
+          name: origin.name, addr: origin.formatted_address || '',
+          tags: [], type: 'shrine', rating: origin.rating || 0
+        };
+        if (origin.photos && origin.photos.length) {
+          photoCache[origin.name] = origin.photos.slice(0,6).map(function(p){ return p.getUrl({maxWidth:800,maxHeight:600}); });
+        }
+        placesService.nearbySearch({
+          location: oLoc, radius: budget.nearbyRadiusM,
+          type: 'place_of_worship', language: 'ja'
+        }, function(near, st2){
+          var candidates = [];
+          if (st2 === google.maps.places.PlacesServiceStatus.OK && near && near.length) {
+            near.forEach(function(p){
+              if (p.name === base.name) return;
+              var loc = p.geometry && p.geometry.location;
+              if (!loc) return;
+              if (!isShrineOrTemple(p.name)) return;
+              var c = { lat: loc.lat(), lng: loc.lng() };
+              if (p.photos && p.photos.length) {
+                photoCache[p.name] = p.photos.slice(0,6).map(function(ph){ return ph.getUrl({maxWidth:800,maxHeight:600}); });
+              }
+              candidates.push({
+                shrine: { name: p.name, addr: p.vicinity || '', tags: [], type: 'shrine', rating: p.rating || 0, rev: p.user_ratings_total || 0 },
+                coord: c, dist: shrineDistKm(baseCoord, c), known: false
+              });
+            });
+          }
+          candidates.sort(function(a,b){ return a.dist - b.dist; });
+          if (candidates.length < 1) { resolve(null); return; }
+          resolve(buildDynamicRoutes(base, baseCoord, candidates, selTime, selTrans, budget));
+        });
+      });
+    }).catch(reject);
+  });
+}
+
+function buildDynamicRoutes(base, baseCoord, candidates, selTime, selTrans, budget) {
+  var budgetMin = budget.budgetMin;
+  var visitMin = budget.visitMin;
+  var maxSpots = budget.maxSpots;
+
+  function getBenefit(s) {
+    if (!s.tags || !s.tags.length) {
+      // タグがない（Places由来）場合は名前から推定
+      var n = s.name || '';
+      if (/天満|天神/.test(n)) return '学業成就・合格祈願';
+      if (/稲荷/.test(n)) return '商売繁盛・五穀豊穣';
+      if (/八幡/.test(n)) return '必勝祈願・厄除け';
+      if (/弁財天|弁天/.test(n)) return '金運・芸事上達';
+      if (/不動|大師|薬師/.test(n)) return '厄除け・病気平癒';
+      if (/観音/.test(n)) return '開運・慈悲';
+      return '開運・厄除け';
+    }
+    var m = {'enmusubi':'縁結び','kaiun':'開運','gakumon':'学業成就','kenko':'健康長寿','shobai':'商売繁盛','shizen':'自然・癒し','rekishi':'歴史・文化'};
+    var b = [];
+    s.tags.forEach(function(t){ if (m[t] && b.length < 2) b.push(m[t]); });
+    return b.length ? b.join('・') : '開運';
+  }
+  function shortLoc(addr) {
+    if (!addr) return '';
+    var a = addr.replace(/^日本[、,]?\s*/, '').replace(/〒[\d\-]+\s*/, '').trim();
+    // 都道府県＋市区町村
+    var m = a.match(/(.{2,3}[都道府県].{1,5}?[市区町村郡])/);
+    if (m) return m[1];
+    // vicinityは県省略形が多い「台東区浅草」「長野市大門町」
+    var m2 = a.match(/(.{1,6}?[市区町村郡])/);
+    if (m2) return m2[1];
+    return a.substring(0, 8);
+  }
+  function legMinutes(km) {
+    // 平均速度(km/h)：徒歩4.5 / 電車25 / バス15 / 車30（市街地）
+    var speed = selTrans === '徒歩' ? 4.5 : selTrans === '車' ? 30 : selTrans === 'バス' ? 15 : 25;
+    var mins = km / speed * 60;
+    // 乗降・待ち時間の固定オフセット（交通手段で差をつける）
+    var overhead = selTrans === '徒歩' ? 0 : selTrans === '電車' ? 8 : selTrans === 'バス' ? 6 : 4;
+    mins += overhead;
+    return Math.max(selTrans === '徒歩' ? 3 : 5, mins);
+  }
+  function moveLbl(km) {
+    var m = Math.round(legMinutes(km));
+    if (m >= 60) { var h = Math.floor(m/60), mm = Math.round((m%60)/5)*5; return mm>0 ? ('約'+h+'時間'+mm+'分') : ('約'+h+'時間'); }
+    // 5分刻みだと近距離で差が潰れるため、20分未満は1分刻みで表示
+    if (m < 20) return '約' + m + '分';
+    return '約' + (Math.round(m/5)*5) + '分';
+  }
+
+  // 時間予算で打ち切る最近傍法
+  function buildOrderedSpots(pool) {
+    var spots = [{
+      name: base.name, loc: shortLoc(base.addr), move: '出発地点',
+      benefit: getBenefit(base), lat: baseCoord.lat, lng: baseCoord.lng
+    }];
+    var usedTime = visitMin;
+    var remaining = pool.slice();
+    var cur = baseCoord;
+    while (remaining.length && spots.length < maxSpots) {
+      var bestIdx = 0, bestD = Infinity;
+      for (var i = 0; i < remaining.length; i++) {
+        var d = shrineDistKm(cur, remaining[i].coord);
+        if (d < bestD) { bestD = d; bestIdx = i; }
+      }
+      var leg = legMinutes(bestD);
+      if (spots.length >= 2 && (usedTime + leg + visitMin) > budgetMin) break;
+      var next = remaining.splice(bestIdx, 1)[0];
+      usedTime += leg + visitMin;
+      spots.push({
+        name: next.shrine.name, loc: shortLoc(next.shrine.addr),
+        move: moveLbl(bestD), benefit: getBenefit(next.shrine),
+        lat: next.coord.lat, lng: next.coord.lng
+      });
+      cur = next.coord;
+    }
+    return spots;
+  }
+  // ペナルティ込みの重み付き最近傍法（ルート分散用）
+  function buildOrderedSpotsWeighted(weighted) {
+    var spots = [{
+      name: base.name, loc: shortLoc(base.addr), move: '出発地点',
+      benefit: getBenefit(base), lat: baseCoord.lat, lng: baseCoord.lng
+    }];
+    var usedTime = visitMin;
+    var remaining = weighted.slice();
+    var cur = baseCoord;
+    while (remaining.length && spots.length < maxSpots) {
+      // 現在地からの実距離＋元々のペナルティで評価
+      var bestIdx = 0, bestScore = Infinity, bestRealKm = 0;
+      for (var i = 0; i < remaining.length; i++) {
+        var realKm = shrineDistKm(cur, remaining[i].c.coord);
+        var penalty = remaining[i].eff - remaining[i].c.dist; // 起点ペナルティ分を継承
+        var score = realKm + penalty;
+        if (score < bestScore) { bestScore = score; bestIdx = i; bestRealKm = realKm; }
+      }
+      var leg = legMinutes(bestRealKm);
+      if (spots.length >= 2 && (usedTime + leg + visitMin) > budgetMin) break;
+      var next = remaining.splice(bestIdx, 1)[0].c;
+      usedTime += leg + visitMin;
+      spots.push({
+        name: next.shrine.name, loc: shortLoc(next.shrine.addr),
+        move: moveLbl(bestRealKm), benefit: getBenefit(next.shrine),
+        lat: next.coord.lat, lng: next.coord.lng
+      });
+      cur = next.coord;
+    }
+    return spots;
+  }
+  function totalTimeLabel(spots) {
+    var moveMin = 0;
+    for (var i = 1; i < spots.length; i++) moveMin += legMinutes(shrineDistKm({lat:spots[i-1].lat,lng:spots[i-1].lng},{lat:spots[i].lat,lng:spots[i].lng}));
+    var total = Math.round(moveMin + spots.length * visitMin);
+    var h = Math.floor(total/60), m = Math.round((total%60)/10)*10;
+    if (m === 60) { h++; m = 0; }
+    return m>0 ? ('約'+h+'時間'+m+'分') : ('約'+h+'時間');
+  }
+  function totalMoveLabel(spots) {
+    var moveMin = 0;
+    for (var i = 1; i < spots.length; i++) moveMin += legMinutes(shrineDistKm({lat:spots[i-1].lat,lng:spots[i-1].lng},{lat:spots[i].lat,lng:spots[i].lng}));
+    moveMin = Math.round(moveMin);
+    if (moveMin >= 60) { var h=Math.floor(moveMin/60),m=Math.round((moveMin%60)/5)*5; return '総移動時間 ' + (m>0?('約'+h+'時間'+m+'分'):('約'+h+'時間')); }
+    return '総移動時間 約' + (Math.round(moveMin/5)*5) + '分';
+  }
+
+  // ══ 3ルートを新テーマで構成 ══
+  function nameMatch(c, re) { return re.test(c.shrine.name || ''); }
+  // 各候補に祭神情報を補完（SHRINESにあれば取得）
+  candidates.forEach(function(c){
+    if (!c.shrine.deity) {
+      var known = SHRINES.find(function(s){ return s.name === c.shrine.name; });
+      if (known) c.shrine.deity = known.deity;
+    }
+    c._lineage = deityLineage(c.shrine.deity, c.shrine.name);
+    c._power = powerAttribute(c.shrine.deity, c.shrine.name);
+    c._goshuin = goshuinScore(c);
+  });
+  // 起点の系統
+  if (!base.deity) {
+    var bk = SHRINES.find(function(s){ return s.name === base.name; });
+    if (bk) base.deity = bk.deity;
+  }
+  var baseLineage = deityLineage(base.deity, base.name);
+  var basePower = powerAttribute(base.deity, base.name);
+
+  // ── ルート1：歴史・神話ロマン（起点と系統が近い順を優先）──
+  function lineageAffinity(c) {
+    // 同系統=3点、関連系統=2点、武神同士など=1点
+    if (c._lineage.key === baseLineage.key) return 3;
+    var related = {
+      amatsu:['izumo','hachiman'], izumo:['amatsu','susanoo','dragon'],
+      susanoo:['izumo','dragon'], hachiman:['takemikazuchi','amatsu'],
+      takemikazuchi:['hachiman'], water:['izumo','dragon'], dragon:['izumo','water','susanoo']
+    };
+    if (related[baseLineage.key] && related[baseLineage.key].indexOf(c._lineage.key) !== -1) return 2;
+    return 0;
+  }
+  var romanPref = candidates.slice().sort(function(a,b){
+    var aff = lineageAffinity(b) - lineageAffinity(a);
+    if (aff !== 0) return aff;
+    if ((b.shrine.rev||0) !== (a.shrine.rev||0)) return (b.shrine.rev||0) - (a.shrine.rev||0);
+    return a.dist - b.dist;
+  });
+
+  // ── ルート2：御朱印・アート巡り（御朱印スコア順）──
+  var goshuinPref = candidates.slice().sort(function(a,b){
+    if (b._goshuin !== a._goshuin) return b._goshuin - a._goshuin;
+    return a.dist - b.dist;
+  });
+
+  // ── ルート3：最強パワースポット（起点と同属性＋口コミ順）──
+  var powerPref = candidates.slice().sort(function(a,b){
+    var as = (a._power.key === basePower.key ? 1 : 0), bs = (b._power.key === basePower.key ? 1 : 0);
+    if (bs !== as) return bs - as;
+    if ((b.shrine.rev||0) !== (a.shrine.rev||0)) return (b.shrine.rev||0) - (a.shrine.rev||0);
+    return a.dist - b.dist;
+  });
+
+  function poolWith(pref) {
+    var names = {}; var pool = [];
+    pref.forEach(function(c){ if(!names[c.shrine.name]){names[c.shrine.name]=true; pool.push(c);} });
+    candidates.forEach(function(c){ if(!names[c.shrine.name]){names[c.shrine.name]=true; pool.push(c);} });
+    return pool;
+  }
+
+  var usedAcross = {};
+  function buildDistinct(pool, avoidWeight) {
+    var weighted = pool.map(function(c){
+      var penalty = (usedAcross[c.shrine.name] || 0) * avoidWeight;
+      return { c: c, eff: c.dist + penalty };
+    });
+    var spots = buildOrderedSpotsWeighted(weighted);
+    spots.forEach(function(s, i){ if(i>0) usedAcross[s.name] = (usedAcross[s.name]||0)+1; });
+    return spots;
+  }
+
+  var transLabel = selTrans;
+  var r1spots = buildDistinct(poolWith(romanPref), 0);
+  var r2spots = buildDistinct(poolWith(goshuinPref), 8);
+  var r3spots = buildDistinct(poolWith(powerPref), 8);
+
+  // ── 2日コースの分割マーク ──
+  function dayMarker(spots) {
+    if (!budget.twoDay) return spots;
+    var acc = visitMin, dayFlagged = false;
+    for (var i = 1; i < spots.length; i++) {
+      acc += legMinutes(shrineDistKm({lat:spots[i-1].lat,lng:spots[i-1].lng},{lat:spots[i].lat,lng:spots[i].lng})) + visitMin;
+      if (!dayFlagged && acc > 420) { spots[i].dayStart = 2; dayFlagged = true; }
+    }
+    return spots;
+  }
+  r1spots = dayMarker(r1spots); r2spots = dayMarker(r2spots); r3spots = dayMarker(r3spots);
+
+  // ══ 解説文（AIの選定理由）を生成 ══
+  function spotLineages(spots) {
+    var set = {};
+    spots.forEach(function(s){
+      var c = candidates.find(function(x){ return x.shrine.name === s.name; });
+      var lin = c ? c._lineage : deityLineage(null, s.name);
+      if (lin.key !== 'other' && lin.key !== 'butsu') set[lin.label] = true;
+    });
+    return Object.keys(set);
+  }
+  function romanReason(spots) {
+    var lins = spotLineages(spots);
+    var head = base.name + 'は' + baseLineage.label + 'に連なる神社です。';
+    if (lins.length >= 2) {
+      return head + 'このルートは' + lins.slice(0,2).join('と') + 'など、神々の系譜や物語のつながりが感じられる社を組み合わせました。神話のロマンを辿る巡礼です。';
+    }
+    return head + '同じ神話の系譜に連なる社を中心に、歴史的なつながりを辿るルートに仕上げました。';
+  }
+  function goshuinReason(spots) {
+    var famous = spots.filter(function(s){ return /天満宮|東照宮|大社|神宮|八幡宮|稲荷/.test(s.name); }).map(function(s){return s.name;});
+    var lead = '御朱印集めを楽しむ方へ。';
+    if (famous.length) {
+      return lead + famous.slice(0,2).join('・') + 'など、限定御朱印や美しい授与品で知られる社を中心に構成しました。月替わりや切り絵御朱印に出会えるかもしれません。';
+    }
+    return lead + '参拝者の評価が高く、御朱印の授与に力を入れている社を厳選しました。御朱印帳が華やぐ巡礼です。';
+  }
+  function powerReason(spots) {
+    var attrs = {};
+    spots.forEach(function(s){
+      var c = candidates.find(function(x){ return x.shrine.name === s.name; });
+      var p = c ? c._power : powerAttribute(null, s.name);
+      attrs[p.label] = true;
+    });
+    var list = Object.keys(attrs).slice(0,2);
+    return base.name + 'を起点に、' + (list.length ? list.join('・') : 'ご神気') + 'を感じられる社を集めました。エネルギーに満ちたパワースポットを巡り、心身を整える特別なルートです。';
+  }
+
+  return [
+    { id:'dr1', name: '🌿 神話ロマン巡り', subtitle:'（相性重視）',
+      transport: transLabel, time: totalTimeLabel(r1spots), totalMove: totalMoveLabel(r1spots), visitMin: visitMin,
+      desc: '祀られる神々の関係や歴史でつながる、物語性を重視した巡礼。',
+      reason: romanReason(r1spots),
+      tags:['神話のつながり','歴史ロマン'],
+      img:'https://images.unsplash.com/photo-1480796927426-f609979314bd?w=300&q=80&auto=format&fit=crop',
+      spots: r1spots },
+    { id:'dr2', name: '🎨 御朱印アート巡り', subtitle:'',
+      transport: transLabel, time: totalTimeLabel(r2spots), totalMove: totalMoveLabel(r2spots), visitMin: visitMin,
+      desc: '御朱印の美しさ、建築、写真映え重視。',
+      reason: goshuinReason(r2spots),
+      tags:['限定御朱印','御朱印映え'],
+      img:'https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=300&q=80&auto=format&fit=crop',
+      spots: r2spots },
+    { id:'dr3', name: '⛩ 最強パワースポット', subtitle:'（属性特化）',
+      transport: transLabel, time: totalTimeLabel(r3spots), totalMove: totalMoveLabel(r3spots), visitMin: visitMin,
+      desc: '願い事や属性相性、御利益最大化。',
+      reason: powerReason(r3spots),
+      tags:[basePower.label,'運気上昇'],
+      img:'https://images.unsplash.com/photo-1545569310-c1d4ed14d12c?w=300&q=80&auto=format&fit=crop',
+      spots: r3spots }
+  ];
+}
+
+
+// ============ AIおすすめ巡拝ルート：PC用UI制御 ============
+function openAiRouteModal(){
+  document.getElementById('aiRouteOverlay').classList.add('open');
+  showAiStep('aiStepInput');
+}
+function closeAiRouteModal(){
+  document.getElementById('aiRouteOverlay').classList.remove('open');
+}
+function showAiStep(id){
+  ['aiStepInput','aiStepLoading','aiStepList','aiStepDetail'].forEach(function(s){
+    document.getElementById(s).style.display = (s === id) ? 'block' : 'none';
+  });
+}
+document.getElementById('aiTransPills').addEventListener('click', function(e){
+  var b = e.target.closest('.ai-pill'); if (!b) return;
+  this.querySelectorAll('.ai-pill').forEach(function(p){ p.classList.remove('on'); });
+  b.classList.add('on');
+});
+document.getElementById('aiTimePills').addEventListener('click', function(e){
+  var b = e.target.closest('.ai-pill'); if (!b) return;
+  this.querySelectorAll('.ai-pill').forEach(function(p){ p.classList.remove('on'); });
+  b.classList.add('on');
+});
+
+window._aiRoutesPC = null;
+
+function startAiRoutePC(){
+  var query = document.getElementById('aiQueryInput').value.trim();
+  var transEl = document.querySelector('#aiTransPills .ai-pill.on');
+  var timeEl = document.querySelector('#aiTimePills .ai-pill.on');
+  var selTrans = transEl ? transEl.getAttribute('data-v') : '電車';
+  var selTime = timeEl ? timeEl.getAttribute('data-v') : '5時間';
+  var budget = aiBudgetFor(selTime);
+
+  showAiStep('aiStepLoading');
+  document.getElementById('aiLoadingSub').textContent = query ? ('「' + query + '」周辺の神社・お寺を探しています') : 'おすすめルートを準備しています';
+
+  if (!query) {
+    setTimeout(function(){
+      window._aiRoutesPC = AI_ROUTES;
+      renderAiRouteCardsPC(selTrans, selTime);
+      showAiStep('aiStepList');
+    }, 1200);
+    return;
+  }
+
+  if (!API_KEY) {
+    setTimeout(function(){
+      window._aiRoutesPC = AI_ROUTES;
+      renderAiRouteCardsPC(selTrans, selTime);
+      showAiStep('aiStepList');
+    }, 1000);
+    return;
+  }
+
+  buildRoutesViaPlaces(query, selTime, selTrans, budget).then(function(routes){
+    window._aiRoutesPC = (routes && routes.length) ? routes : AI_ROUTES;
+    renderAiRouteCardsPC(selTrans, selTime);
+    showAiStep('aiStepList');
+  }).catch(function(err){
+    console.error('AI route error:', err);
+    window._aiRoutesPC = AI_ROUTES;
+    renderAiRouteCardsPC(selTrans, selTime);
+    showAiStep('aiStepList');
+  });
+}
+
+function renderAiRouteCardsPC(selTrans, selTime){
+  var ct = document.getElementById('aiRouteCardsPC');
+  var routes = window._aiRoutesPC || AI_ROUTES;
+  if (!routes.length) {
+    ct.innerHTML = '<div class="ai-empty-msg">条件に合う巡拝ルートが見つかりませんでした。<br>神社名や条件を変えてお試しください。</div>';
+    return;
+  }
+  ct.innerHTML = routes.map(function(r, idx){
+    var img = (photoCache[r.spots[0].name] && photoCache[r.spots[0].name][0]) || r.img || 'https://images.unsplash.com/photo-1758531588833-4e0ae03c2153?w=600&q=70&auto=format&fit=crop';
+    var tags = (r.tags||[]).map(function(t){ return '<span class="tag">'+t+'</span>'; }).join('');
+    return '<div class="ai-rcard-pc" onclick="showAiRouteDetail('+idx+')">'
+      + '<div class="hero"><img loading="lazy" src="'+img+'" alt="'+r.name+'">'
+      + '<div class="chips"><span class="chip">'+(r.transport||selTrans)+'</span><span class="chip">'+(r.time||selTime)+'</span></div>'
+      + '<div class="hero-name">'+r.name+(r.subtitle?'<span class="sub">'+r.subtitle+'</span>':'')+'</div>'
+      + '</div>'
+      + '<div class="body"><div class="desc">'+r.desc+'</div><div class="tags">'+tags+'</div></div>'
+      + '</div>';
+  }).join('');
+}
+
+function showAiRouteDetail(idx){
+  var r = (window._aiRoutesPC || AI_ROUTES)[idx];
+  if (!r) return;
+  document.getElementById('aiDetailTitle').textContent = r.name;
+  var body = document.getElementById('aiDetailBody');
+  var head = '<div style="font-size:12.5px;color:var(--subtext);margin-bottom:16px;">'+(r.transport||'')+' ・ '+(r.time||'')+' ・ '+(r.totalMove||'')+'</div>';
+  var spots = (r.spots||[]).map(function(s, i){
+    return '<div class="ai-spot-item">'
+      + '<div class="ai-spot-num">'+(i+1)+'</div>'
+      + '<div><div class="ai-spot-name">'+s.name+'</div>'
+      + '<div class="ai-spot-meta">'+(s.loc||'')+' ・ '+(s.move||'')+'</div>'
+      + (s.benefit ? '<div class="ai-spot-benefit">'+s.benefit+'</div>' : '')
+      + '</div></div>';
+  }).join('');
+  body.innerHTML = head + '<div>' + spots + '</div>';
+  showAiStep('aiStepDetail');
+}
+function backToAiList(){ showAiStep('aiStepList'); }
+
 
 // タブ / フィルター / チップの選択トグル（見た目のみ・後日データ接続）
 document.querySelectorAll('.search-tabs, .filters, .goshuin-chips').forEach(function(group){

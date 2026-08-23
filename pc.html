@@ -911,7 +911,7 @@ var AI_ROUTES = [
     transport:'車', time:'約6時間', totalMove:'総移動時間 約1時間30分',
     desc:'自然や景色を楽しみながら心を整えるルートです',
     tags:['絶景スポット多め','限定御朱印あり'],
-    img:'https://images.unsplash.com/photo-1545569310-c1d4ed14d12c?w=300&q=80&auto=format&fit=crop',
+    img:'https://images.unsplash.com/photo-1478436127897-769e1b3f0f36?w=300&q=80&auto=format&fit=crop',
     spots:[
       {name:'善光寺',loc:'長野市',move:'出発地から約15分',benefit:'開運・厄除け',lat:36.6590,lng:138.1871},
       {name:'戸隠神社 中社',loc:'長野市',move:'約30分',benefit:'心願成就・学業成就',lat:36.7567,lng:138.0689},
@@ -1301,7 +1301,7 @@ function buildDynamicRoutes(base, baseCoord, candidates, selTime, selTrans, budg
       desc: '願い事や属性相性、御利益最大化。',
       reason: powerReason(r3spots),
       tags:[basePower.label,'運気上昇'],
-      img:'https://images.unsplash.com/photo-1545569310-c1d4ed14d12c?w=300&q=80&auto=format&fit=crop',
+      img:'https://images.unsplash.com/photo-1478436127897-769e1b3f0f36?w=300&q=80&auto=format&fit=crop',
       spots: r3spots }
   ];
 }
@@ -1385,7 +1385,7 @@ function renderAiRouteCardsPC(selTrans, selTime){
     var img = (photoCache[r.spots[0].name] && photoCache[r.spots[0].name][0]) || r.img || 'https://images.unsplash.com/photo-1758531588833-4e0ae03c2153?w=600&q=70&auto=format&fit=crop';
     var tags = (r.tags||[]).map(function(t){ return '<span class="tag">'+t+'</span>'; }).join('');
     return '<div class="ai-rcard-pc" onclick="showAiRouteDetail('+idx+')">'
-      + '<div class="rphoto"><img loading="lazy" src="'+img+'" alt="'+r.name+'">'
+      + '<div class="rphoto"><img loading="lazy" src="'+img+'" alt="'+r.name+'" onerror="this.onerror=null;this.src=\'https://images.unsplash.com/photo-1758531588833-4e0ae03c2153?w=600&q=70&auto=format&fit=crop\';">'
       + '<div class="rchips"><span class="chip">'+(r.transport||selTrans)+'</span><span class="chip">'+(r.time||selTime)+'</span></div>'
       + '<div class="rname">'+r.name+(r.subtitle?'<span class="sub">'+r.subtitle+'</span>':'')+'</div>'
       + '</div>'

@@ -103,42 +103,43 @@
   .mypage-recent-empty{text-align:center;color:#bbb;font-size:12px;padding:20px 0;}
 
   /* ---------- AIおすすめ巡拝ルート モーダル ---------- */
-  .ai-overlay{display:none;position:fixed;inset:0;background:rgba(20,10,8,.6);z-index:300;align-items:center;justify-content:center;padding:24px;}
+  .ai-overlay{display:none;position:fixed;inset:0;background:rgba(20,10,8,.6);z-index:300;align-items:center;justify-content:center;padding:40px;}
   .ai-overlay.open{display:flex;}
-  .ai-modal{background:#fff;border-radius:20px;width:640px;max-width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 30px 70px rgba(0,0,0,.35);}
-  .ai-modal-hd{background:linear-gradient(100deg,var(--purple),#6b3fa0);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:2;}
-  .ai-modal-tit{font-family:'Noto Serif JP',serif;font-size:16px;font-weight:700;color:#fff;flex:1;}
-  .ai-modal-body{padding:28px 28px 32px;}
-  .ai-field-label{font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:10px;}
+  .ai-modal{background:#fff;border-radius:24px;width:1100px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:0 40px 90px rgba(0,0,0,.4);}
+  .ai-modal-hd{background:linear-gradient(100deg,var(--purple),#6b3fa0);padding:26px 34px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:2;}
+  .ai-modal-tit{font-family:'Noto Serif JP',serif;font-size:20px;font-weight:700;color:#fff;flex:1;}
+  .ai-modal-body{padding:38px 40px 44px;}
+  .ai-field-label{font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;}
   .ai-pill-row{display:flex;gap:8px;flex-wrap:wrap;}
   .ai-pill{border:1px solid var(--border);background:#fff;border-radius:20px;padding:9px 16px;font-size:13px;color:var(--text);font-weight:500;transition:all .2s;}
   .ai-pill.on{background:var(--purple);border-color:var(--purple);color:#fff;font-weight:700;}
-  .ai-loading-wrap{padding:70px 30px;text-align:center;}
-  .ai-loading-spinner{width:52px;height:52px;border-radius:50%;border:4px solid var(--border);border-top-color:var(--purple);margin:0 auto 22px;animation:aiSpin 0.9s linear infinite;}
+  .ai-loading-wrap{padding:100px 30px;text-align:center;}
+  .ai-loading-spinner{width:60px;height:60px;border-radius:50%;border:5px solid var(--border);border-top-color:var(--purple);margin:0 auto 26px;animation:aiSpin 0.9s linear infinite;}
   @keyframes aiSpin{to{transform:rotate(360deg);}}
-  .ai-loading-text{font-family:'Noto Serif JP',serif;font-size:15px;font-weight:700;color:var(--text);}
-  .ai-loading-sub{font-size:12px;color:var(--subtext);margin-top:8px;}
-  .ai-route-cards{display:flex;flex-direction:column;gap:16px;}
-  .ai-rcard-pc{border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;transition:transform .2s,box-shadow .2s;}
-  .ai-rcard-pc:hover{transform:translateY(-3px);box-shadow:var(--shadow-card);}
-  .ai-rcard-pc .rphoto{position:relative;height:150px;overflow:hidden;}
+  .ai-loading-text{font-family:'Noto Serif JP',serif;font-size:18px;font-weight:700;color:var(--text);}
+  .ai-loading-sub{font-size:13px;color:var(--subtext);margin-top:10px;}
+  .ai-route-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+  .ai-rcard-pc{border:1px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer;transition:transform .2s,box-shadow .2s;}
+  .ai-rcard-pc:hover{transform:translateY(-4px);box-shadow:var(--shadow-card);}
+  .ai-rcard-pc .rphoto{position:relative;aspect-ratio:4/3;overflow:hidden;}
   .ai-rcard-pc .rphoto img{width:100%;height:100%;object-fit:cover;display:block;}
   .ai-rcard-pc .rphoto::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(20,10,5,.82),transparent 60%);}
-  .ai-rcard-pc .rname{position:absolute;bottom:12px;left:14px;right:14px;color:#fff;font-family:'Noto Serif JP',serif;font-size:16px;font-weight:700;}
-  .ai-rcard-pc .rname .sub{display:block;font-size:11px;font-weight:400;color:#EADFCB;margin-top:2px;}
-  .ai-rcard-pc .rchips{position:absolute;top:12px;left:14px;display:flex;gap:6px;}
-  .ai-rcard-pc .chip{background:rgba(255,255,255,.9);color:var(--text);font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:10px;}
-  .ai-rcard-pc .body{padding:14px 16px 16px;}
-  .ai-rcard-pc .desc{font-size:12.5px;color:var(--subtext);line-height:1.7;}
-  .ai-rcard-pc .tags{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
-  .ai-rcard-pc .tag{font-size:10.5px;background:var(--bg);color:var(--purple);border:1px solid var(--border);border-radius:10px;padding:3px 9px;}
-  .ai-spot-item{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);}
+  .ai-rcard-pc .rname{position:absolute;bottom:14px;left:16px;right:16px;color:#fff;font-family:'Noto Serif JP',serif;font-size:18px;font-weight:700;}
+  .ai-rcard-pc .rname .sub{display:block;font-size:12px;font-weight:400;color:#EADFCB;margin-top:3px;}
+  .ai-rcard-pc .rchips{position:absolute;top:14px;left:16px;display:flex;gap:6px;}
+  .ai-rcard-pc .chip{background:rgba(255,255,255,.9);color:var(--text);font-size:11px;font-weight:600;padding:4px 10px;border-radius:10px;}
+  .ai-rcard-pc .body{padding:18px 20px 20px;}
+  .ai-rcard-pc .desc{font-size:13px;color:var(--subtext);line-height:1.7;}
+  .ai-rcard-pc .tags{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;}
+  .ai-rcard-pc .tag{font-size:11px;background:var(--bg);color:var(--purple);border:1px solid var(--border);border-radius:10px;padding:4px 10px;}
+  .ai-spot-item{display:flex;gap:16px;padding:16px 0;border-bottom:1px solid var(--border);}
   .ai-spot-item:last-child{border-bottom:none;}
-  .ai-spot-num{width:28px;height:28px;border-radius:50%;background:var(--purple);color:#fff;font-family:'Noto Serif JP',serif;font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none;}
-  .ai-spot-name{font-size:14px;font-weight:700;}
-  .ai-spot-meta{font-size:11.5px;color:var(--subtext);margin-top:4px;}
-  .ai-spot-benefit{display:inline-block;margin-top:6px;font-size:10.5px;background:var(--bg);color:var(--vermilion);border-radius:9px;padding:2px 9px;}
-  .ai-empty-msg{text-align:center;color:var(--subtext);font-size:13px;padding:40px 10px;line-height:1.9;}
+  .ai-spot-num{width:32px;height:32px;border-radius:50%;background:var(--purple);color:#fff;font-family:'Noto Serif JP',serif;font-size:13.5px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none;}
+  .ai-spot-name{font-size:15.5px;font-weight:700;}
+  .ai-spot-meta{font-size:12.5px;color:var(--subtext);margin-top:5px;}
+  .ai-spot-benefit{display:inline-block;margin-top:7px;font-size:11.5px;background:var(--bg);color:var(--vermilion);border-radius:9px;padding:3px 10px;}
+  .ai-empty-msg{text-align:center;color:var(--subtext);font-size:14px;padding:50px 10px;line-height:1.9;}
+  #aiDetailBody{max-width:640px;}
 
   /* ---------- hero ---------- */
   .hero{position:relative;min-height:460px;display:flex;align-items:center;
@@ -151,8 +152,13 @@
 
   /* ---------- unified search panel ---------- */
   .search-panel{max-width:var(--maxw);margin:-70px auto 0;padding:0 40px;position:relative;z-index:5;}
-  .search-card{background:#fff;border-radius:22px;padding:34px 36px;box-shadow:0 26px 60px rgba(43,20,10,.18);border:1px solid var(--border);}
-  .search-title{font-family:'Noto Serif JP',serif;font-size:21px;font-weight:700;margin-bottom:18px;}
+  .search-card{position:relative;overflow:hidden;background:linear-gradient(155deg,#fff 0%,#fff 62%,#FBF4E4 100%);border-radius:26px;padding:38px 40px;box-shadow:0 30px 64px rgba(43,20,10,.2);border:1px solid var(--border);}
+  .search-card-deco{position:absolute;top:-10px;right:-10px;width:220px;height:240px;pointer-events:none;opacity:.07;}
+  .search-card-deco-svg{width:100%;height:100%;fill:var(--gold);}
+  .search-card-hd{position:relative;display:flex;align-items:center;gap:18px;margin-bottom:26px;}
+  .search-card-icon{flex:none;width:64px;height:64px;border-radius:50%;background:linear-gradient(155deg,#fff,var(--bg));border:1.5px solid var(--gold);box-shadow:0 6px 16px rgba(200,166,90,.25);display:flex;align-items:center;justify-content:center;}
+  .search-title{font-family:'Noto Serif JP',serif;font-size:24px;font-weight:700;line-height:1.4;}
+  .search-card-sub{font-size:13px;color:var(--subtext);margin-top:5px;}
   .search-subtitle{font-size:12px;color:var(--subtext);margin-bottom:16px;}
   .search-tabs{display:flex;gap:6px;margin-bottom:14px;}
   .search-tabs button{font-size:13px;font-weight:600;color:var(--subtext);padding:8px 16px;border-radius:10px 10px 0 0;}
@@ -161,7 +167,7 @@
   .quick-links .ql-label{font-size:11.5px;color:var(--subtext);}
   .quick-links a{font-size:12px;color:var(--purple);font-weight:600;background:var(--bg);border:1px solid var(--border);padding:6px 13px;border-radius:16px;}
   .quick-links a:hover{background:#EFE7F5;}
-  .search-fields{display:flex;gap:14px;align-items:center;flex-wrap:wrap;}
+  .search-fields{position:relative;display:flex;gap:14px;align-items:center;flex-wrap:wrap;}
   .field{flex:1 1 200px;display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:12px;padding:16px 18px;background:var(--bg);}
   .field input,.field select{border:none;background:transparent;outline:none;font-size:14.5px;width:100%;font-family:inherit;color:var(--text);}
   .field.small{flex:1 1 190px;padding:13px 16px;}
@@ -562,7 +568,6 @@
           </div>
         </div>
       </div>
-      <button class="simba-btn">SIMBA</button>
     </div>
   </div>
 </header>
@@ -756,17 +761,29 @@
 <!-- ============ 統合検索パネル ============ -->
 <div class="search-panel" id="search">
   <div class="search-card">
-    <div class="search-title">行きたい神社・お寺を入力</div>
+    <div class="search-card-deco" aria-hidden="true">
+      <svg viewBox="0 0 200 220" class="search-card-deco-svg"><path d="M100 10c-8 18-30 26-30 26h60s-22-8-30-26z" opacity=".5"/><rect x="66" y="34" width="8" height="150"/><rect x="126" y="34" width="8" height="150"/><rect x="40" y="60" width="120" height="10"/><rect x="30" y="86" width="140" height="8"/></svg>
+    </div>
+    <div class="search-card-hd">
+      <div class="search-card-icon">
+        <svg viewBox="0 0 40 40" width="30" height="30" fill="none"><path d="M20 4c-3 6-11 9-11 9h22s-8-3-11-9z" fill="var(--vermilion)"/><rect x="12" y="12" width="3" height="22" fill="var(--vermilion)"/><rect x="25" y="12" width="3" height="22" fill="var(--vermilion)"/><rect x="6" y="17" width="28" height="3" fill="var(--vermilion)"/></svg>
+      </div>
+      <div>
+        <div class="search-title">行きたい神社・お寺を入力</div>
+        <div class="search-card-sub">条件を選ぶだけで、AIが最適な巡拝ルートをご提案します</div>
+      </div>
+    </div>
     <div class="search-fields">
       <div class="field" style="flex:1 1 100%;">
         <svg class="ic" viewBox="0 0 24 24" style="color:#B8452A;width:18px;height:18px"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.6" y2="16.6"/></svg>
         <input id="aiQueryInput" type="text" placeholder="例：明治神宮、浅草寺、鶴岡八幡宮">
       </div>
     </div>
-    <div class="ai-pill-row" id="aiTypePills" style="margin-top:16px;">
+    <div class="ai-field-label" style="margin-top:22px;">神社・お寺の種類</div>
+    <div class="ai-pill-row" id="aiTypePills">
       <button class="ai-pill on" data-v="神社中心">⛩ 神社中心</button>
       <button class="ai-pill" data-v="両方">◆ 両方</button>
-      <button class="ai-pill" data-v="寺院中心">寺院中心</button>
+      <button class="ai-pill" data-v="寺院中心">お寺中心</button>
     </div>
     <div class="ai-field-label" style="margin-top:20px;">交通手段</div>
     <div class="ai-pill-row" id="aiTransPills">
@@ -785,7 +802,7 @@
     <div class="ai-cta-row">
       <button class="ai-cta-big" onclick="startAiRoutePC()">
         <svg class="ic" style="color:#fff" viewBox="0 0 24 24"><path d="M12 2l1.8 5.6L19 9l-5.2 1.4L12 16l-1.8-5.6L5 9l5.2-1.4L12 2z"/></svg>
-        AIがおすすめルートを作成
+        AIおすすめ巡拝ルートを作る
         <svg class="ic" style="color:#fff" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </button>
     </div>
@@ -1571,40 +1588,42 @@ function startAiRoutePC(){
   openAiRouteModal();
   document.getElementById('aiLoadingSub').textContent = query ? ('「' + query + '」周辺の神社・お寺を探しています') : 'おすすめルートを準備しています';
 
-  function fallbackToStatic(){
-    window._aiRoutesPC = AI_ROUTES;
-    renderAiRouteCardsPC(selTrans, selTime);
-    showAiStep('aiStepList');
-  }
-
-  if (!query || !API_KEY) {
-    setTimeout(fallbackToStatic, 1000);
-    return;
-  }
-
-  // 一定時間内に応答がなければ固定ルートへフォールバック（無限ローディング防止）
-  var settled = false;
-  var safetyTimer = setTimeout(function(){
-    if (settled) return;
-    settled = true;
-    fallbackToStatic();
-  }, 9000);
-
-  buildRoutesViaPlaces(query, selTime, selTrans, budget).then(function(routes){
-    if (settled) return;
-    settled = true;
-    clearTimeout(safetyTimer);
+  function finish(routes){
     window._aiRoutesPC = (routes && routes.length) ? routes : AI_ROUTES;
     renderAiRouteCardsPC(selTrans, selTime);
     showAiStep('aiStepList');
-  }).catch(function(err){
-    console.error('AI route error:', err);
-    if (settled) return;
-    settled = true;
-    clearTimeout(safetyTimer);
-    fallbackToStatic();
-  });
+  }
+
+  // データ取得はすぐ開始（バックグラウンド）
+  var resultPromise;
+  if (query && API_KEY) {
+    resultPromise = buildRoutesViaPlaces(query, selTime, selTrans, budget).catch(function(err){
+      console.error('AI route error:', err);
+      return null;
+    });
+  } else {
+    resultPromise = Promise.resolve(null);
+  }
+
+  var resolved = false;
+  var resolvedRoutes = null;
+  resultPromise.then(function(routes){ resolved = true; resolvedRoutes = routes; });
+
+  // モバイル版と同じ演出：ローディングは固定5秒表示。
+  // 5秒経過時点でまだ結果が届いていなければ、最大3秒だけ追加で待つ（合計最大8秒）。
+  setTimeout(function(){
+    if (resolved) { finish(resolvedRoutes); return; }
+    var waited = 0;
+    var iv = setInterval(function(){
+      waited += 200;
+      if (resolved || waited >= 3000) {
+        clearInterval(iv);
+        finish(resolvedRoutes);
+      }
+    }, 200);
+  }, 5000);
 }
+
 
 function renderAiRouteCardsPC(selTrans, selTime){
   var ct = document.getElementById('aiRouteCardsPC');

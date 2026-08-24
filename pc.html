@@ -7,8 +7,11 @@
   try {
     var ua = navigator.userAgent || "";
     var isMobileUA = /Mobi|Android|iPhone|iPod|iPad/i.test(ua);
-    // index.html側の判定と対称にする（iPhoneの「PC版で見る」は幅980px程度になるため）
-    var isMobile = isMobileUA ? (window.innerWidth < 1024) : (window.innerWidth < 850);
+    // index.html側の判定（幅850〜1024px付近）とぴったり境界を揃えようとすると、
+    // 測定タイミングのわずかなズレで PC版⇄モバイル版 を行き来する「チカチカ」が発生する。
+    // そのため、ここでは「モバイル端末なのに極端に幅が狭い場合」だけを戻す安全網とし、
+    // index.html側の判定範囲とは重ならないようにする。
+    var isMobile = isMobileUA && window.innerWidth < 700;
     if (isMobile) {
       location.replace('/' + location.search + location.hash);
     }

@@ -7,11 +7,8 @@
   try {
     var ua = navigator.userAgent || "";
     var isMobileUA = /Mobi|Android|iPhone|iPod|iPad/i.test(ua);
-    // index.html側の判定（幅850〜1024px付近）とぴったり境界を揃えようとすると、
-    // 測定タイミングのわずかなズレで PC版⇄モバイル版 を行き来する「チカチカ」が発生する。
-    // そのため、ここでは「モバイル端末なのに極端に幅が狭い場合」だけを戻す安全網とし、
-    // index.html側の判定範囲とは重ならないようにする。
-    var isMobile = isMobileUA && window.innerWidth < 700;
+    // index.html側と同じ考え方：幅ではなくUAだけで判定し、行ったり来たりを防ぐ
+    var isMobile = isMobileUA;
     if (isMobile) {
       location.replace('/' + location.search + location.hash);
     }
@@ -402,6 +399,19 @@
     .grid-post{grid-template-columns:repeat(4,1fr);}
     nav.main-nav{gap:12px;}
     nav.main-nav a{font-size:13.5px;}
+  }
+
+  /* ---------- 安全網：万が一PC版が非常に狭い画面で開かれても崩れないようにする ---------- */
+  @media (max-width:760px){
+    body{min-width:0;overflow-x:hidden;}
+    .ai-modal{width:100%;max-width:100%;border-radius:0;max-height:100vh;}
+    .ai-route-cards{grid-template-columns:1fr;}
+    .search-card{padding:26px 20px;}
+    .search-card .ai-cta-big{width:100%;}
+    .grid-rank9{grid-template-columns:1fr !important;}
+    .grid-post,.rank-top3,.grid-purpose{grid-template-columns:1fr !important;}
+    .headbar{flex-wrap:wrap;height:auto;padding:12px;}
+    nav.main-nav{display:none;}
   }
 
   /* ========================================================

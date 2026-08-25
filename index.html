@@ -5781,6 +5781,10 @@ function updateShrineUi(){
 }
 
 // タグ・交通手段・所要時間の切り替え
+// ⚠ 注意：このリスナーは document に直接登録されているため、
+// PC版へ document.write で切り替わった後もそのまま残り続ける（詳細は index.html冒頭のコメント参照）。
+// 現状はPC版側で ai-tag / ai-time-btn / ai-tr-btn というクラス名を使っていないため実害はないが、
+// 今後モバイル版・PC版のどちらかでこれらと同じクラス名を新たに使う場合は干渉に注意すること。
 document.addEventListener('click', function(e){
   if (e.target.classList.contains('ai-tag')) {
     var clicked = e.target;

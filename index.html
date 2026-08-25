@@ -28,11 +28,20 @@
         // 取得できなかった場合はモバイル版のまま表示するため、非表示を解除する
         document.documentElement.style.visibility = 'visible';
       });
+    } else {
+      // モバイル表示の場合のみ、ここでviewportを設定する。
+      // あらかじめ静的な<meta name="viewport">タグをHTMLに置いてしまうと、
+      // PC判定でdocument.writeによりページを丸ごと差し替える前に
+      // ブラウザがモバイル用のviewport(device-width)を先に読み込んで確定させてしまい、
+      // 「PC版のデザインなのに横幅だけスマホの実寸のまま」になる不具合の原因になっていたため。
+      var vp = document.createElement('meta');
+      vp.name = 'viewport';
+      vp.content = 'width=device-width, initial-scale=1.0';
+      document.head.appendChild(vp);
     }
   } catch (e) {}
 })();
 </script>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>わびなび〜和美導〜</title>
 <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,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">
 <link rel="icon" type="image/png" sizes="192x192" href="https://github.com/SIMBA3838/shrine-app/blob/main/%E3%82%8F%E3%81%B2%E3%82%99%E3%81%AA%E3%81%B2%E3%82%99%E3%82%A2%E3%82%A4%E3%82%B3%E3%83%B3%E4%B8%B8%E5%9E%8B.png?raw=true">

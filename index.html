@@ -1764,8 +1764,8 @@ html,body{margin:0;padding:0;background:var(--washi)}
     <div class="reg-hd-tit">会員登録・ログイン</div>
     <div style="width:24px"></div>
   </div>
-  <div class="reg-cont">
-    <div class="reg-logo">
+  <div class="reg-cont" id="regCont">
+    <div id="regStepProvider">    <div class="reg-logo">
       <div class="reg-logo-ja">わびなび</div>
       <div class="reg-logo-en">〜和美導〜</div>
     </div>
@@ -1794,6 +1794,28 @@ html,body{margin:0;padding:0;background:var(--washi)}
 
     <div class="reg-toggle">
       すでにアカウントをお持ちの方は<br><a onclick="regToggleMode()">ログインはこちら</a>
+    </div>
+    </div>
+    <!-- プロフィール設定ステップ：LINE/Google等でログインしても、実名・実写真は
+         絶対にここに自動反映しない。表示名・アイコンは必ずユーザー自身に設定してもらう。 -->
+    <div id="regStepProfile" style="display:none">
+      <div class="reg-tagline" style="margin-bottom:1.25rem">
+        投稿やマイページに表示する<b>ニックネーム</b>と<b>アイコン</b>を設定してください。<br>
+        <span style="color:#999;font-size:11px">※LINE・Googleの実名や写真は使用されません。安心してご利用いただけます。</span>
+      </div>
+      <input id="profileNameInput" type="text" maxlength="20" placeholder="表示名（例：御朱印さんぽ好き）" style="width:100%;padding:.85rem 1rem;border:.5px solid var(--kara);border-radius:10px;font-size:14px;font-family:'Noto Serif JP',serif;margin-bottom:1rem;box-sizing:border-box">
+      <div style="font-size:11px;color:#888;margin-bottom:8px">アイコンを選択</div>
+      <div id="avatarPicker" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:1.5rem">
+        <div class="avatar-opt on" data-av="🌸" onclick="selectAvatar(this,'🌸')" style="width:44px;height:44px;border-radius:50%;background:var(--washi);border:2px solid var(--red);display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer">🌸</div>
+        <div class="avatar-opt" data-av="⛩️" onclick="selectAvatar(this,'⛩️')" style="width:44px;height:44px;border-radius:50%;background:var(--washi);border:2px solid transparent;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer">⛩️</div>
+        <div class="avatar-opt" data-av="🍁" onclick="selectAvatar(this,'🍁')" style="width:44px;height:44px;border-radius:50%;background:var(--washi);border:2px solid transparent;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer">🍁</div>
+        <div class="avatar-opt" data-av="🎋" onclick="selectAvatar(this,'🎋')" style="width:44px;height:44px;border-radius:50%;background:var(--washi);border:2px solid transparent;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer">🎋</div>
+        <div class="avatar-opt" data-av="🙏" onclick="selectAvatar(this,'🙏')" style="width:44px;height:44px;border-radius:50%;background:var(--washi);border:2px solid transparent;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer">🙏</div>
+        <div class="avatar-opt" data-av="🏮" onclick="selectAvatar(this,'🏮')" style="width:44px;height:44px;border-radius:50%;background:var(--washi);border:2px solid transparent;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer">🏮</div>
+        <div class="avatar-opt" data-av="🦊" onclick="selectAvatar(this,'🦊')" style="width:44px;height:44px;border-radius:50%;background:var(--washi);border:2px solid transparent;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer">🦊</div>
+        <div class="avatar-opt" data-av="🐺" onclick="selectAvatar(this,'🐺')" style="width:44px;height:44px;border-radius:50%;background:var(--washi);border:2px solid transparent;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer">🐺</div>
+      </div>
+      <button class="reg-btn reg-btn-line" style="background:var(--red);color:#fff" onclick="completeProfileSetup()">この内容で始める</button>
     </div>
 
     <div class="reg-benefits">
@@ -2186,8 +2208,8 @@ html,body{margin:0;padding:0;background:var(--washi)}
 <div style="background:var(--red);padding:1.25rem 1.25rem 2rem">
   <div style="display:flex;align-items:center;gap:10px"><div style="cursor:pointer;color:rgba(255,255,255,.7);font-size:20px" onclick="go('pgHome')">‹</div><div style="font-family:'Shippori Mincho',serif;font-size:15px;font-weight:800;color:#fff;letter-spacing:.1em">マイページ</div></div>
   <div style="display:flex;flex-direction:column;align-items:center;margin-top:1.25rem">
-    <div style="width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;margin-bottom:.75rem"><svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="13" r="7" stroke="#c9a84c" stroke-width="1.5"/><path d="M5 33c0-7 26-7 26 0" stroke="#c9a84c" stroke-width="1.5" stroke-linecap="round"/></svg></div>
-    <div style="font-family:'Shippori Mincho',serif;font-size:17px;font-weight:800;color:#fff">参拝者　太郎</div>
+    <div id="pProfileAvatar" style="width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;margin-bottom:.75rem;font-size:32px">🌸</div>
+    <div id="pProfileName" style="font-family:'Shippori Mincho',serif;font-size:17px;font-weight:800;color:#fff">参拝者</div>
     <div style="font-size:10px;color:var(--gold);margin-top:3px;letter-spacing:.2em">PILGRIM LEVEL ★★★☆☆</div>
   </div>
 </div>
@@ -5600,9 +5622,55 @@ function closeRegister(){
   document.getElementById('pgRegister').style.display = 'none';
   updateFabVisibility();
 }
+// ─── ログイン方法とプロフィール（表示名・アイコン）を明確に分離する ───────────
+// 重要：LINE/Googleでログインしても、そこから取得できる実名・プロフィール写真は
+// 個人情報保護のため絶対に投稿の表示名・アイコンとして自動反映しない。
+// ログインの「手段」として使うだけにとどめ、投稿・マイページに表示する
+// ニックネーム／アイコンは、必ずこのあとの画面でユーザー自身に設定してもらう。
+// （将来LINE Login/Google Sign-InのAPIを実際に組み込む場合も、
+//   取得したdisplayName/pictureUrlをそのまま表示用に使わないこと）
+var regSelectedProvider = null;
 function regWithProvider(provider){
-  showToast(provider + 'での登録は現在準備中です。近日公開予定です');
+  regSelectedProvider = provider;
+  var hasProfile = !!localStorage.getItem('wabinavi_display_name');
+  if (hasProfile) {
+    // 既にニックネーム設定済みなら、そのままログイン扱いにする
+    applyProfileToUI();
+    closeRegister();
+    showToast('おかえりなさい、' + localStorage.getItem('wabinavi_display_name') + 'さん');
+    return;
+  }
+  document.getElementById('regStepProvider').style.display = 'none';
+  document.getElementById('regStepProfile').style.display = 'block';
 }
+function selectAvatar(el, av){
+  document.querySelectorAll('.avatar-opt').forEach(function(o){ o.style.borderColor = 'transparent'; o.classList.remove('on'); });
+  el.style.borderColor = 'var(--red)';
+  el.classList.add('on');
+  window._selectedAvatar = av;
+}
+function completeProfileSetup(){
+  var input = document.getElementById('profileNameInput');
+  var name = input.value.trim();
+  if (!name) { showToast('表示名を入力してください'); input.focus(); return; }
+  var avatar = window._selectedAvatar || '🌸';
+  localStorage.setItem('wabinavi_display_name', name);
+  localStorage.setItem('wabinavi_avatar', avatar);
+  if (regSelectedProvider) localStorage.setItem('wabinavi_login_provider', regSelectedProvider);
+  applyProfileToUI();
+  closeRegister();
+  showToast(name + 'さん、ようこそ！');
+}
+function applyProfileToUI(){
+  var name = localStorage.getItem('wabinavi_display_name');
+  var avatar = localStorage.getItem('wabinavi_avatar');
+  var nameEl = document.getElementById('pProfileName');
+  var avEl = document.getElementById('pProfileAvatar');
+  if (name && nameEl) nameEl.textContent = name;
+  if (avatar && avEl) avEl.textContent = avatar;
+}
+document.addEventListener('DOMContentLoaded', function(){ applyProfileToUI(); });
+
 var regIsLogin = false;
 function regToggleMode(){
   regIsLogin = !regIsLogin;

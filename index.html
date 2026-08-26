@@ -5666,6 +5666,21 @@ function regWithProvider(provider){
   document.getElementById('regStepProfile').style.display = 'block';
 }
 
+// テスト用：URLに ?reset_profile=1 を付けてアクセスすると、
+// 保存済みのニックネーム・アイコン・ログイン情報を消して、初回登録と同じ状態に戻せる。
+(function(){
+  var params = new URLSearchParams(location.search);
+  if (params.get('reset_profile') === '1') {
+    localStorage.removeItem('wabinavi_display_name');
+    localStorage.removeItem('wabinavi_avatar');
+    localStorage.removeItem('wabinavi_login_provider');
+    history.replaceState(null, '', location.pathname);
+    window.addEventListener('DOMContentLoaded', function(){
+      if (typeof showToast === 'function') showToast('プロフィール情報をリセットしました');
+    });
+  }
+})();
+
 // LINEログインから戻ってきた時の処理（?line_login=success が付いている場合）
 (function(){
   var params = new URLSearchParams(location.search);

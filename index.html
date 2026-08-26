@@ -5630,6 +5630,12 @@ function closeRegister(){
 // （将来LINE Login/Google Sign-InのAPIを実際に組み込む場合も、
 //   取得したdisplayName/pictureUrlをそのまま表示用に使わないこと）
 var regSelectedProvider = null;
+
+// 本物のLINEログイン設定（チャネルIDは公開情報のためコードに書いてOK。
+// チャネルシークレット等の秘密の鍵は、Cloudflare Worker側にのみ保存している）
+var LINE_LOGIN_CHANNEL_ID = '2011255000';
+var LINE_LOGIN_REDIRECT_URI = 'https://wabinavi-line-worker.ambition103ms.workers.dev/callback';
+
 function regWithProvider(provider){
   regSelectedProvider = provider;
   var hasProfile = !!localStorage.getItem('wabinavi_display_name');
@@ -5640,9 +5646,53 @@ function regWithProvider(provider){
     showToast('おかえりなさい、' + localStorage.getItem('wabinavi_display_name') + 'さん');
     return;
   }
+  if (provider === 'LINE') {
+    // 本物のLINEログイン画面へ遷移する。
+    // ここから先（本人確認・友だち追加・あいさつメッセージ送信）はCloudflare Worker側で処理し、
+    // 完了すると wabinavi.jp/?line_login=success&uid=... の形でこのサイトに戻ってくる。
+    var state = 'wabinavi_' + Date.now();
+    var authUrl = 'https://access.line.me/oauth2/v2.1/authorize'
+      + '?response_type=code'
+      + '&client_id=' + encodeURIComponent(LINE_LOGIN_CHANNEL_ID)
+      + '&redirect_uri=' + encodeURIComponent(LINE_LOGIN_REDIRECT_URI)
+      + '&state=' + encodeURIComponent(state)
+      + '&scope=' + encodeURIComponent('profile openid')
+      + '&bot_prompt=normal';
+    location.href = authUrl;
+    return;
+  }
+  // Googleログインは今後実装予定。現時点ではプロフィール設定のみ進める。
   document.getElementById('regStepProvider').style.display = 'none';
   document.getElementById('regStepProfile').style.display = 'block';
 }
+
+// LINEログインから戻ってきた時の処理（?line_login=success が付いている場合）
+(function(){
+  var params = new URLSearchParams(location.search);
+  var result = params.get('line_login');
+  if (!result) return;
+  // URLをきれいに戻す（uidなどをアドレスバーに残さない）
+  history.replaceState(null, '', location.pathname);
+  if (result === 'success') {
+    var hasProfile = !!localStorage.getItem('wabinavi_display_name');
+    if (hasProfile) {
+      showToast('おかえりなさい、' + localStorage.getItem('wabinavi_display_name') + 'さん');
+    } else {
+      regSelectedProvider = 'LINE';
+      // ページ読み込み完了後に、プロフィール設定画面を開く
+      window.addEventListener('DOMContentLoaded', function(){
+        document.getElementById('pgRegister').style.display = 'flex';
+        document.getElementById('regStepProvider').style.display = 'none';
+        document.getElementById('regStepProfile').style.display = 'block';
+      });
+    }
+  } else if (result === 'error') {
+    window.addEventListener('DOMContentLoaded', function(){
+      if (typeof showToast === 'function') showToast('LINEログインに失敗しました。もう一度お試しください');
+    });
+  }
+})();
+
 function selectAvatar(el, av){
   document.querySelectorAll('.avatar-opt').forEach(function(o){ o.style.borderColor = 'transparent'; o.classList.remove('on'); });
   el.style.borderColor = 'var(--red)';

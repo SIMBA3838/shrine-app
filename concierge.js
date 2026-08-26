@@ -1538,19 +1538,19 @@
   // ─────────────────────────────────────────
   var WABI_TOURS = [
     { name:'嵐電1日フリーきっぷ 御朱印帳付きプラン', area:'京都・嵐電', badge:'御朱印付き', partner:'楽天トラベル',
-      shrine:'車折神社', link:'https://a.r10.to/hFISmH' },
+      shrine:'車折神社', link:'https://a.r10.to/hFISmH', img:'https://images.unsplash.com/photo-1752898514963-e36929a03859?w=600&q=80&auto=format&fit=crop' },
     { name:'京都魔界案内ミステリーツアー 陰陽師編', area:'京都・体験', badge:'人気', partner:'楽天トラベル',
-      shrine:'晴明神社', link:'https://a.r10.to/hgv8Ka' },
+      shrine:'晴明神社', link:'https://a.r10.to/hgv8Ka', img:'https://images.unsplash.com/photo-1760333972888-852dd0072281?w=600&q=80&auto=format&fit=crop' },
     { name:'奈良 吉野 櫻本坊 修行体験＋お抹茶＋お菓子', area:'奈良・吉野', badge:'世界遺産', partner:'楽天トラベル',
-      shrine:'金峯山寺', link:'https://a.r10.to/h5KHp7' },
+      shrine:'金峯山寺', link:'https://a.r10.to/h5KHp7', img:'https://images.unsplash.com/photo-1763120339579-d660fbebaa16?w=600&q=80&auto=format&fit=crop' },
     { name:'犬鳴山 七宝瀧寺 滝行＋写経体験', area:'大阪・泉佐野', badge:'修験の聖地', partner:'楽天トラベル',
-      shrine:'七宝瀧寺', link:'https://a.r10.to/h8XIiv' }
+      shrine:'七宝瀧寺', link:'https://a.r10.to/h8XIiv', img:'https://images.unsplash.com/photo-1759339645664-9b9c15d70b56?w=600&q=80&auto=format&fit=crop' }
   ];
   function tourCardHtml(t){
     return '<div class="tour-card" style="position:relative">'
       + '<span class="wabi-pr">PR</span>'
       + '<a href="'+t.link+'" target="_blank" rel="nofollow sponsored noopener" style="display:flex;text-decoration:none;color:inherit;width:100%">'
-      + '<div class="tour-img" data-tourshrine="'+t.shrine+'"><div class="tour-img-badge">'+t.badge+'</div></div>'
+      + '<div class="tour-img" data-tourshrine="'+t.shrine+'" style="width:152px !important;height:112px !important;flex:0 0 152px !important;background:url(\''+t.img+'\') center/cover !important;">'+'<div class="tour-img-badge">'+t.badge+'</div></div>'
       + '<div class="tour-body"><div><div class="tour-title">'+t.name+'</div><div class="tour-route">'+t.area+'</div></div>'
       + '<div class="tour-bottom"><span class="wabi-rk-btn" style="padding:6px 14px">楽天トラベルで見る</span>'
       + '<span style="font-size:9px;color:#a89a80;margin-left:6px">'+t.partner+'</span></div></div></a></div>';

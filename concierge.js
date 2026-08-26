@@ -7422,22 +7422,22 @@
   /* ── ② 御朱印グッズ（楽天で実在を確認した商品）───────────── */
   // link が hb.afl… のものは楽天アフィリエイトのリンク（PR表示あり）
   var GOODS = [
-    { name:'御朱印帳 大判 金剛力士像 箔押し 金箔 蛇腹', shop:'日本製 nippoh', price:'¥2,090', tag:'箔押し',
-      img:'https://shop.r10s.jp/nippoh-bb/cabinet/hakuoshi/imgrc0107619189.jpg',
-      pr:true,
-      link:'https://hb.afl.rakuten.co.jp/ichiba/55e6354a.261418e4.55e6354b.281f8a3b/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fnippoh-bb%2F8-001%2F%3Fscid%3Daf_pc_bbtn&link_type=picttext&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0dGV4dCIsInNpemUiOiIyNDB4MjQwIiwibmFtIjoxLCJuYW1wIjoicmlnaHQiLCJjb20iOjEsImNvbXAiOiJkb3duIiwicHJpY2UiOjEsImJvciI6MSwiY29sIjoxLCJiYnRuIjoxLCJwcm9kIjowLCJhbXAiOmZhbHNlfQ==' },
-    { name:'御朱印帳 大判 翡翠花吹雪 金襴 京都ちせん', shop:'御朱印帳工房 京都ちせん', price:'¥2,480', tag:'金襴',
-      img:'https://shop.r10s.jp/kyoto-chisen/cabinet/compass1649313958.jpg',
-      pr:true,
-      link:'https://hb.afl.rakuten.co.jp/ichiba/55e637eb.50260a1f.55e637ec.b9335393/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fkyoto-chisen%2F10000067%2F%3Fscid%3Daf_pc_bbtn&link_type=picttext&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0dGV4dCIsInNpemUiOiIyNDB4MjQwIiwibmFtIjoxLCJuYW1wIjoicmlnaHQiLCJjb20iOjEsImNvbXAiOiJkb3duIiwicHJpY2UiOjEsImJvciI6MSwiY29sIjoxLCJiYnRuIjoxLCJwcm9kIjowLCJhbXAiOmZhbHNlfQ==' },
-    { name:'御朱印帳 大判 鳥獣戯画 金襴生地 蛇腹', shop:'御朱印帳工房 京都ちせん', price:'¥2,480', tag:'鳥獣戯画',
-      img:'https://shop.r10s.jp/kyoto-chisen/cabinet/compass1751434539.jpg',
+    { name:'御城印帳 ポケット式 御城印ホルダー 戦国武将 家紋', shop:'京都ごりやく堂', price:'¥3,190', tag:'ランキング1位',
+      img:'https://images.unsplash.com/photo-1478436127897-769e1b3f0f36?w=400&q=80&auto=format&fit=crop',
       pr:false,
-      link:'https://item.rakuten.co.jp/kyoto-chisen/10000163/' },
-    { name:'御朱印帳 -JAPAN- 大判 蛇腹式', shop:'めのうの店 川島', price:'¥1,870', tag:'定番',
-      img:'https://shop.r10s.jp/since1877/cabinet/syouhin/gosyuintyo/imgrc0115043440.jpg',
+      link:'https://item.rakuten.co.jp/kyoto-goriyaku/kgd-ghldm/' },
+    { name:'御朱印ホルダー 見開きサイズ 書き置き 20ポケット', shop:'京都ごりやく堂', price:'¥3,300〜', tag:'ランキング2位',
+      img:'https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=400&q=80&auto=format&fit=crop',
       pr:false,
-      link:'https://item.rakuten.co.jp/since1877/japan-series/' }
+      link:'https://item.rakuten.co.jp/kyoto-goriyaku/isk-hldl/' },
+    { name:'御朱印帳 大判 かわいい 翡翠花吹雪 金襴 蛇腹式', shop:'御朱印帳工房 京都ちせん', price:'¥2,480', tag:'ランキング3位',
+      img:'https://images.unsplash.com/photo-1763120339579-d660fbebaa16?w=400&q=80&auto=format&fit=crop',
+      pr:false,
+      link:'https://item.rakuten.co.jp/kyoto-chisen/10000067/' },
+    { name:'うるわしき御朱印帳 友禅紙 鳥の子紙 大判サイズ', shop:'京都ごりやく堂', price:'¥1,980', tag:'ランキング4位',
+      img:'https://images.unsplash.com/photo-1752898514963-e36929a03859?w=400&q=80&auto=format&fit=crop',
+      pr:false,
+      link:'https://item.rakuten.co.jp/kyoto-goriyaku/kgd-urusyu/' }
   ];
 
   /* ── スタイル ─────────────────────────────────────────── */

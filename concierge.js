@@ -325,7 +325,12 @@
     '.wc-li-nm{flex:1;line-height:1.4;}',
     '.wc-li-tag{font-size:10px;color:#a89a80;}',
     '.wc-li-btn{border:none;background:#f3ede1;color:#8a7a5c;width:26px;height:26px;border-radius:8px;cursor:pointer;font-size:12px;}',
-    '.wc-cta-wrap{position:fixed;bottom:0;left:0;right:0;z-index:6;padding:10px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(to top,#F8F5EF 65%,rgba(248,245,239,0));}',
+    // ★下部メニュー（#wabiNav）に隠れて押せなくなっていたのを修正★
+    //   ・bottom を 0 から「メニューの高さ」に変え、メニューの上に置く
+    //   ・z-index をメニュー（2000）より上にして、確実に指が届くようにする
+    //   --wabi-nav-h は実際のメニューの高さを測って入れている（下の方の処理）
+    '.wc-cta-wrap{position:fixed;bottom:var(--wabi-nav-h,60px);left:0;right:0;z-index:2100;padding:10px 16px 12px;background:linear-gradient(to top,#F8F5EF 65%,rgba(248,245,239,0));pointer-events:none;}',
+    '.wc-cta-wrap>*{pointer-events:auto;}',
     '.wc-cta{display:block;width:100%;max-width:468px;margin:0 auto;height:56px;border:none;border-radius:28px;background:linear-gradient(135deg,#7a5aa8,#5a4470);color:#fff;font-size:15px;font-weight:800;font-family:"Shippori Mincho",serif;cursor:pointer;box-shadow:0 8px 20px -6px rgba(90,68,112,.5);}',
     '.wc-hero{position:relative;width:100%;aspect-ratio:4/3;background:#ddd;overflow:hidden;}',
     '.wc-hero img{width:100%;height:100%;object-fit:cover;display:block;}',
@@ -536,7 +541,9 @@
 
     var old = document.getElementById('wcInline'); if (old) old.remove();
     var box = document.createElement('div'); box.id='wcInline';
-    box.style.cssText = 'padding-bottom:96px;';
+    // 以前は下部固定ボタンがこの中にあったため 96px の余白を空けていたが、
+    // ボタンを body 直下へ移したので不要になった。大きな空白の原因だったので詰める。
+    box.style.cssText = 'padding-bottom:10px;';
     var h = '';
     h += '<div id="wcAddedBox"></div>';
     h += '<div class="wc-sec" style="text-align:center;margin-top:18px">'
@@ -577,17 +584,59 @@
     });
 
     // 画面下固定の「カスタマイズしたルートを見る」ボタン
-    var pg = document.getElementById('pgAiRouteList');
-    if (pg && !document.getElementById('wcInlineCtaBar')) {
+    //
+    // ★以前は #pgAiRouteList の中に入れていたが、この要素には transform が掛かっている。
+    //   transform が掛かった要素の中では position:fixed が「画面」ではなく
+    //   「その要素」を基準にしてしまい、ボタンが画面の下にはみ出して押せなくなっていた。
+    //   そのため body の直下に置き、表示・非表示だけをページに合わせて切り替える。
+    if (document.getElementById('pgAiRouteList') && !document.getElementById('wcInlineCtaBar')) {
       var bar = document.createElement('div');
       bar.id = 'wcInlineCtaBar'; bar.className = 'wc-cta-wrap';
+      bar.style.display = 'none';
       bar.innerHTML = '<button class="wc-cta" id="wcInlineCta">カスタマイズしたルートを見る →</button>';
-      pg.appendChild(bar);
+      document.body.appendChild(bar);
       document.getElementById('wcInlineCta').onclick = openPreview;
     }
+    syncNavHeight();
+    syncInlineCta();
     resolveCardPhotos();
     setTimeout(resolveCardPhotos, 1200); // SDK読み込みが遅れた場合の再試行
   }
+
+  // 下部メニューの高さを測って CSS 変数 --wabi-nav-h に入れる。
+  // 端末やホームバーの有無で高さが変わるため、決め打ちにせず毎回測る。
+  // ルート一覧ページが開いているときだけ、下部固定ボタンを出す
+  function syncInlineCta(){
+    try {
+      var bar = document.getElementById('wcInlineCtaBar');
+      if (!bar) return;
+      var page = document.getElementById('pgAiRouteList');
+      var open = page && page.classList.contains('show')
+                 && getComputedStyle(page).display !== 'none';
+      // ルート一覧の上に別の画面（プレビュー・スポット詳細・テーマ）が
+      // かぶさっている間は出さない
+      if (open) {
+        ['wcPrev', 'wcSpot', 'wcTheme', 'wabiRoutePg'].forEach(function(id){
+          var el = document.getElementById(id);
+          if (el && getComputedStyle(el).display !== 'none') open = false;
+        });
+      }
+      bar.style.display = open ? 'block' : 'none';
+    } catch(e){}
+  }
+  window.wabiSyncInlineCta = syncInlineCta;
+
+  function syncNavHeight(){
+    try {
+      var nav = document.getElementById('wabiNav');
+      var h = (nav && nav.offsetHeight) ? nav.offsetHeight : 60;
+      document.documentElement.style.setProperty('--wabi-nav-h', h + 'px');
+    } catch(e){}
+  }
+  window.wabiSyncNavHeight = syncNavHeight;
+  syncNavHeight();
+  window.addEventListener('resize', syncNavHeight);
+  window.addEventListener('orientationchange', function(){ setTimeout(syncNavHeight, 300); });
 
   // 滞在時間（分）の目安
   var STAY = {shrine:40, gourmet:60, cafe:30, sight:30, exp:60};
@@ -609,6 +658,75 @@
       if (!valid.some(function(it){ return it.type==='add' && it.a.key===a.key; })) valid.push({type:'add', a:a});
     });
     state.items = valid;
+  }
+
+  // ─────────────────────────────────────────
+  // ルートのスポット画像が「⛩」のままになるのを防ぐ後追い取得
+  //
+  // AIが作るルートのスポットは photo を持たないことがある。
+  //  ① photoCache / SHRINES に既にある写真を使う（通信なし）
+  //  ② それでも無ければ Places API に1回だけ問い合わせる
+  // 取れた写真はルートのデータにも書き戻すので、再描画しても消えない。
+  // ─────────────────────────────────────────
+  var spotPhotoMemo = {};   // 神社名 → URL（'' は「写真なし」の確定）
+
+  function rememberSpotPhoto(name, url){
+    spotPhotoMemo[name] = url || '';
+    if (!url) return;
+    try {
+      if (state.route && state.route.spots) {
+        state.route.spots.forEach(function(sp){ if (sp.name===name && !sp.photo) sp.photo = url; });
+      }
+      (window._dynamicRoutes || []).forEach(function(r){
+        (r.spots || []).forEach(function(sp){ if (sp.name===name && !sp.photo) sp.photo = url; });
+      });
+    } catch(e){}
+  }
+
+  function paintSpotPhoto(box, url){
+    if (!box || box.querySelector('img')) return;
+    var im = document.createElement('img');
+    im.loading = 'lazy';
+    im.onerror = function(){ try { im.parentNode.removeChild(im); box.textContent = '\u26e9'; } catch(e){} };
+    box.textContent = '';
+    box.appendChild(im);
+    im.src = url;
+  }
+
+  function fillSpotPhotos(){
+    try {
+      var boxes = document.querySelectorAll(
+        '.wcb-img[data-shrinename], .wc-mini-img[data-shrinename], .wc-tl-th[data-shrinename]');
+      var svc = null;
+      [].forEach.call(boxes, function(box){
+        if (box.querySelector('img')) return;
+        var name = box.getAttribute('data-shrinename');
+        if (!name) return;
+
+        var url = spotPhotoMemo[name];
+        if (url === undefined && typeof window.findShrinePhoto === 'function') {
+          try { url = window.findShrinePhoto(name) || undefined; } catch(e){ url = undefined; }
+        }
+        if (url) { paintSpotPhoto(box, url); rememberSpotPhoto(name, url); return; }
+        if (url === '') return;                          // 写真なしと確定済み
+        if (box.getAttribute('data-photoloading')) return;
+        if (typeof google === 'undefined' || !google.maps || !google.maps.places) return;
+
+        box.setAttribute('data-photoloading', '1');
+        if (!svc) svc = new google.maps.places.PlacesService(document.createElement('div'));
+        svc.findPlaceFromQuery({ query: name, fields: ['photos'] }, function(res, st){
+          box.removeAttribute('data-photoloading');
+          if (st === google.maps.places.PlacesServiceStatus.OK
+              && res && res[0] && res[0].photos && res[0].photos.length) {
+            var u = res[0].photos[0].getUrl({ maxWidth: 500 });
+            rememberSpotPhoto(name, u);
+            paintSpotPhoto(box, u);
+          } else {
+            rememberSpotPhoto(name, '');                 // 次から問い合わせない
+          }
+        });
+      });
+    } catch(e){}
   }
 
   function renderAddedList(){
@@ -682,7 +800,10 @@
     };
     // ドラッグで並び替え（ハンドル ≡ を押したまま上下）
     setupDrag();
+    // 写真が無いスポットは後から埋める
+    fillSpotPhotos();
   }
+  window.wabiFillSpotPhotos = fillSpotPhotos;   // 別スコープの定期実行から呼ぶ
 
   function setupDrag(){
     var list = document.getElementById('wcbList');
@@ -742,7 +863,7 @@
   function buildTimeline(){
     ensureItems();
     return state.items.map(function(it){
-      if (it.type==='shrine') return {name:it.spot.name, photo:it.spot.photo, meta:'約'+STAY.shrine+'分滞在', ic:'⛩', grad:G.sight};
+      if (it.type==='shrine') return {name:it.spot.name, sname:it.spot.name, photo:it.spot.photo, meta:'約'+STAY.shrine+'分滞在', ic:'⛩', grad:G.sight};
       var a = it.a;
       return {name:a.item.name,
         meta:(a.cat==='hotel' ? '宿泊・1泊' : (CAT_LABEL[a.cat]||'')+'・約'+(STAY[a.cat]||40)+'分'),
@@ -766,7 +887,7 @@
     h += '<div class="wc-tl">';
     tl.forEach(function(t,i){
       h += '<div class="wc-tl-i"><div class="wc-tl-n">'+(i+1)+'</div>'
-        + '<div class="wc-tl-th" style="background:'+t.grad+'">'+(t.photo?'<img src="'+esc(t.photo)+'" loading="lazy">':t.ic)+'</div>'
+        + '<div class="wc-tl-th"'+(t.sname?' data-shrinename="'+esc(t.sname)+'"':'')+' style="background:'+t.grad+'">'+(t.photo?'<img src="'+esc(t.photo)+'" loading="lazy">':t.ic)+'</div>'
         + '<div><div class="wc-tl-nm">'+t.name+'</div><div class="wc-tl-mt">'+t.meta+'</div></div></div>';
       if (i<tl.length-1) h += '<div class="wc-tl-mv">'+(r.transport==='徒歩'?'徒歩':'移動')+' 約10分</div>';
     });
@@ -859,7 +980,7 @@
   // 5.5 スポット詳細ページ（カード画像タップで開く）
   // ─────────────────────────────────────────
   var spotPg = document.createElement('div'); spotPg.id='wcSpot';
-  spotPg.innerHTML = '<div class="wc-sd-inner" id="wcSpotBody"></div><div class="wc-cta-wrap" style="z-index:266"><button class="wc-cta" id="wcSpotCta">このスポットを追加してルートを更新 →</button></div>';
+  spotPg.innerHTML = '<div class="wc-sd-inner" id="wcSpotBody"></div><div class="wc-cta-wrap"><button class="wc-cta" id="wcSpotCta">このスポットを追加してルートを更新 →</button></div>';
   document.body.appendChild(spotPg);
   var lb = document.createElement('div'); lb.id='wcLb'; lb.innerHTML='<img>';
   lb.onclick = function(){ lb.style.display='none'; };
@@ -923,7 +1044,7 @@
     if (state.route && state.route.spots) {
       h += '<div class="wc-sd-card"><div class="wc-sd-h">⛩ この近くの神社</div><div class="wc-sd-g">'
         + state.route.spots.map(function(s){
-            return '<div class="wc-mini"><div class="wc-mini-img" style="background:'+G.sight+'">'+(s.photo?'<img src="'+esc(s.photo)+'" loading="lazy">':'⛩')+'</div>'
+            return '<div class="wc-mini"><div class="wc-mini-img" data-shrinename="'+esc(s.name)+'" style="background:'+G.sight+'">'+(s.photo?'<img src="'+esc(s.photo)+'" loading="lazy">':'⛩')+'</div>'
               + '<div class="wc-mini-b"><div class="wc-mini-n">'+s.name+'</div><div class="wc-mini-m">巡拝ルート内</div></div></div>';
           }).join('')
         + '</div></div>';
@@ -1218,6 +1339,8 @@
     }catch(e){}
   }
   WABI_TICK(upgradeRankingPhotos, 1200);
+  WABI_TICK(function(){ if (window.wabiSyncInlineCta) window.wabiSyncInlineCta(); }, 400);
+  WABI_TICK(function(){ if (window.wabiFillSpotPhotos) window.wabiFillSpotPhotos(); }, 1500);
 
   // ─────────────────────────────────────────
   // 10. トップ「テーマで巡るベスト10」「季節の行事・ライトアップ」をJSONから表示
@@ -4849,6 +4972,9 @@
     '.wlp-h{font-size:19px;font-weight:700;letter-spacing:.04em;}',
     '.wlp-cnt{font-size:30px;font-weight:800;color:#5D3A7A;margin:2px 0 18px;}',
     '.wlp-cnt small{font-size:14px;font-weight:700;margin-left:3px;color:#6F6F6F;}',
+    '.wlp-addg{display:block;width:100%;margin-top:18px;padding:13px 0;border:2px dashed #C8A04D;'
+      +'border-radius:16px;background:#fff;color:#7a4a10;font-size:13.5px;font-weight:700;'
+      +'font-family:inherit;cursor:pointer;}',
     // 検索欄
     '.wlp-search{position:relative;margin-bottom:18px;}',
     ".wlp-search input{width:100%;box-sizing:border-box;height:44px;padding:0 40px 0 14px;border:1px solid #E7E1D6;",
@@ -5028,8 +5154,13 @@
             + '<div class="nm">' + esc(g.shrine) + '</div>'
             + (g.date ? '<div class="dt">' + esc(g.date) + '</div>' : '') + '</div>';
         }).join('') + '</div>'
-      : empty('📕', 'まだ御朱印が登録されていません。<br>神社詳細の「タップして御朱印を登録」から<br>追加できます。');
+      : empty('📕', 'まだ御朱印が登録されていません。<br>下の「＋ 御朱印を登録」から<br>追加できます。');
+    h += '<button class="wlp-addg" id="wlpAddG">＋ 御朱印を登録</button>'
+      + '<div style="text-align:center;font-size:10.5px;color:#b8b2a6;margin-top:8px">'
+      + 'ここに登録した御朱印は、あなたのこの端末にだけ残ります。サイトには公開されません。</div>';
     show('御朱印帳', '📖', h);
+    var addG = document.getElementById('wlpAddG');
+    if (addG) addG.onclick = function(){ recordGoshuin(''); };
     pg.querySelectorAll('[data-g]').forEach(function(el){
       el.onclick = function(){
         var g = list[+el.getAttribute('data-g')];
@@ -5411,10 +5542,13 @@
   // ── 御朱印の登録 ──────────────────────────────────────────
   function recordGoshuin(shrineName){
     var name = shrineName || (window.currentSdShrine && currentSdShrine.name) || '';
-    if (!name) { if (typeof showToast === 'function') showToast('神社情報を取得できませんでした'); return; }
+    var askName = !name;          // 神社名が分からないときは入力してもらう
     var state = { img: '' };
 
-    open('<div class="wrc-ttl">御朱印を登録する</div><div class="wrc-sub">' + esc(name) + '</div>'
+    open('<div class="wrc-ttl">御朱印を登録する</div>'
+      + (askName
+          ? '<div class="wrc-lb">神社・お寺の名前</div><input type="text" id="wrcGName" placeholder="例：伊勢神宮（内宮）">'
+          : '<div class="wrc-sub">' + esc(name) + '</div>')
       + '<div class="wrc-lb">御朱印の写真</div><div class="wrc-photos" id="wrcGP">'
       +   '<div class="wrc-add" id="wrcGAdd" style="width:120px;height:150px"><span>📷</span>写真を選ぶ</div></div>'
       + '<div class="wrc-lb">拝受日</div><input type="date" id="wrcGDate">'
@@ -5440,6 +5574,10 @@
     paint();
 
     document.getElementById('wrcGSave').onclick = function(){
+      if (askName) {
+        name = ((document.getElementById('wrcGName') || {}).value || '').trim();
+        if (!name) { if (typeof showToast === 'function') showToast('神社・お寺の名前を入れてください'); return; }
+      }
       if (!state.img) { if (typeof showToast === 'function') showToast('御朱印の写真を選んでください'); return; }
       var dv = (document.getElementById('wrcGDate') || {}).value || '';
       var list = load(K_G);
@@ -5500,12 +5638,10 @@
       f.__wrc = true;
       window.sdVisited = f;
     }
-    // 御朱印の登録（index.html 側の showGoshuinForm を差し替え）
-    if (typeof window.showGoshuinForm === 'function' && !window.showGoshuinForm.__wrc){
-      var g = function(name){ recordGoshuin(name); };
-      g.__wrc = true;
-      window.showGoshuinForm = g;
-    }
+    // ★御朱印の「募集中」カードには、もう登録フォームを付けない★
+    //   サイトに出る御朱印画像は管理者だけが登録する（admin/goshuin.html）。
+    //   利用者が自分の御朱印帳に記録する入口は、マイページの御朱印帳に置いた。
+    //   （以前はここで window.showGoshuinForm を差し替えていた）
     // コミュニティの「参拝を投稿する」
     if (typeof window.openCommunityPost === 'function' && !window.openCommunityPost.__wrc){
       var p = function(){ recordVisit(window.currentSdShrine || null); };

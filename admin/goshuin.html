@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>わびなび 管理｜御朱印画像の登録</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F8F5EF;font-family:'Noto Serif JP',serif;color:#2a2018}
+.wrap{max-width:680px;margin:0 auto;padding:20px 16px 90px}
+h1{font-size:18px;margin:0 0 4px}
+.sub{font-size:12px;color:#a89a80;margin-bottom:16px;line-height:1.7}
+a.back{color:#a83320;text-decoration:none;font-size:13px}
+.card{background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 3px 12px -6px rgba(90,70,40,.2)}
+label{font-size:11px;color:#a89a80;display:block;margin-bottom:4px}
+input[type=text],input[type=password]{width:100%;border:1.5px solid #e5ddca;border-radius:10px;padding:10px;font-size:14px;box-sizing:border-box;font-family:inherit}
+input:focus{outline:none;border-color:#7a5aa8}
+.field{margin-bottom:14px}
+.drop{border:2px dashed #c9a84c;border-radius:14px;padding:22px 14px;text-align:center;color:#7a4a10;font-size:13px;cursor:pointer;background:#fffdf7}
+.drop.on{background:#fff6e0}
+.prev{margin-top:12px;display:none}
+.prev img{max-width:100%;max-height:300px;border-radius:10px;border:1px solid #e8d5a3;display:block;margin:0 auto;background:#fff}
+.meta{font-size:11px;color:#a89a80;text-align:center;margin-top:6px}
+.btn{width:100%;padding:14px 0;border-radius:14px;border:none;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn.go{background:linear-gradient(135deg,#7a5aa8,#5a4470);color:#fff}
+.btn.go:disabled{background:#ded8cc;color:#fff;cursor:not-allowed}
+.btn.sub2{background:#fff;border:1.5px solid #c9a84c;color:#7a4a10;margin-top:10px}
+.status{font-size:12px;margin-top:10px;line-height:1.8}
+.status.ok{color:#2e7d4f}
+.status.ng{color:#a83320}
+.exists{background:#fff6e0;border:1px solid #e8d5a3;border-radius:12px;padding:12px 14px;font-size:12px;color:#7a4a10;line-height:1.8;margin-top:12px;display:none}
+.exists img{max-width:120px;border-radius:8px;display:block;margin-top:8px;background:#fff}
+.note{font-size:11px;color:#a89a80;line-height:1.9;background:#fff;border-radius:12px;padding:14px;margin-top:12px}
+.ghbox{background:#fff;border-radius:12px;padding:12px 14px;margin-top:14px;font-size:11px;color:#6b5d48}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#2a2018;color:#fff;padding:10px 22px;border-radius:20px;font-size:13px;opacity:0;transition:.3s;pointer-events:none;z-index:9;max-width:86%;text-align:center}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="dashboard.html">‹ ダッシュボードに戻る</a>
+  <h1>御朱印画像の登録</h1>
+  <div class="sub">
+    ここで登録した画像が、サイトの「御朱印の写真を募集中」の場所に表示されます。<br>
+    登録できるのは管理者だけです。一般の利用者は登録できません。
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label for="shrine">神社・お寺の名前（サイトに出ている名前と同じにしてください）</label>
+      <input type="text" id="shrine" placeholder="例：伊勢神宮（内宮）">
+    </div>
+
+    <div class="exists" id="exists"></div>
+
+    <div class="field">
+      <label>御朱印の画像</label>
+      <div class="drop" id="drop">
+        タップして画像を選ぶ<br>
+        <span style="font-size:11px;color:#a89a80">（PNG / JPEG・8MBまで）</span>
+      </div>
+      <input type="file" id="file" accept="image/png,image/jpeg" style="display:none">
+      <div class="prev" id="prev"><img id="prevImg" alt=""><div class="meta" id="prevMeta"></div></div>
+    </div>
+
+    <button class="btn go" id="go" disabled>この画像をサイトに登録する</button>
+    <button class="btn sub2" id="del">この神社の御朱印画像を取り下げる</button>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="ghbox">
+    <b>🔑 GitHubの接続キー（初回のみ）</b><br>
+    画像をサイトへ直接アップするために必要です。テーマ編集画面と同じキーを使います。
+    <input type="password" id="ghToken" placeholder="github_pat_ で始まるキーを貼り付け" style="margin-top:6px">
+    <div style="margin-top:8px"><button class="btn sub2" style="width:auto;padding:8px 16px;margin-top:0" id="ghSave">キーを保存</button> <span id="ghState"></span></div>
+  </div>
+
+  <div class="note">
+    <b>登録のしかた</b><br>
+    ① 神社・お寺の名前を入れる<br>
+    ② 画像を選ぶ<br>
+    ③「この画像をサイトに登録する」を押す<br>
+    <br>
+    画像はリポジトリの一番上の階層に「神社名.png（または .jpg）」という名前で保存されます。
+    サイト側はこの名前で画像を探しているので、名前が1文字でも違うと表示されません。<br>
+    反映まで数分かかります（GitHub Pagesの更新待ちです）。
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="../assets/js/store.js"></script>
+<script>
+if (typeof WabiStore !== 'undefined' && WabiStore.requireAuth) WabiStore.requireAuth();
+
+var REPO = 'marunavi/wabinavi';
+var state = { b64: null, ext: 'png', mime: 'image/png', size: 0 };
+
+function $(i){ return document.getElementById(i); }
+function toast(m){ var t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(function(){ t.classList.remove('show'); }, 2800); }
+function setStatus(msg, cls){ var e=$('status'); e.textContent=msg; e.className='status' + (cls ? ' '+cls : ''); }
+
+/* ── GitHubの接続キー ───────────────────────────────── */
+$('ghToken').value = localStorage.getItem('wabi_gh_token') || '';
+function ghState(){ $('ghState').textContent = localStorage.getItem('wabi_gh_token') ? '✓ 設定済み' : '未設定'; }
+ghState();
+$('ghSave').onclick = function(){
+  localStorage.setItem('wabi_gh_token', $('ghToken').value.trim());
+  ghState(); toast('キーを保存しました');
+};
+
+/* ── 神社名から、サイトが探しにいくファイル名を作る ──────────
+   index.html の gCandidates() と同じ考え方。
+   拡張子だけ差し替えられるよう、拡張子なしの「基本の名前」を返す。   */
+function baseFileName(name){
+  var n = String(name || '').trim();
+  try { n = n.normalize('NFC'); } catch(e){}
+  return n;
+}
+
+/* すでに画像が登録されているかを調べる（画像を1枚ずつ読んでみる） */
+var checkSeq = 0;
+function checkExisting(){
+  var seq = ++checkSeq;
+  var box = $('exists');
+  var name = baseFileName($('shrine').value);
+  box.style.display = 'none';
+  if (!name) return;
+  var exts = ['png','PNG','jpg','JPG','jpeg','JPEG'];
+  var i = 0;
+  (function next(){
+    if (seq !== checkSeq) return;               // 入力が変わったら中止
+    if (i >= exts.length) {
+      box.style.display = 'block';
+      box.innerHTML = '🈳 この名前ではまだ御朱印画像が登録されていません。新規に登録できます。';
+      return;
+    }
+    var url = '../' + encodeURIComponent(name) + '.' + exts[i++] + '?t=' + Date.now();
+    var im = new Image();
+    im.onload = function(){
+      if (seq !== checkSeq) return;
+      box.style.display = 'block';
+      box.innerHTML = '⚠️ この神社にはすでに画像が登録されています。登録すると<b>上書き</b>されます。'
+        + '<img src="' + url + '" alt="">';
+    };
+    im.onerror = next;
+    im.src = url;
+  })();
+}
+$('shrine').addEventListener('input', function(){ checkExisting(); validate(); });
+
+/* URLの ?shrine= を初期値にする（サイト側から飛んできたとき） */
+(function(){
+  var m = location.search.match(/[?&]shrine=([^&]*)/);
+  if (m) { $('shrine').value = decodeURIComponent(m[1]); checkExisting(); }
+})();
+
+/* ── 画像を選ぶ ─────────────────────────────────────── */
+$('drop').onclick = function(){ $('file').click(); };
+$('file').onchange = function(){
+  var f = this.files && this.files[0];
+  if (!f) return;
+  if (f.size > 8 * 1024 * 1024) { toast('8MBより大きい画像は登録できません'); return; }
+  state.mime = f.type || 'image/png';
+  state.ext = /png/i.test(state.mime) ? 'png' : 'jpg';
+  state.size = f.size;
+  var r = new FileReader();
+  r.onload = function(){
+    var s = String(r.result);
+    state.b64 = s.slice(s.indexOf(',') + 1);     // data:...;base64, の後ろ
+    $('prevImg').src = s;
+    $('prevMeta').textContent = f.name + '（' + Math.round(f.size / 1024) + ' KB）';
+    $('prev').style.display = 'block';
+    validate();
+  };
+  r.readAsDataURL(f);
+};
+
+function validate(){
+  $('go').disabled = !(baseFileName($('shrine').value) && state.b64);
+}
+
+/* ── GitHubへアップロード ───────────────────────────── */
+function ghPut(path, contentB64, message, cb){
+  var token = (localStorage.getItem('wabi_gh_token') || '').trim();
+  if (!token) { setStatus('GitHubの接続キーが未設定です。下の欄にキーを入れて保存してください。', 'ng'); return; }
+  var api = 'https://api.github.com/repos/' + REPO + '/contents/' + path.split('/').map(encodeURIComponent).join('/');
+  var hd = { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json' };
+  fetch(api, { headers: hd })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(cur){
+      var payload = { message: message, content: contentB64 };
+      if (cur && cur.sha) payload.sha = cur.sha;
+      return fetch(api, { method: 'PUT', headers: hd, body: JSON.stringify(payload) });
+    })
+    .then(function(r){ cb(r && r.ok, r); })
+    .catch(function(){ cb(false); });
+}
+
+$('go').onclick = function(){
+  var name = baseFileName($('shrine').value);
+  if (!name || !state.b64) return;
+  var path = name + '.' + state.ext;
+  $('go').disabled = true;
+  setStatus('登録中…');
+  ghPut(path, state.b64, 'Add goshuin image: ' + path + ' (from admin)', function(ok){
+    $('go').disabled = false;
+    if (ok) {
+      setStatus('🌿 登録しました。数分でサイトに反映されます（' + path + '）', 'ok');
+      toast('登録しました');
+      setTimeout(checkExisting, 1200);
+    } else {
+      setStatus('登録に失敗しました。キーの権限（Contents: Read and write）をご確認ください。', 'ng');
+    }
+  });
+};
+
+/* ── 取り下げ（ファイルを削除する） ───────────────────── */
+$('del').onclick = function(){
+  var name = baseFileName($('shrine').value);
+  if (!name) { toast('神社名を入れてください'); return; }
+  if (!confirm('「' + name + '」の御朱印画像をサイトから取り下げますか？')) return;
+  var token = (localStorage.getItem('wabi_gh_token') || '').trim();
+  if (!token) { setStatus('GitHubの接続キーが未設定です。', 'ng'); return; }
+  var hd = { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json' };
+  var exts = ['png','PNG','jpg','JPG','jpeg','JPEG'];
+  var removed = 0, i = 0;
+  setStatus('取り下げ中…');
+  (function next(){
+    if (i >= exts.length) {
+      setStatus(removed ? ('取り下げました（' + removed + '件）。数分でサイトに反映されます。' ) : '該当する画像が見つかりませんでした。', removed ? 'ok' : 'ng');
+      setTimeout(checkExisting, 1200);
+      return;
+    }
+    var path = name + '.' + exts[i++];
+    var api = 'https://api.github.com/repos/' + REPO + '/contents/' + encodeURIComponent(path);
+    fetch(api, { headers: hd }).then(function(r){ return r.ok ? r.json() : null; }).then(function(cur){
+      if (!cur || !cur.sha) { next(); return; }
+      fetch(api, { method:'DELETE', headers: hd,
+        body: JSON.stringify({ message:'Remove goshuin image: ' + path + ' (from admin)', sha: cur.sha }) })
+        .then(function(r){ if (r && r.ok) removed++; next(); })
+        .catch(next);
+    }).catch(next);
+  })();
+};
+</script>
+</body>
+</html>

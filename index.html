@@ -949,7 +949,18 @@ html,body{margin:0;padding:0;background:var(--washi)}
 .ai-list-hd{padding:1.5rem 1.25rem .5rem;text-align:center}
 .ai-list-tit{font-family:'Shippori Mincho',serif;font-size:18px;font-weight:800;color:#5d3a7a;letter-spacing:.06em;line-height:1.5}
 .ai-list-sub{font-size:11px;color:#999;margin-top:.3rem;font-family:'Noto Serif JP',serif}
-.ai-list-cards{padding:.75rem 1rem 6rem;overflow-x:hidden;box-sizing:border-box}
+.ai-list-cards{padding:.75rem 1rem 1rem;overflow-x:hidden;box-sizing:border-box}
+/* ★おすすめルート一覧が「入れ子のスクロール枠」になってしまう問題の対処★
+   .ai-list-cards は overflow-x:hidden を持つ。CSSの仕様では片方の軸を hidden に
+   すると、もう片方（縦）は auto として扱われるため、この要素自身が
+   スクロール枠になっていた。すると flex の子として際限なく縮められ、
+   ・外側のページがまったくスクロールしない
+   ・中身（約17,800px）が高さ637pxの窓に閉じ込められる
+   ・下にぽっかり大きな余白が残る
+   という状態になっていた。縮みを止めれば、外側のページが普通にスクロールする。 */
+#pgAiRouteList > *{flex-shrink:0}
+/* 下部固定ボタン＋下部メニューに隠れないための余白 */
+.ai-list-retry{margin-bottom:calc(var(--wabi-nav-h,60px) + 84px)}
 .ai-rcard{background:#fff;border-radius:16px;box-shadow:0 4px 16px rgba(0,0,0,.06);margin-bottom:1.25rem;overflow:hidden;transition:all .3s ease;max-width:100%;box-sizing:border-box}
 /* ── ヒーロー画像（全面・大型） ── */
 .ai-rcard-hero{position:relative;width:100%;height:340px;overflow:hidden;background:#2D2A28}
@@ -3135,6 +3146,7 @@ function buildRoutesViaPlaces(query, selTime, selTrans, budget) {
         };
         if (origin.photos && origin.photos.length) {
           photoCache[origin.name] = origin.photos.slice(0,6).map(function(p){ return p.getUrl({maxWidth:800,maxHeight:600}); });
+          base.photo = origin.photos[0].getUrl({maxWidth:500});   // ルート一覧のサムネイル用
         }
         // ② 周辺の神社仏閣を Nearby Search
         placesService.nearbySearch({
@@ -3149,11 +3161,13 @@ function buildRoutesViaPlaces(query, selTime, selTrans, budget) {
               if (!loc) return;
               if (!isShrineOrTemple(p.name)) return;  // 神社仏閣判定
               var c = { lat: loc.lat(), lng: loc.lng() };
+              var cPhoto = null;
               if (p.photos && p.photos.length) {
                 photoCache[p.name] = p.photos.slice(0,6).map(function(ph){ return ph.getUrl({maxWidth:800,maxHeight:600}); });
+                cPhoto = p.photos[0].getUrl({maxWidth:500});      // ルート一覧のサムネイル用
               }
               candidates.push({
-                shrine: { name: p.name, addr: p.vicinity || '', tags: [], type: 'shrine', rating: p.rating || 0, rev: p.user_ratings_total || 0 },
+                shrine: { name: p.name, addr: p.vicinity || '', tags: [], type: 'shrine', rating: p.rating || 0, rev: p.user_ratings_total || 0, photo: cPhoto },
                 coord: c, dist: shrineDistKm(baseCoord, c), known: false
               });
             });
@@ -3296,7 +3310,8 @@ function buildDynamicRoutes(base, baseCoord, candidates, selTime, selTrans, budg
   function buildOrderedSpots(pool) {
     var spots = [{
       name: base.name, loc: shortLoc(base.addr), move: '出発地点',
-      benefit: getBenefit(base), lat: baseCoord.lat, lng: baseCoord.lng
+      benefit: getBenefit(base), lat: baseCoord.lat, lng: baseCoord.lng,
+      photo: base.photo || (typeof findShrinePhoto==='function' ? findShrinePhoto(base.name) : null)
     }];
     var usedTime = visitMin;
     var remaining = pool.slice();
@@ -3314,7 +3329,8 @@ function buildDynamicRoutes(base, baseCoord, candidates, selTime, selTrans, budg
       spots.push({
         name: next.shrine.name, loc: shortLoc(next.shrine.addr),
         move: moveLbl(bestD), benefit: getBenefit(next.shrine),
-        lat: next.coord.lat, lng: next.coord.lng
+        lat: next.coord.lat, lng: next.coord.lng,
+        photo: next.shrine.photo || (typeof findShrinePhoto==='function' ? findShrinePhoto(next.shrine.name) : null)
       });
       cur = next.coord;
     }
@@ -3324,7 +3340,8 @@ function buildDynamicRoutes(base, baseCoord, candidates, selTime, selTrans, budg
   function buildOrderedSpotsWeighted(weighted) {
     var spots = [{
       name: base.name, loc: shortLoc(base.addr), move: '出発地点',
-      benefit: getBenefit(base), lat: baseCoord.lat, lng: baseCoord.lng
+      benefit: getBenefit(base), lat: baseCoord.lat, lng: baseCoord.lng,
+      photo: base.photo || (typeof findShrinePhoto==='function' ? findShrinePhoto(base.name) : null)
     }];
     var usedTime = visitMin;
     var remaining = weighted.slice();
@@ -3345,7 +3362,8 @@ function buildDynamicRoutes(base, baseCoord, candidates, selTime, selTrans, budg
       spots.push({
         name: next.shrine.name, loc: shortLoc(next.shrine.addr),
         move: moveLbl(bestRealKm), benefit: getBenefit(next.shrine),
-        lat: next.coord.lat, lng: next.coord.lng
+        lat: next.coord.lat, lng: next.coord.lng,
+        photo: next.shrine.photo || (typeof findShrinePhoto==='function' ? findShrinePhoto(next.shrine.name) : null)
       });
       cur = next.coord;
     }
@@ -4576,11 +4594,23 @@ const PLACEHOLDER_IMG = 'https://placehold.jp/24/333333/ffffff/400x400.png?text=
 
 function goshuinPH(name){
   var n = String(name).replace(/'/g, "\\'");
-  return '<div style="position:relative;cursor:pointer" onclick="showGoshuinForm(\'' + n + '\')">'
+  // ★御朱印画像の登録は管理者だけ★
+  //   一般の利用者がタップしても何も起きないようにする（でたらめな画像の登録を防ぐ）。
+  //   管理者のときだけ、管理画面の御朱印登録ページへ移動する。
+  var admin = (typeof isAdmin === 'function') && isAdmin();
+  return '<div style="position:relative' + (admin ? ';cursor:pointer' : '') + '"'
+    + (admin ? ' onclick="openGoshuinAdmin(\'' + n + '\')"' : '') + '>'
     + '<img src="' + PLACEHOLDER_IMG + '" loading="lazy" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:8px;border:1px solid #e8d5a3;display:block;opacity:.85">'
     + '<div style="position:absolute;bottom:8px;left:0;right:0;text-align:center">'
-    + '<span style="background:var(--red);color:#fff;font-size:10px;padding:3px 12px;border-radius:20px;font-family:\'Shippori Mincho\',serif">📸 タップして御朱印を登録</span>'
+    + '<span style="background:var(--red);color:#fff;font-size:10px;padding:3px 12px;border-radius:20px;font-family:\'Shippori Mincho\',serif">'
+    + (admin ? '🔧 管理者：御朱印を登録' : '御朱印の写真を募集中') + '</span>'
     + '</div></div>';
+}
+
+// 管理者だけ：管理画面の御朱印登録ページを開く
+function openGoshuinAdmin(name){
+  if (!(typeof isAdmin === 'function' && isAdmin())) return;
+  location.href = 'admin/goshuin.html?shrine=' + encodeURIComponent(name);
 }
 
 function goshuinBlock(s){
@@ -4610,6 +4640,8 @@ function goshuinBlock(s){
 
 // ── 御朱印投稿フォーム ────────────────────────────────────
 function showGoshuinForm(shrineName) {
+  // ★管理者以外には出さない（別の場所から呼ばれても開かないようにする保険）★
+  if (!(typeof isAdmin === 'function' && isAdmin())) return;
   document.getElementById('goshuinFormShrine').textContent = shrineName;
   document.getElementById('goshuinModal').style.display = 'flex';
 }

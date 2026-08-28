@@ -30,17 +30,40 @@
   if (WabiStore.isAuthed()) location.href = 'dashboard.html';
   var pw = document.getElementById('pw');
   var err = document.getElementById('err');
+  var btn = null;
+
+  // パスワードが未設定なら、初回セットアップへ案内する
+  WabiStore.needsSetup().then(function (yes) {
+    if (yes) {
+      err.style.color = '#7a4a10';
+      err.innerHTML = 'パスワードがまだ設定されていません。<br>'
+        + '<a href="password.html" style="color:#a83320">初回設定に進む</a>';
+    }
+  });
   document.getElementById('pwEye').addEventListener('click', function () {
     if (pw.type === 'password') { pw.type = 'text'; this.textContent = '🙈'; this.style.opacity = '1'; }
     else { pw.type = 'password'; this.textContent = '👁'; this.style.opacity = '.65'; }
   });
   function tryLogin() {
-    if (WabiStore.login(pw.value)) {
-      location.href = 'dashboard.html';
-    } else {
+    if (!btn) btn = document.getElementById('loginBtn');
+    var original = btn.textContent;
+    btn.disabled = true; btn.textContent = '確認中…';   // ハッシュ計算に1〜2秒かかる
+    err.style.color = '';
+    WabiStore.login(pw.value).then(function (result) {
+      btn.disabled = false; btn.textContent = original;
+      if (result === true) { location.href = 'dashboard.html'; return; }
+      if (result === 'unset') {
+        err.style.color = '#7a4a10';
+        err.innerHTML = 'パスワードがまだ設定されていません。<br>'
+          + '<a href="password.html" style="color:#a83320">初回設定に進む</a>';
+        return;
+      }
       err.textContent = 'パスワードが違います';
       pw.value = '';
-    }
+    }).catch(function () {
+      btn.disabled = false; btn.textContent = original;
+      err.textContent = '確認に失敗しました。通信状況をご確認ください';
+    });
   }
   document.getElementById('loginBtn').addEventListener('click', tryLogin);
   pw.addEventListener('keydown', function (e) { if (e.key === 'Enter') tryLogin(); });

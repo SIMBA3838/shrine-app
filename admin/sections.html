@@ -55,7 +55,16 @@ a.back{color:#a83320;text-decoration:none;font-size:13px}
     <b>🔑 直接投稿の設定（初回のみ）</b><br>
     GitHubの接続キー（Personal Access Token）を入れると、「投稿」ボタンだけでサイトに公開できます。未設定のときは、編集後にClaudeへ「テーマを公開して」と頼んでください。
     <input type="password" id="ghToken" placeholder="github_pat_ で始まるキーを貼り付け">
-    <div style="margin-top:6px"><button class="draft" id="ghSave">キーを保存</button> <span id="ghState"></span></div>
+    <div style="margin-top:6px">
+      <button class="draft" id="ghSave">キーを保存</button>
+      <button class="del" id="ghDel">キーを削除</button>
+      <span id="ghState"></span>
+    </div>
+    <div style="margin-top:9px;font-size:11px;color:#a89a80;line-height:1.9">
+      キーはこの端末のブラウザにだけ保存されます。<b>共用の端末では、使い終わったら「キーを削除」を押してください。</b><br>
+      キーは <b>Fine-grained token</b>／対象は <b>marunavi/wabinavi だけ</b>／権限は
+      <b>Contents: Read and write だけ</b>／<b>有効期限90日</b> をおすすめします。
+    </div>
   </div>
   <div class="note">
     <b>説明文の書き方：</b>自由に文章を書けます。行に画像のURL（https://〜.jpg など）だけを貼ると、公開ページでその場所に画像として表示されます。<br>
@@ -122,6 +131,9 @@ $('ghToken').value=localStorage.getItem('wabi_gh_token')||'';
 function ghState(){$('ghState').textContent=localStorage.getItem('wabi_gh_token')?'✓ 設定済み（投稿ボタンで直接公開できます）':'未設定';}
 ghState();
 $('ghSave').onclick=function(){localStorage.setItem('wabi_gh_token',$('ghToken').value.trim());ghState();toast('キーを保存しました');};
+$('ghDel').onclick=function(){
+  if(!confirm('この端末に保存したGitHubの接続キーを削除しますか？\n（サイトの内容は消えません。次に公開するときに入れ直しが必要になります）'))return;
+  localStorage.removeItem('wabi_gh_token');$('ghToken').value='';ghState();toast('キーを削除しました');};
 function publish(){
   var token=(localStorage.getItem('wabi_gh_token')||'').trim();
   var pubItems=(DATA[KEY]||[]).filter(function(t){return t.status==='published';});

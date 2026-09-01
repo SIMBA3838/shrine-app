@@ -1018,3 +1018,141 @@
   setInterval(function(){ try { bind(); } catch(e){} }, 250);
   bind();
 })();
+
+/* ══════════════════════════════════════════════════════════════
+   所要時間の見積もりを実際に近づける
+   （2026-09-01）
+
+   ★何が起きていたか★
+   「7時間」を選んだのに、Googleマップで開くと移動だけで9時間になる。
+   見積もりの計算に2つの甘さがあった。
+
+   ① 距離を**直線距離**で測っていた
+      実際の道のりは直線の 1.2〜1.4倍ある。山あいならもっと。
+   ② 速度が現実離れしていた
+      電車を時速25kmの一定としていたが、実際は
+      駅までの徒歩・待ち時間・乗り換えが乗る。地方路線ならなおさら。
+
+   その結果、入りきらない数の寺社を「7時間で回れます」と出していた。
+
+   ★直し方★
+   ・道のり ＝ 直線距離 × 交通手段ごとの係数
+   ・速度は距離帯で変える（近距離は遅く、長距離は速く）
+   ・乗降や駐車の手間を1区間ごとに足す
+   ・そのうえで**選んだ時間に収まるところまでスポットを削る**
+   ・画面に出す時間も、計算し直した値に差し替える
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiTimeFix) return;
+  window.__wabiTimeFix = true;
+
+  // 交通手段ごとの現実的な見積もり
+  //   detour : 直線距離を道のりに直す係数
+  //   speed  : 道のり(km) → 時速(km/h)
+  //   over   : 1区間ごとの手間（分）。駐車、駅までの徒歩、待ち、乗り換え
+  //   min    : 1区間の最低所要（分）
+  var MODE = {
+    '徒歩': { detour:1.25, speed:function(){ return 4.5; },                 over:0,  min:3 },
+    '車':   { detour:1.35, speed:function(km){ return km<5?22:km<20?32:km<50?45:55; }, over:6,  min:5 },
+    'バス': { detour:1.35, speed:function(km){ return km<10?13:18; },        over:15, min:10 },
+    '電車': { detour:1.25, speed:function(km){ return km<10?14:km<40?20:28; }, over:20, min:12 }
+  };
+  function modeOf(t){ return MODE[t] || MODE['電車']; }
+
+  function legMin(km, transport){
+    var m = modeOf(transport);
+    var road = km * m.detour;
+    var mins = road / m.speed(road) * 60 + m.over;
+    return Math.max(m.min, mins);
+  }
+  window.wabiLegMin = legMin;
+
+  function dist(a, b){
+    if (typeof shrineDistKm === 'function') return shrineDistKm(a, b);
+    return 0;
+  }
+  function hm(min){
+    var t = Math.round(min);
+    var h = Math.floor(t/60), m = Math.round((t%60)/5)*5;
+    if (m === 60){ h++; m = 0; }
+    if (h && m) return '約' + h + '時間' + m + '分';
+    if (h)      return '約' + h + '時間';
+    return '約' + Math.max(5, m) + '分';
+  }
+  function legLabel(min){
+    var m = Math.round(min);
+    if (m >= 60){ var h = Math.floor(m/60), mm = Math.round((m%60)/5)*5;
+                  return mm ? ('約'+h+'時間'+mm+'分') : ('約'+h+'時間'); }
+    return '約' + (m < 20 ? m : Math.round(m/5)*5) + '分';
+  }
+
+  // ルート1本を、選んだ時間に収まるように整え直す
+  function retime(r, budgetMin, visitMin, transport){
+    if (!r || !r.spots || r.spots.length < 2) return r;
+    var spots = r.spots, keep = [spots[0]], used = visitMin, i, d, leg;
+    for (i = 1; i < spots.length; i++){
+      var a = keep[keep.length-1], b = spots[i];
+      if (typeof a.lat !== 'number' || typeof b.lat !== 'number'){ keep.push(b); continue; }
+      d = dist({lat:a.lat,lng:a.lng}, {lat:b.lat,lng:b.lng});
+      leg = legMin(d, transport);
+      // 2社目までは必ず入れる（1社だけの「ルート」にはしない）
+      if (keep.length >= 2 && used + leg + visitMin > budgetMin) break;
+      used += leg + visitMin;
+      b.move = legLabel(leg);
+      keep.push(b);
+    }
+    r.spots = keep;
+
+    // 表示する時間を計算し直す
+    var moveMin = 0;
+    for (i = 1; i < keep.length; i++){
+      var p = keep[i-1], q = keep[i];
+      if (typeof p.lat !== 'number' || typeof q.lat !== 'number') continue;
+      moveMin += legMin(dist({lat:p.lat,lng:p.lng}, {lat:q.lat,lng:q.lng}), transport);
+    }
+    r.time      = hm(moveMin + keep.length * visitMin);
+    r.totalMove = '総移動時間 ' + hm(moveMin);
+    r._moveMin  = Math.round(moveMin);
+    r._stayMin  = keep.length * visitMin;
+    return r;
+  }
+
+  // ★あとから足されるスポットにも効かせる★
+  //   concierge.js には「スポット数が少ないと周辺の寺社を補充する」処理があり、
+  //   せっかく削ったぶんを戻してしまう。定期的に見張って、はみ出したら削り直す。
+  //   （すでに収まっていれば何も変わらないので、無駄な書き換えは起きない）
+  function retimeAll(){
+    try {
+      var routes = window._dynamicRoutes;
+      if (!routes || !routes.length) return;
+      // ★手書きの10ルート（このファイルの上のほうで定義しているもの）は触らない★
+      //   あちらは所要時間も人が書いたもの。AIが組んだルートだけを対象にする。
+      if (!window._aiSelTime) return;
+      var b = (typeof aiBudgetFor === 'function') ? aiBudgetFor(window._aiSelTime) : null;
+      if (!b) return;
+      routes.forEach(function(r){
+        if (!r || !r._wabiDyn) return;
+        retime(r, b.budgetMin, b.visitMin, r.transport || window._aiSelTrans || '電車');
+      });
+    } catch(e){}
+  }
+  window.wabiRetimeAll = retimeAll;
+  setInterval(retimeAll, 800);
+
+  // index.html の buildDynamicRoutes を包んで、返ってきたルートを整え直す
+  var orig = window.buildDynamicRoutes;
+  if (typeof orig === 'function'){
+    window.buildDynamicRoutes = function(base, baseCoord, candidates, selTime, selTrans, budget){
+      var routes = orig.apply(this, arguments);
+      try {
+        var b = budget || (typeof aiBudgetFor === 'function' ? aiBudgetFor(selTime) : null);
+        if (!b || !routes || !routes.length) return routes;
+        routes.forEach(function(r){
+          r._wabiDyn = true;                       // AIが組んだルートの目印
+          retime(r, b.budgetMin, b.visitMin, r.transport || selTrans);
+        });
+      } catch(e){}
+      return routes;
+    };
+  }
+})();

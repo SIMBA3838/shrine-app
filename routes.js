@@ -424,14 +424,19 @@
     return out;
   }
 
-  // 名前から座標を探す（ルートのデータの中を順に見る）
+  // 名前から座標を探す
+  //   ① 表示中のルートのデータ  ② 全国の座標表 SHRINE_COORDS
+  // の順に見る。座標が見つかれば「緯度,経度」を返す。
   function coordOf(name){
     var n = clean(name);
     if (!n) return null;
+    var i, j;
+
+    // ① ルートのデータ（Placesで取った正確な座標が入っている）
     var rs = allRoutes();
-    for (var i = 0; i < rs.length; i++){
+    for (i = 0; i < rs.length; i++){
       var spots = (rs[i] && rs[i].spots) || [];
-      for (var j = 0; j < spots.length; j++){
+      for (j = 0; j < spots.length; j++){
         var sp = spots[j];
         if (!sp) continue;
         if (typeof sp.lat !== 'number' || typeof sp.lng !== 'number') continue;
@@ -440,7 +445,43 @@
         if (m === n || m.indexOf(n) >= 0 || n.indexOf(m) >= 0) return sp.lat + ',' + sp.lng;
       }
     }
+
+    // ② 全国の座標表（index.html の SHRINE_COORDS）
+    try {
+      if (typeof SHRINE_COORDS !== 'undefined' && SHRINE_COORDS){
+        var keys = Object.keys(SHRINE_COORDS), best = '', k, c;
+        for (i = 0; i < keys.length; i++){
+          k = clean(keys[i]);
+          if (!k) continue;
+          if (k === n) { c = SHRINE_COORDS[keys[i]]; return c.lat + ',' + c.lng; }
+          // 部分一致は「いちばん長く一致したもの」を採る（別の社を掴まないように）
+          if ((k.indexOf(n) >= 0 || n.indexOf(k) >= 0) && k.length > best.length) best = keys[i];
+        }
+        if (best) { c = SHRINE_COORDS[best]; return c.lat + ',' + c.lng; }
+      }
+    } catch(e){}
+
     return null;
+  }
+
+  // 座標が分からないときの「せめてもの手当て」。
+  // 名前だけだと、Googleが同じ名前の別のお寺を掴んでしまう。
+  // 住所が分かるならくっつけて、場所を絞り込む。
+  function nameWithPlace(name){
+    var n = clean(name);
+    try {
+      if (typeof SHRINES !== 'undefined' && SHRINES){
+        var hit = null, best = '';
+        for (var i = 0; i < SHRINES.length; i++){
+          var sn = clean(SHRINES[i] && SHRINES[i].name);
+          if (!sn) continue;
+          if (sn === n) { hit = SHRINES[i]; break; }
+          if ((sn.indexOf(n) >= 0 || n.indexOf(sn) >= 0) && sn.length > best.length) { best = sn; hit = SHRINES[i]; }
+        }
+        if (hit && hit.addr) return n + ' ' + hit.addr;
+      }
+    } catch(e){}
+    return n;
   }
 
   // 1番目の社の名前から、そのルートの交通手段を割り出す
@@ -486,7 +527,7 @@
       ).filter(Boolean);
       if (!names.length) return;
       // 画面に並んでいる順番のまま。座標が分かるものは座標にする。
-      var pts = names.map(function(nm){ return coordOf(nm) || clean(nm); });
+      var pts = names.map(function(nm){ return coordOf(nm) || nameWithPlace(nm); });
       var url = buildUrl(pts, transportOf(names[0]));
       if (url) window.open(url, '_blank');
     };
@@ -509,14 +550,311 @@
         }
       }
       if (!names.length) return;
-      var pts = names.map(function(nm){ return coordOf(nm) || clean(nm); });
+      var pts = names.map(function(nm){ return coordOf(nm) || nameWithPlace(nm); });
       var url = buildUrl(pts, transportOf(names[0]));
       if (url) window.open(url, '_blank', 'noopener');
     };
   }
 
+  // 他の処理からも使えるように公開する（保存したルートの画面が使う）
+  window.coordOfPublic = coordOf;
+  window.navUrlPublic  = buildUrl;
+  window.nameWithPlacePublic = nameWithPlace;
+
   // プレビューは開くたびに中身が作り直されるので、短い間隔で貼り直す
   function apply(){ try { bindNavi(); bindSelect(); } catch(e){} }
   apply();
   setInterval(apply, 150);
+})();
+
+/* ══════════════════════════════════════════════════════════════
+   下部メニュー（ホーム／マップ／みんなの投稿／マイページ）が
+   AIルートの画面で効かなくなる問題の修正
+   （2026-09-01）
+
+   ★何が起きていたか★
+   下部メニューを押すと concierge.js の closeAll() が走り、
+   開いている画面を閉じてからホームやマップへ移動する。
+   ところがその「閉じる対象の一覧」に
+     ・pgAiRouteList（ルート提案ページ）
+     ・pgAiLoading（作成中の画面）
+     ・pgRouteMap ／ wcPrev ／ wcSpot ／ wcTheme
+   が入っていなかった。
+   そのためページが前面に残り続け、**押しても何も起きないように見えていた**。
+
+   ★もうひとつの落とし穴★
+   closeAll() は style.display='none' を直接書き込む。
+   これらの画面は class="show" で表示する作りなので、
+   一度 display:none を書かれると class を付け直しても開かなくなる。
+   そこで、閉じるときは class を外し、display は空に戻す。
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiNavClose) return;
+  window.__wabiNavClose = true;
+
+  // class="show" で開く画面（.ai-ov）
+  var SHOW_PAGES = ['pgAiRouteList', 'pgAiLoading', 'pgRouteMap'];
+  // style.display で開く画面
+  var DISP_PAGES = ['wcPrev', 'wcSpot', 'wcTheme', 'wabiRoutePg'];
+
+  function closeAiPages(){
+    SHOW_PAGES.forEach(function(id){
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.classList.remove('show');
+      el.style.display = '';          // 直接書かれた none を消す（また開けるように）
+    });
+    DISP_PAGES.forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+  }
+  window.wabiCloseAiPages = closeAiPages;
+
+  // 下部メニューが押された瞬間に、concierge.js 側の処理より先に閉じる
+  document.addEventListener('click', function(ev){
+    try {
+      var t = ev.target;
+      if (!t || !t.closest) return;
+      if (!t.closest('#wabiNav .wn')) return;
+      closeAiPages();
+    } catch(e){}
+  }, true);   // true＝先に走らせる
+
+  // 過去に display:none を書き込まれて開かなくなっている場合の復旧
+  setInterval(function(){
+    try {
+      SHOW_PAGES.forEach(function(id){
+        var el = document.getElementById(id);
+        // 「開く指示（show）は出ているのに、直接 none が書かれている」状態を直す
+        if (el && el.classList.contains('show') && el.style.display === 'none') el.style.display = '';
+      });
+    } catch(e){}
+  }, 300);
+})();
+
+/* ══════════════════════════════════════════════════════════════
+   マイページに「保存したルート」を追加する
+   （2026-09-01 / index.html・concierge.js は触らずここから追加）
+
+   ★これまでの状態★
+   ・カスタマイズ済みルート画面の「♡ ルートを保存」
+       → 端末の中には記録していたが、**見る画面がどこにも無かった**
+   ・AI結果画面の「ルートを保存」
+       → 中身が空で、メッセージを出すだけだった
+
+   ここで、保存の中身をきちんと作り、マイページから一覧・ナビ・削除
+   ができるようにする。保存先はこの端末の中だけ（localStorage）。
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiSavedRoutes) return;
+  window.__wabiSavedRoutes = true;
+
+  var KEY     = 'wabi_saved_routes';   // 新しい保存先
+  var OLD_KEY = 'wabi_custom_routes';  // 以前の「♡ ルートを保存」の記録
+
+  function esc(s){
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function today(){
+    var d = new Date();
+    return d.getFullYear() + '.' + ('0'+(d.getMonth()+1)).slice(-2) + '.' + ('0'+d.getDate()).slice(-2);
+  }
+  function load(){
+    var out = [];
+    try { var a = JSON.parse(localStorage.getItem(KEY) || '[]'); if (Array.isArray(a)) out = a; } catch(e){}
+    // 以前の形式の記録も、見えるように取り込む（一度だけ）
+    try {
+      var old = JSON.parse(localStorage.getItem(OLD_KEY) || '[]');
+      if (Array.isArray(old) && old.length){
+        old.forEach(function(o){
+          if (!o || !o.name) return;
+          if (out.some(function(x){ return x.name === o.name && x.date === (o.date || ''); })) return;
+          out.push({ name:o.name, spots:[], added:o.added || [], transport:'', date:(o.date||'').replace(/-/g,'.') });
+        });
+        localStorage.setItem(KEY, JSON.stringify(out));
+        localStorage.removeItem(OLD_KEY);
+      }
+    } catch(e){}
+    return out;
+  }
+  function save(list){
+    try { localStorage.setItem(KEY, JSON.stringify(list.slice(0, 50))); return true; }
+    catch(e){ return false; }
+  }
+  function add(entry){
+    var list = load();
+    // 同じ内容が続けて入らないようにする
+    var sig = entry.name + '|' + (entry.spots||[]).map(function(s){ return s.name; }).join(',');
+    list = list.filter(function(x){
+      return (x.name + '|' + (x.spots||[]).map(function(s){ return s.name; }).join(',')) !== sig;
+    });
+    list.unshift(entry);
+    return save(list);
+  }
+  function toast(m){
+    if (typeof showToast === 'function') showToast(m);
+    else if (window.WABI_TOAST) window.WABI_TOAST(m);
+  }
+
+  // ── 保存する ────────────────────────────────────────────────
+  // ① AI結果画面の「ルートを保存」（もともと中身が空だった）
+  window.saveRoute = function(){
+    try {
+      var r = window.currentAiRoute;
+      if (!r || !r.stops || !r.stops.length) { toast('保存できるルートがありません'); return; }
+      var name = '';
+      var t = document.getElementById('aiResultTitle');
+      if (t) name = t.textContent.trim();
+      if (!name) name = r.stops[0].name + ' からの巡礼';
+      var ok = add({
+        name: name,
+        spots: r.stops.map(function(s){ return { name:s.name, lat:s.lat, lng:s.lng }; }),
+        added: [], transport: '', date: today()
+      });
+      toast(ok ? '♡ マイページに保存しました' : '保存できませんでした（空き容量をご確認ください）');
+    } catch(e){ toast('保存できませんでした'); }
+  };
+
+  // ② カスタマイズ済みルート画面の「♡ ルートを保存」
+  //    画面に並んでいる順番のまま、座標つきで保存し直す
+  function bindSave(){
+    var btn = document.getElementById('wcSave');
+    if (!btn || btn.getAttribute('data-wsv') === '1') return;
+    btn.setAttribute('data-wsv', '1');
+    btn.onclick = function(){
+      try {
+        var rows = [].map.call(document.querySelectorAll('#wcPrevBody .wc-tl-nm'),
+                               function(n){ return String(n.textContent).trim(); }).filter(Boolean);
+        if (!rows.length) { toast('保存できるルートがありません'); return; }
+        var title = '';
+        var h = document.querySelector('#wcPrevBody .wc-hero-t');
+        if (h) title = h.textContent.replace(/\s+/g, ' ').trim();
+        if (!title) title = rows[0] + ' からの巡礼';
+        var spots = rows.map(function(nm){
+          var c = (typeof window.coordOfPublic === 'function') ? window.coordOfPublic(nm) : null;
+          var p = c ? c.split(',') : null;
+          return p ? { name:nm, lat:+p[0], lng:+p[1] } : { name:nm };
+        });
+        var ok = add({ name:title, spots:spots, added:[],
+                       transport:(window.WABI_ROUTE_TRANSPORT || ''), date:today() });
+        toast(ok ? '♡ マイページに保存しました' : '保存できませんでした');
+      } catch(e){ toast('保存できませんでした'); }
+    };
+  }
+
+  // ── 一覧の画面 ──────────────────────────────────────────────
+  var css = document.createElement('style');
+  css.textContent = [
+    '#wabiSaved{position:fixed;inset:0;z-index:2050;background:#FAF8F4;display:none;overflow-y:auto;}',
+    '#wabiSaved .sv-hd{position:sticky;top:0;z-index:2;background:rgba(250,248,244,.96);backdrop-filter:blur(8px);',
+      'display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid #efe9dd;}',
+    '#wabiSaved .sv-hd .b{font-size:22px;width:30px;cursor:pointer;color:#a83320;line-height:1;}',
+    '#wabiSaved .sv-hd .t{flex:1;text-align:center;font-size:15px;font-weight:800;letter-spacing:.1em;}',
+    '#wabiSaved .sv-in{max-width:500px;margin:0 auto;padding:18px 16px 110px;}',
+    '#wabiSaved .sv-h{font-size:19px;font-weight:700;}',
+    '#wabiSaved .sv-cnt{font-size:30px;font-weight:800;color:#5D3A7A;margin:2px 0 18px;}',
+    '#wabiSaved .sv-cnt small{font-size:14px;margin-left:3px;color:#6F6F6F;}',
+    '#wabiSaved .sv-card{background:#fff;border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.06);',
+      'padding:16px;margin-bottom:14px;}',
+    '#wabiSaved .sv-nm{font-size:15px;font-weight:700;line-height:1.5;font-family:"Shippori Mincho",serif;}',
+    '#wabiSaved .sv-dt{font-size:11px;color:#b8b2a6;margin-top:4px;}',
+    '#wabiSaved .sv-sp{font-size:12.5px;color:#6b6355;line-height:1.9;margin-top:10px;}',
+    '#wabiSaved .sv-btns{display:flex;gap:8px;margin-top:14px;}',
+    '#wabiSaved .sv-b{flex:1;padding:11px 0;border-radius:12px;border:none;font-size:13px;font-weight:700;',
+      'font-family:inherit;cursor:pointer;}',
+    '#wabiSaved .sv-go{background:linear-gradient(135deg,#7a5aa8,#5a4470);color:#fff;}',
+    '#wabiSaved .sv-del{background:#fff;border:1px solid #e0b0a8;color:#a83320;flex:0 0 92px;}',
+    '#wabiSaved .sv-empty{text-align:center;color:#b8b2a6;font-size:13px;line-height:2;padding:50px 10px;}'
+  ].join('');
+  document.head.appendChild(css);
+
+  var page = document.createElement('div');
+  page.id = 'wabiSaved';
+  page.innerHTML = '<div class="sv-hd"><div class="b" id="svBack">‹</div>'
+    + '<div class="t">保存したルート</div><div style="width:30px"></div></div>'
+    + '<div class="sv-in" id="svIn"></div>';
+  document.body.appendChild(page);
+  page.querySelector('#svBack').onclick = function(){ page.style.display = 'none'; };
+
+  function render(){
+    var list = load();
+    var h = '<div class="sv-h">保存したルート</div>'
+          + '<div class="sv-cnt">' + list.length + '<small>件</small></div>';
+    if (!list.length){
+      h += '<div class="sv-empty">まだ保存したルートがありません。<br>'
+         + 'ルートの画面で「♡ ルートを保存」を押すと<br>ここに並びます。</div>';
+    } else {
+      h += list.map(function(r, i){
+        var names = (r.spots || []).map(function(s){ return s.name; });
+        if (!names.length && r.added && r.added.length) names = r.added.slice();
+        return '<div class="sv-card">'
+          + '<div class="sv-nm">' + esc(r.name) + '</div>'
+          + '<div class="sv-dt">' + esc(r.date || '') + '</div>'
+          + (names.length ? '<div class="sv-sp">' + names.map(function(n, j){
+              return (j+1) + '. ' + esc(n); }).join('<br>') + '</div>' : '')
+          + '<div class="sv-btns">'
+          + '<button class="sv-b sv-go" data-go="' + i + '">ナビを開始 →</button>'
+          + '<button class="sv-b sv-del" data-del="' + i + '">削除</button>'
+          + '</div></div>';
+      }).join('');
+    }
+    document.getElementById('svIn').innerHTML = h;
+
+    document.querySelectorAll('#wabiSaved [data-go]').forEach(function(b){
+      b.onclick = function(){
+        var r = load()[+b.getAttribute('data-go')];
+        if (!r) return;
+        var pts = (r.spots || []).map(function(s){
+          if (typeof s.lat === 'number' && typeof s.lng === 'number') return s.lat + ',' + s.lng;
+          var c = (typeof window.coordOfPublic === 'function') ? window.coordOfPublic(s.name) : null;
+          if (c) return c;
+          return (typeof window.nameWithPlacePublic === 'function') ? window.nameWithPlacePublic(s.name) : s.name;
+        });
+        if (!pts.length) { toast('この記録には行き先が入っていません'); return; }
+        var url = (typeof window.navUrlPublic === 'function') ? window.navUrlPublic(pts, r.transport) : null;
+        if (url) window.open(url, '_blank');
+      };
+    });
+    document.querySelectorAll('#wabiSaved [data-del]').forEach(function(b){
+      b.onclick = function(){
+        if (!confirm('この保存を削除しますか？')) return;
+        var list = load();
+        list.splice(+b.getAttribute('data-del'), 1);
+        save(list); render();
+      };
+    });
+  }
+
+  function open(){ render(); page.style.display = 'block'; page.scrollTop = 0; }
+  window.wabiOpenSavedRoutes = open;
+
+  // ── マイページにカードを1枚足す ──────────────────────────────
+  function addCard(){
+    var wrap = document.querySelector('#wcMypage .mp-stats');
+    if (!wrap || wrap.querySelector('[data-saved-routes]')) return;
+    var base = wrap.querySelector('.mp-stat');
+    if (!base) return;
+    var card = base.cloneNode(true);
+    card.setAttribute('data-saved-routes', '1');
+    card.removeAttribute('data-bg');
+    card.style.background = '#3a3025 url(mp-sanpai.jpg) center/cover';
+    var l = card.querySelector('.mp-stat-l');   if (l) l.textContent = '保存したルート';
+    var v = card.querySelector('.mp-stat-v');
+    if (v){ v.removeAttribute('data-count'); v.innerHTML = load().length + '<small>件</small>'; }
+    card.onclick = function(ev){ ev.stopPropagation(); open(); };
+    wrap.appendChild(card);
+  }
+
+  function tick(){
+    try {
+      bindSave();
+      addCard();
+      var c = document.querySelector('#wcMypage .mp-stats [data-saved-routes] .mp-stat-v');
+      if (c) c.innerHTML = load().length + '<small>件</small>';
+    } catch(e){}
+  }
+  tick();
+  setInterval(tick, 500);
 })();

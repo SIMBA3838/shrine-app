@@ -930,8 +930,13 @@
     var card = base.cloneNode(true);
     card.setAttribute('data-saved-routes', '1');
     card.removeAttribute('data-bg');
-    card.style.background = '#3a3025 url(mp-sanpai.jpg) center/cover';
+    card.style.background = '#3a3025 url(mp-follower.jpg) center/cover';   // 旧フォロワーの写真を流用
     var l = card.querySelector('.mp-stat-l');   if (l) l.textContent = '保存したルート';
+    // アイコンも地図（ルート）のものに差し替える
+    var ico = card.querySelector('.mp-stat-ic');
+    if (ico) ico.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" '
+      + 'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'
+      + '<path d="m9 4-6 2v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14"/><path d="M15 6v14"/></svg>';
     var v = card.querySelector('.mp-stat-v');
     if (v){ v.removeAttribute('data-count'); v.innerHTML = load().length + '<small>件</small>'; }
     card.onclick = function(ev){ ev.stopPropagation(); open(); };
@@ -1738,4 +1743,167 @@
   function install(){ for (var i = 0; i < LIST.length; i++) wrap(LIST[i]); }
   install();
   setInterval(install, 400);   // concierge.js が後から差し替えても かぶせ直す
+})();
+
+/* ══════════════════════════════════════════════════════════════
+   マイページのカードを組み直す（2026-09-01）
+   ① 「参拝した神社」→「参拝した神社仏閣」（お寺も数に入る）
+   ② 「フォロー」と「フォロワー」を1枚にまとめ、
+      中身は「フォロー中」「フォロワー」の2つだけ（おすすめ／リクエストは廃止）
+   ③ 「フォロワー」のカードを外し、その位置に「保存したルート」を置く
+      （カードの写真は旧フォロワーの mp-follower.jpg をそのまま使う）
+
+   concierge.js は文字（ラベル）でカードを見分けているため、名前を変えると
+   写真・並び順・数字・タップ先の紐づけが外れる。そこでこの4つは
+   こちら側で引き受け直している。
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiMypageCards3) return;
+  window.__wabiMypageCards3 = true;
+
+  var L_VISIT  = '参拝した神社仏閣';
+  var L_PEOPLE = 'フォロー・フォロワー';
+  var L_SAVED  = '保存したルート';
+
+  var ORDER = ['御朱印', L_VISIT, 'お気に入りの神社仏閣', '投稿した記録', L_PEOPLE, L_SAVED];
+
+  function labelOf(c){
+    var l = c.querySelector('.mp-stat-l');
+    return l ? l.textContent.trim() : '';
+  }
+  function cardByLabel(wrap, txt){
+    var out = null;
+    wrap.querySelectorAll('.mp-stat').forEach(function(c){ if (labelOf(c) === txt) out = c; });
+    return out;
+  }
+
+  /* ── ① 参拝した神社仏閣：件数（お寺もふくむ）─────────────── */
+  function visitedCount(){
+    var rec = [];
+    try { rec = JSON.parse(localStorage.getItem('wabiVisits') || '[]') || []; } catch(e){}
+    var n = rec.length;
+    try {
+      if (typeof SHRINES !== 'undefined' && SHRINES && SHRINES.length){
+        SHRINES.forEach(function(s){
+          if (!s || !s.visited) return;
+          for (var i = 0; i < rec.length; i++) if (rec[i] && rec[i].name === s.name) return;
+          n++;                       // 神社・お寺の区別なく数える
+        });
+      }
+    } catch(e){}
+    return n;
+  }
+
+  function openVisitedPage(){
+    var map = window.wabiOpenList || {};
+    var f = map['参拝した神社'];
+    if (typeof f !== 'function') return;
+    f();
+    // 開いたページの見出しも「神社仏閣」に直す
+    setTimeout(function(){
+      var pg = document.getElementById('wabiListPg');
+      if (!pg) return;
+      var t = pg.querySelector('.wlp-hd .t');  if (t) t.textContent = L_VISIT;
+      var h = pg.querySelector('.wlp-h');      if (h) h.textContent = L_VISIT;
+      var u = pg.querySelector('.wlp-cnt small'); if (u) u.textContent = 'ヶ所';
+    }, 0);
+  }
+
+  /* ── ② フォロー・フォロワーを1ページにまとめる ─────────── */
+  function openPeoplePage(which){
+    var map = window.wabiOpenList || {};
+    var f = (which === 'follower') ? map['フォロワー'] : map['フォロー'];
+    if (typeof f !== 'function') return;
+    f();
+    setTimeout(function(){
+      var pg = document.getElementById('wabiListPg');
+      if (!pg) return;
+      var t = pg.querySelector('.wlp-hd .t'); if (t) t.textContent = L_PEOPLE;
+      var h = pg.querySelector('.wlp-h');
+      if (h) h.textContent = (which === 'follower') ? 'フォロワー' : 'フォロー中';
+      var tabs = pg.querySelectorAll('.wlp-tabs .tb');
+      if (tabs.length < 2) return;
+      tabs[0].textContent = 'フォロー中';
+      tabs[1].textContent = 'フォロワー';
+      tabs[0].classList.toggle('on', which !== 'follower');
+      tabs[1].classList.toggle('on', which === 'follower');
+      tabs[0].onclick = function(){ openPeoplePage('follow');    };
+      tabs[1].onclick = function(){ openPeoplePage('follower');  };
+    }, 0);
+  }
+  function n(k){ try { var a = JSON.parse(localStorage.getItem(k) || '[]'); return Array.isArray(a) ? a.length : 0; } catch(e){ return 0; } }
+  // カードには「フォロー中／フォロワー」を並べて出す（合計だと意味が分からなくなるため）
+  function peopleValueHtml(){
+    return n('wabiFollowing') + '<small>／</small>' + n('wabiFollowers') + '<small>人</small>';
+  }
+
+  /* ── カードを組み直す ──────────────────────────────────── */
+  function takeOver(card, label, unit, countFn, openFn, bgFile){
+    var l = card.querySelector('.mp-stat-l');
+    if (l && l.textContent.trim() !== label) l.textContent = label;
+    if (bgFile){
+      card.removeAttribute('data-bg');
+      card.style.background = '#3a3025 url(' + bgFile + ') center/cover';
+    }
+    var v = card.querySelector('.mp-stat-v');
+    if (v){
+      var html = (unit === null) ? countFn() : (countFn() + (unit ? '<small>' + unit + '</small>' : ''));
+      v.removeAttribute('data-count');
+      if (v.innerHTML !== html) v.innerHTML = html;
+    }
+    if (!card.getAttribute('data-wtake')){
+      card.setAttribute('data-wtake', '1');
+      card.setAttribute('data-wlp', '1');       // concierge 側の紐づけを止める
+      card.removeAttribute('data-tap');         // 「準備中です」を止める
+      card.addEventListener('click', function(ev){ ev.stopPropagation(); openFn(); }, true);
+    }
+  }
+
+  function run(){
+    var wrap = document.querySelector('#wcMypage .mp-stats');
+    if (!wrap) return;
+
+    // ③ フォロワーのカードは外す（その場所は「保存したルート」が入る）
+    var fw = cardByLabel(wrap, 'フォロワー');
+    if (fw && fw.parentNode) fw.parentNode.removeChild(fw);
+
+    // ① 参拝した神社 → 参拝した神社仏閣
+    var v = cardByLabel(wrap, L_VISIT) || cardByLabel(wrap, '参拝した神社');
+    if (v) takeOver(v, L_VISIT, 'ヶ所', visitedCount, openVisitedPage, 'mp-sanpai.jpg');
+
+    // ② フォロー → フォロー・フォロワー
+    var p = cardByLabel(wrap, L_PEOPLE) || cardByLabel(wrap, 'フォロー');
+    if (p) takeOver(p, L_PEOPLE, null, peopleValueHtml, function(){ openPeoplePage('follow'); }, 'mp-follow.jpg');
+
+    // 並び順を整える（concierge 側は名前が変わって並べ替えできないため）
+    var have = {};
+    wrap.querySelectorAll('.mp-stat').forEach(function(c){ have[labelOf(c)] = c; });
+    for (var i = 0; i < ORDER.length; i++) if (!have[ORDER[i]]) return;   // 揃うまで待つ
+
+    var same = true;
+    for (var j = 0; j < ORDER.length; j++){
+      if (wrap.children[j] !== have[ORDER[j]]) { same = false; break; }
+    }
+    if (!same){
+      for (var k = 0; k < ORDER.length; k++) wrap.appendChild(have[ORDER[k]]);
+    }
+    wrap.setAttribute('data-ordered', '1');
+  }
+
+  // マイページを開いた直後にも即座に整える（一瞬だけ古い並びが見えないように）
+  function hook(){
+    if (typeof window.openWabiMypage !== 'function' || window.openWabiMypage.__wmc) return;
+    var orig = window.openWabiMypage;
+    var wrapped = function(){
+      var r = orig.apply(this, arguments);
+      [0, 60, 150, 300, 600, 1000].forEach(function(ms){ setTimeout(run, ms); });
+      return r;
+    };
+    wrapped.__wmc = true;
+    window.openWabiMypage = wrapped;
+  }
+
+  hook();
+  run();
+  setInterval(function(){ hook(); run(); }, 400);
 })();

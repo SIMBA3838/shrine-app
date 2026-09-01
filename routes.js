@@ -1686,3 +1686,56 @@
     if (!now && !g(AV) && !g(NM)) resetDom();
   }, 400);
 })();
+
+/* ══════════════════════════════════════════════════════════════
+   「もっと見る」を押すと、古い見た目や別の写真が一瞬出てから
+   今のデザインに切り替わるのを直す
+
+   原因：ページを開く関数（openSeasonList など）が、開くたびに
+        中身を古い形で描き直していた。完成版は別の処理が
+        最大0.8秒後に描き直すので、その差が見えていた。
+   対策：完成版がすでに入っているときは、開く関数に中身を
+        触らせない（一時的に id を外して見つけられなくする）。
+        写真も描き直されないので、別の写真に入れ替わることもない。
+   （2026-09-01）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiKeepList) return;
+  window.__wabiKeepList = true;
+
+  // fn : 開く関数の名前 / el : 中身の入れ物 / ok : 完成版のしるし
+  var LIST = [
+    { fn:'openSeasonList',  el:'seasonListFull',  ok:'.wev-card'  },  // この時期おすすめイベント
+    { fn:'openEcList',      el:'ecGridFull',      ok:'.wgd-btn'   },  // 御朱印グッズ
+    { fn:'openTourList',    el:'tourListFull',    ok:'.tour-card' },  // ツアー特集
+    { fn:'openOsupplyList', el:'osupplyGridFull', ok:'.tour-card' }   // 参拝のお供
+  ];
+
+  function wrap(t){
+    var f = window[t.fn];
+    if (typeof f !== 'function' || f.__wkeep) return;
+
+    var wrapped = function(){
+      var el = null;
+      try { el = document.getElementById(t.el); } catch(e){}
+      // 完成版がまだ無い（読み込み直後など）ときは、いつも通り描かせる
+      if (!el || !el.querySelector(t.ok)) return f.apply(this, arguments);
+
+      // 完成版が入っている：一瞬だけ id を外して、描き直しをさせない
+      var id = el.id;
+      el.id = id + '__wkeep';
+      try {
+        return f.apply(this, arguments);
+      } finally {
+        el.id = id;
+      }
+    };
+    wrapped.__wkeep = true;
+    wrapped.__orig  = f;
+    window[t.fn] = wrapped;
+  }
+
+  function install(){ for (var i = 0; i < LIST.length; i++) wrap(LIST[i]); }
+  install();
+  setInterval(install, 400);   // concierge.js が後から差し替えても かぶせ直す
+})();

@@ -1362,3 +1362,61 @@
   var n = 0;
   var iv = setInterval(function(){ apply(); if (++n > 10) clearInterval(iv); }, 700);
 })();
+
+/* ============================================================
+   __wabiUrlClean : LINEログイン後にURLへ残る認証パラメータを消す
+   (state / code / liffClientId / liffRedirectUri など)
+   LIFF SDK がパラメータを使い終わってから消すので、ログインは壊れない
+   ============================================================ */
+(function(){
+  if (window.__wabiUrlClean) return;
+  window.__wabiUrlClean = true;
+
+  var JUNK = ['code','state','liffClientId','liffRedirectUri','liffReferer',
+              'error','error_description','friendship_status_changed'];
+
+  function params(){
+    try { return new URLSearchParams(location.search || ''); } catch(e){ return null; }
+  }
+
+  function junkCount(){
+    var q = params(); if (!q) return 0;
+    var n = 0;
+    for (var i = 0; i < JUNK.length; i++) if (q.has(JUNK[i])) n++;
+    return n;
+  }
+
+  function strip(){
+    try {
+      var q = params(); if (!q) return;
+      var changed = false;
+      for (var i = 0; i < JUNK.length; i++){
+        if (q.has(JUNK[i])) { q.delete(JUNK[i]); changed = true; }
+      }
+      if (!changed) return;
+      var rest = q.toString();
+      var url = location.pathname + (rest ? '?' + rest : '') + (location.hash || '');
+      history.replaceState(null, '', url);
+    } catch(e){}
+  }
+
+  if (!junkCount()) return;
+
+  // 認証コードが無ければ SDK が使うものは何も残っていない → すぐ消してよい
+  var hasCode = false;
+  try { hasCode = !!(params() && params().get('code')); } catch(e){}
+  if (!hasCode){ setTimeout(strip, 1200); return; }
+
+  // 認証コードがある場合は LIFF SDK が処理し終わるのを待つ
+  var t0 = Date.now();
+  var iv = setInterval(function(){
+    var ready = false;
+    try {
+      if (window.liff && typeof liff.isLoggedIn === 'function') ready = !!liff.isLoggedIn();
+    } catch(e){ ready = false; }        // init 前は例外 → まだ待つ
+    if (ready || (Date.now() - t0) > 12000){
+      clearInterval(iv);
+      strip();
+    }
+  }, 300);
+})();

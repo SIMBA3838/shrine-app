@@ -1420,3 +1420,269 @@
     }
   }, 300);
 })();
+
+/* ══════════════════════════════════════════════════════════════
+   ② わびなびおすすめ巡拝ルート：周辺スポットの写真が出ないのを直す
+   原因：写真の取得を「開いた直後」と「1.5秒後」の2回しか試しておらず、
+        Googleマップの部品の読み込みが遅い回線だと2回とも空振りして
+        そのまま二度と取りに行かなかった。
+   対策：Googleの部品が使えるようになるまで待って、最大3回まで取り直す。
+   （2026-09-01）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiSpotPhoto2) return;
+  window.__wabiSpotPhoto2 = true;
+
+  var MAX_TRY = 3;
+  var svc = null;
+
+  function ready(){
+    return !!(window.google && window.google.maps && google.maps.places
+              && google.maps.places.PlacesService);
+  }
+
+  function hasPhoto(card){
+    var im = card.querySelector('.im');
+    return !!(im && /url\(/i.test(im.style.backgroundImage || ''));
+  }
+
+  function unhideFilledSections(){
+    try {
+      document.querySelectorAll('#wabiRoutePg .wrp-scroll').forEach(function(sc){
+        var vis = 0;
+        sc.querySelectorAll('.wpc').forEach(function(c){ if (c.style.display !== 'none') vis++; });
+        var sec = sc.closest ? sc.closest('.wrp-sec') : null;
+        if (sec && vis) sec.style.display = '';
+      });
+    } catch(e){}
+  }
+
+  function fill(){
+    var pg = document.getElementById('wabiRoutePg');
+    if (!pg || pg.style.display === 'none') return;      // 記事ページを開いている時だけ
+    var cards = pg.querySelectorAll('.wpc[data-q]');
+    if (!cards.length) return;
+    if (!ready()) return;                                 // Googleの部品待ち（次の巡回で再挑戦）
+    if (!svc) { try { svc = new google.maps.places.PlacesService(document.createElement('div')); } catch(e){ return; } }
+
+    Array.prototype.forEach.call(cards, function(card){
+      if (hasPhoto(card)) return;                         // すでに写真あり
+      if (card.getAttribute('data-wbusy')) return;        // 問い合わせ中
+      var tried = parseInt(card.getAttribute('data-wtry') || '0', 10);
+      if (tried >= MAX_TRY) return;                       // 3回試してだめならアイコンのまま
+      card.setAttribute('data-wtry', String(tried + 1));
+      card.setAttribute('data-wbusy', '1');
+
+      var q = card.getAttribute('data-q') || '';
+      try {
+        svc.findPlaceFromQuery(
+          { query: q, fields: ['photos', 'rating', 'user_ratings_total'] },
+          function(res, st){
+            card.removeAttribute('data-wbusy');
+            var ok = (st === google.maps.places.PlacesServiceStatus.OK && res && res[0]);
+            if (!ok) return;
+            card.setAttribute('data-wtry', String(MAX_TRY));   // 結果が返ったら打ち止め
+            var p = res[0];
+            if (p.photos && p.photos.length){
+              var im = card.querySelector('.im');
+              if (im){
+                im.style.backgroundImage = 'url(' + p.photos[0].getUrl({ maxWidth: 400 }) + ')';
+                im.textContent = '';
+              }
+            }
+            var rt = card.querySelector('.rt');
+            if (rt && !rt.textContent && p.rating){
+              rt.innerHTML = '★ ' + p.rating.toFixed(1)
+                + (p.user_ratings_total ? ' <span>(' + p.user_ratings_total.toLocaleString() + ')</span>' : '');
+            }
+            if (card.style.display === 'none' && !p.rating) card.style.display = '';
+            unhideFilledSections();
+          }
+        );
+      } catch(e){ card.removeAttribute('data-wbusy'); }
+    });
+  }
+
+  setInterval(fill, 1200);
+})();
+
+
+/* ══════════════════════════════════════════════════════════════
+   ③ おすすめ神社ランキング：タグを押しただけでは切り替えず、
+      金色の「この条件で検索する」を押したときに反映する
+   （2026-09-01）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiSearchGate) return;
+  window.__wabiSearchGate = true;
+
+  var css = document.createElement('style');
+  css.textContent = [
+    '@keyframes wabiSrchPulse{0%,100%{transform:scale(1);box-shadow:inset 0 0 0 1px rgba(255,255,255,.4),0 4px 14px -4px rgba(169,138,56,.65)}',
+    '50%{transform:scale(1.02);box-shadow:inset 0 0 0 1px rgba(255,255,255,.55),0 8px 22px -4px rgba(169,138,56,.95)}}',
+    '.btn-search.wabi-wait{animation:wabiSrchPulse 1.1s ease-in-out 2;}'
+  ].join('');
+  (document.head || document.documentElement).appendChild(css);
+
+  var hold = 0;
+
+  // concierge.js が後から window.filter を差し替えるので、
+  // 見張って毎回かぶせ直す（かぶせ済みなら何もしない）
+  function install(){
+    var f = window.filter;
+    if (typeof f !== 'function' || f.__wgate) return;
+    var wrapped = function(){
+      if (hold) return;                  // タグを押した流れの中では描き替えない
+      return f.apply(this, arguments);
+    };
+    wrapped.__wgate = true;
+    wrapped.__orig  = f;
+    window.filter = wrapped;
+  }
+  install();
+  setInterval(install, 400);
+
+  // タグ（すべて／神社／お寺／御朱印…）を押したときだけ、少しの間だけ止める
+  document.addEventListener('click', function(e){
+    var t = e.target, tag = null;
+    while (t && t !== document){
+      if (t.classList && t.classList.contains('tag')) { tag = t; break; }
+      t = t.parentNode;
+    }
+    if (!tag || !tag.closest || !tag.closest('.tagrow')) return;
+    hold++;
+    setTimeout(function(){ if (hold > 0) hold--; }, 150);
+    var btn = document.querySelector('.btn-search');
+    if (btn){
+      btn.classList.remove('wabi-wait');
+      void btn.offsetWidth;
+      btn.classList.add('wabi-wait');
+    }
+  }, true);
+
+  // 金色のボタンは必ず素通しで実行する
+  document.addEventListener('click', function(e){
+    var t = e.target, btn = null;
+    while (t && t !== document){
+      if (t.classList && t.classList.contains('btn-search')) { btn = t; break; }
+      t = t.parentNode;
+    }
+    if (!btn) return;
+    hold = 0;
+    btn.classList.remove('wabi-wait');
+  }, true);
+})();
+
+
+/* ══════════════════════════════════════════════════════════════
+   ④ ツアー特集の「PR」バッジ：白い下地でタイトルが読めないのを直す
+      デザインはそのまま、下地を薄くして文字が透ける
+   （2026-09-01）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiPrBadge) return;
+  window.__wabiPrBadge = true;
+
+  var RULES = [
+    'html body span.wabi-pr,',
+    'html body #pgHome span.wabi-pr,',
+    'html body.wabi-top #pgHome span.wabi-pr{',
+    '  background:rgba(255,255,255,.38) !important;',
+    '  color:#7A6E60 !important;',
+    '  font-size:9.5px !important;',
+    '  font-weight:700 !important;',
+    '  letter-spacing:.04em !important;',
+    '  padding:1px 5px !important;',
+    '  border-radius:7px !important;',
+    '  top:4px !important; right:4px !important;',
+    '  text-shadow:0 0 3px #fff,0 0 2px #fff !important;',
+    '  -webkit-backdrop-filter:blur(1px); backdrop-filter:blur(1px);',
+    '  border:0 !important; box-shadow:none !important;',
+    '}'
+  ].join('\n');
+
+  function put(){
+    var old = document.getElementById('wabiPrBadgeCss');
+    if (old) old.parentNode.removeChild(old);
+    var s = document.createElement('style');
+    s.id = 'wabiPrBadgeCss';
+    s.textContent = RULES;
+    (document.head || document.documentElement).appendChild(s);   // 常に最後に置き直す
+  }
+  put();
+  var n = 0;
+  var iv = setInterval(function(){ put(); if (++n > 12) clearInterval(iv); }, 900);
+})();
+
+
+/* ══════════════════════════════════════════════════════════════
+   ⑤ ログアウトしたら、マイページの写真と名前も元に戻す
+      ・ログアウト中は「巡礼者 太郎」＋人型アイコンに戻す
+      ・自分で決めた名前と写真は預かっておき、ログインし直したら戻す
+   （2026-09-01）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiLogoutProfile) return;
+  window.__wabiLogoutProfile = true;
+
+  var NM = 'wabiName',      AV = 'wabiAvatar';
+  var MN = 'wabiNameMine',  MA = 'wabiAvatarMine';
+  var KN = 'wabiNameKeep',  KA = 'wabiAvatarKeep';
+  var DEFAULT_NAME = '巡礼者 太郎';
+  var PERSON = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" '
+             + 'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
+             + '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>'
+             + '<circle cx="12" cy="7" r="4"></circle></svg>';
+
+  function g(k){ try { return localStorage.getItem(k) || ''; } catch(e){ return ''; } }
+  function s(k, v){ try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch(e){} }
+  function loggedIn(){
+    try { var u = JSON.parse(localStorage.getItem('wabiUser') || 'null'); return !!(u && u.id); }
+    catch(e){ return false; }
+  }
+
+  function onLogout(){
+    // 自分で決めた名前・写真を預かってから消す（MineもConcierge側が戻さないよう空に）
+    var nm = g(NM) || g(MN);
+    var av = g(AV) || g(MA);
+    if (nm) s(KN, nm);
+    if (av) s(KA, av);
+    s(NM, ''); s(AV, ''); s(MN, ''); s(MA, '');
+    resetDom();
+  }
+
+  function onLogin(){
+    var nm = g(KN), av = g(KA);
+    if (nm && !g(NM)){ s(NM, nm); s(MN, nm); }
+    if (av && !g(AV)){ s(AV, av); s(MA, av); }
+  }
+
+  function resetDom(){
+    try {
+      var box = document.querySelector('#wcMypage .mp-av');
+      if (box){
+        var im = box.querySelector('img');
+        if (im && im.parentNode) im.parentNode.removeChild(im);
+        if (!box.querySelector('svg')) box.insertAdjacentHTML('afterbegin', PERSON);
+        box.classList.remove('has-photo');
+      }
+      var nmEl = document.querySelector('#wcMypage .mp-name');
+      if (nmEl){
+        var now = (nmEl.textContent || '').replace(/\s*✎\s*$/, '').trim();
+        if (now && now !== DEFAULT_NAME){
+          nmEl.innerHTML = DEFAULT_NAME + '<span class="wp-pen">✎</span>';
+        }
+      }
+    } catch(e){}
+  }
+
+  var was = loggedIn();
+  setInterval(function(){
+    var now = loggedIn();
+    if (was && !now) onLogout();
+    else if (!was && now) onLogin();
+    was = now;
+    // ログアウト中で、自分で決めた写真も無いなら、いつでも既定の見た目に保つ
+    if (!now && !g(AV) && !g(NM)) resetDom();
+  }, 400);
+})();

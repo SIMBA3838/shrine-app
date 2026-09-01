@@ -42,6 +42,66 @@
   } catch (e) {}
 })();
 </script>
+<!-- ▼ 読み込み中に前のデザインが見えてしまうのを防ぐ（2026-09-01） -->
+<style id="wabiBootCss">
+html.wabi-booting{background:#FAF8F3;}
+html.wabi-booting body{visibility:hidden;}
+html.wabi-booting #wabiBoot{visibility:visible;}
+#wabiBoot{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100vh;
+  z-index:2147483000;background:#FAF8F3;transition:opacity .4s ease;}
+#wabiBoot .wb-in{position:fixed;top:50%;left:0;right:0;transform:translateY(-50%);
+  display:flex;align-items:center;justify-content:center;flex-direction:column;}
+#wabiBoot.off{opacity:0;pointer-events:none;}
+#wabiBoot .wb-t{font-family:'Shippori Mincho','Noto Serif JP',serif;font-size:19px;font-weight:700;
+  letter-spacing:.34em;text-indent:.34em;color:#3A1D5D;margin-bottom:16px;
+  animation:wabiBootPulse 1.5s ease-in-out infinite;}
+#wabiBoot .wb-b{width:110px;height:2px;border-radius:2px;background:#ECE6DA;overflow:hidden;position:relative;}
+#wabiBoot .wb-b i{position:absolute;left:-40%;top:0;width:40%;height:100%;background:#C9A24A;
+  animation:wabiBootBar 1.1s linear infinite;}
+@keyframes wabiBootPulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes wabiBootBar{0%{left:-40%}100%{left:100%}}
+</style>
+<script>
+(function(){
+  var done = false;
+  function finish(){
+    if (done) return; done = true;
+    try { document.documentElement.classList.remove('wabi-booting'); } catch(e){}
+    var d = document.getElementById('wabiBoot');
+    if (d){ d.className = 'off'; setTimeout(function(){ if (d.parentNode) d.parentNode.removeChild(d); }, 600); }
+  }
+  window.wabiBootFinish = finish;
+  try {
+    var ua = navigator.userAgent || '';
+    var mob = /Mobi|Android|iPhone|iPod|iPad/i.test(ua);
+    var forced = false;
+    try { forced = !!sessionStorage.getItem('wabinavi_force_mobile'); } catch(e){}
+    if (!mob && !forced) return;              // PC版に差し替わる側では出さない
+    document.documentElement.className += ' wabi-booting';
+    var t0 = Date.now();
+    function show(){
+      if (!document.body || document.getElementById('wabiBoot')) return;
+      var d = document.createElement('div');
+      d.id = 'wabiBoot';
+      d.innerHTML = '<div class="wb-in"><div class="wb-t">わびなび</div><div class="wb-b"><i></i></div></div>';
+      document.body.appendChild(d);
+    }
+    var iv = setInterval(function(){
+      show();
+      var ready = false;
+      try {
+        ready = !!document.getElementById('wabiTopFix3')
+             && !!document.body && document.body.classList.contains('wabi-top');
+      } catch(e){}
+      if (ready || Date.now() - t0 > 6000){
+        clearInterval(iv);
+        setTimeout(finish, 80);
+      }
+    }, 60);
+    setTimeout(finish, 9000);                 // 万一に備えた最終手段
+  } catch(e){ finish(); }
+})();
+</script>
 <title>わびなび〜和美導〜</title>
 <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAIFUlEQVR4nJ1XbYxdVRVd+5x738ybmc60tRRoO2JLCbRAi1AYiqAQUFArNFakChgTIrERFKMGA3780YCGBCNFiCYCArUtJkZaMf2gxdoy9AtSChZtLbQDnWFKp/P53rv3nr2XP+6b6esUhupJXl7uuefutc7e6+y9j+D/GCT5Qe9ERP4XWye9+H1AaQYABufc+9o6GTIfuqAGmGZGgAQJJ4BVXzkRGAGIABBxzkmt7bGIjEmgCk4zNQfSSAdQRgzmLgByD4ysB4QQD5e7RsYi8b6Tw7s2M3MwM5qv7gokc98TcHFdziOtULwTiMvxc8MGOIPzDoD7IG84jBo14AoqCUYiTnJkkqp0UR1dXMe9D/2KHSuX0xXqIb5AmlIACkACjrDINCNgOtr+B3qAJGEWjCrOwYMY+cDM4KI69L2+G3vuvx/a3w+qotj6Ucy69140TGuFhSQXJQmI5PEgFRLBOefHCgeYj6AhzUxTMqTGkBo1NU3LRtI6n1tt69vm2cGVy41U06Rse3+z1NZfMs96du7I59KyMSTGkJiGxKgpNaQZyVDFOPEYV+dNQ5aapqRWgUNioVIyTSpW7jpkGy6fb4P79xrJ437vbdlkm669xsLQoIVKyUJSysGrGzBNqZol1fUjJI7XgGlwMH/sUeF8Ab6uCFeoQ+8rOzCxrQ2N02ciG+jF7nt+iH/98j5oeQgfuewK1E+diqED++HrivCFIpz3sGPhB8wiMw21kFGNMMxoEBEnAC0EuEJRKoff5cFly6BDJfTt3oXmWbNyjwXFmw8vRd2kSZj5nbtyY40N2PfQUtRPmYbCxPE445ZbEDdPgKVlcT6iOHFKC4A3AI4kXQ07BehFBCTFFYry7vq1eGnRItHBIWmc8TFpmnGmHNn8D7FKSZLuw9Jy0TwZN3cuku5uSQ53Su/Ol6U4dZo0zZgulUNdsmXBAunZsU1coYg8PQi8wJnZcV7IT1fIEobELEuoSYWH/rqKL1x5BQf+vWc4ZkbSutas5rqPz7Edt99mHc+ssLeeeoJbv3azrZ0z23p2tLNWFz3b2m3jFZfZ4c2bqGlCCwk1JBZCVhrRQY34EmpKmrL0TgfXXXgBSwf3kyQH39zHvY8+zFAa5O577uYb9/2MJNm98Xm+176ZJPnq3d/jvoceZNrbw72PPMxy59skyaPb27n+4ouY9vWSFkjLqCEtkdRaAkFDmpCBFhKS5NZbv8q+V1+hqfK1n/6IjwN84eqruPXmxSTJLTcs4AqAKwDu/OY3RuY2fGI+HwP4n0eW0kJg94a13HH7bSTJ/CiHYQIZSUZ5/I8lG6pBPFCYMAH9e/6J5vMuQOuNN6Ju0mQM7d+Hpplnov/1XTj0l9VoHD8OVMVbj/4Os3/yY7Scfx5EHFpvWoxTr/0MxHv07dqFhtbWqnEIkGvMzOicy4+hwY4JIk/5mLJwIQ48+RQgQPO5czDzjjsx5fOfRRgcQtTcAgEQhoYQBkrw9TGixiZopYLWr9yEmXd+G43Tz4IlZbzz7CpM/eIigITzjgAgInTOHcsDzrmRHC3OgZpi8lXXYPyFF+LFRQvRvfF5dK1dg3dWrUbH8uVomNaKub9+ENHESag7oxXznn4aEIfOZ1ehY8VKdL+wAZ3PrcaW67+A1sWL0Tz7PFDTarnOw25mUpsBVUNWogWaZjRNaSElSXatXcM1s87m36++kke2beWBP/ye279+KyuH36VWBmmhwsE397P9y4vYufrP7N74PNfNPZ8bL5/PIy+15woPCc0yUjMjA0OWDAyn5WjY8QQIWn5YIbkwTNF8zlloPncW2pavhPgY2dEjOLpzJ3Z99y74YgMAIj3ai/LBAyhMOg0T2y7FJ9evxctLlqB59jlgyEbCSoGIWd4vAD6P+EhlEphRZVgmahTn2fHMn9AyZw7Ex6x0d3HTtZ+j9g/wkieX0UWOTTOmY/4fn2LPtp1sv+F6aKWEwqTTUH/6FHSuWkWJYlIVQlIgMDKDuJFqOOwBiEgMSAKRKC+lean29fXUgX4AQKGlBW1PPg5XKAAG1J8+RepOOYVAjIt++wjqJk+GeJ83ZyKUOB42PvJPIhEn9SdkQpIMWdqvIQm0jJpVjKT173nNNi9ccEL1I8kNl7XZi19aeMI7LQ/ZpuuusXLn20ZqXpoto4Yky7K0lzVDakkAyEKWlKPIN4M0DUF8oYiX71iCceecjVM/fR3ixiLCUAlv3H8fGs74KMLAICCCmd+6A+IF2UAZHSuWgRpw/s9/AU3L8FFEiLgQ9KjzcZNzLq56XUYTgKoO0oKL4qhB05S+UETXur/hrceeQDyuCWl/P8QMp1z5KZy55E7AMrzxwAM4un07EEUojB+P9EgPzv7B9zHx4kuhaQW+UJCQpQMiEX0UNdeE/fjWaIRECP2gxj6Oi6YhTxi+AADQ8gB8sQgggmUVOBEgqgMshaUpXH0TAMBCAojA+Ug0ZIOky6I4nlALnkt/1BgmEbKsD1AfRXETSGjIKCLVJsNAM3jvYQCoCvEeTgQa8krr41gAye2I1yiOJ44GH5NAHo7QbxqCc26cj6IYIKgGgnQ1n+aJnBCIiM+vAhpCSrIPcIUojltqMcYkMJqEqSWqYQCgcw6N3rkCnK8mq1G9pSmVTEw5CMB8FDc75447cqPDfjI3o9y2WUk1lEmqgB5AJFLtKQkjEEioOOec8w3e+4axgE+KwGgSOROYwVKSGc1M8t7fO5EI4gvDFfZkwE+KQC0RkviwC2/tmpO5Hf8XkEQD+S8p4D0AAAAASUVORK5CYII=">
 <link rel="icon" type="image/png" sizes="192x192" href="https://github.com/SIMBA3838/shrine-app/blob/main/%E3%82%8F%E3%81%B2%E3%82%99%E3%81%AA%E3%81%B2%E3%82%99%E3%82%A2%E3%82%A4%E3%82%B3%E3%83%B3%E4%B8%B8%E5%9E%8B.png?raw=true">
@@ -7411,5 +7471,5 @@ function startNavi() {
 }
 
 </script>
-<script>var _wv=Date.now();var _ws=document.createElement("script");_ws.src="routes.js?v="+_wv;_ws.onload=function(){var _wc=document.createElement("script");_wc.src="concierge.js?v="+_wv;document.body.appendChild(_wc);};document.body.appendChild(_ws);</script></body>
+<script>var _wv=Date.now();/* concierge.js は881KBあり、毎回ダウンロードし直すと表示が遅れるため5分単位でキャッシュを効かせる */var _wv5=Math.floor(Date.now()/300000);var _ws=document.createElement("script");_ws.src="routes.js?v="+_wv;_ws.onload=function(){var _wc=document.createElement("script");_wc.src="concierge.js?v="+_wv5;document.body.appendChild(_wc);};document.body.appendChild(_ws);</script></body>
 </html>

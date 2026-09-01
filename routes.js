@@ -394,3 +394,129 @@
     };
   }
 })();
+
+/* ══════════════════════════════════════════════════════════════
+   ナビの出発地を「ルートの1番目の社」に固定する
+   （2026-09-01 / concierge.js は触らず、この小さいファイルから上書き）
+
+   ★何が起きていたか★
+   これまでナビのURLは、出発地を神社の「名前（文字列）」で渡していた。
+   Googleマップは名前から場所を特定できなかったとき、
+   **黙って出発地を利用者の現在地に置き換える**。
+   これが「最初に指定した神社からではなく、今いる場所から案内される」原因。
+
+   ★直し方★
+   出発地・経由地・目的地を、可能なかぎり「緯度,経度」で渡す。
+   数字なので取り違えようがなく、現在地に化けることもない。
+   座標が分からない地点だけ、これまでどおり名前で渡す。
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiNavFix) return;
+  window.__wabiNavFix = true;
+
+  function clean(s){ return String(s || '').replace(/[（(].*$/, '').trim(); }
+
+  // 画面に出ている可能性のあるルートを全部集める
+  function allRoutes(){
+    var out = [];
+    try { if (Array.isArray(window._dynamicRoutes)) out = out.concat(window._dynamicRoutes); } catch(e){}
+    try { if (Array.isArray(window.AI_ROUTES))      out = out.concat(window.AI_ROUTES); } catch(e){}
+    return out;
+  }
+
+  // 名前から座標を探す（ルートのデータの中を順に見る）
+  function coordOf(name){
+    var n = clean(name);
+    if (!n) return null;
+    var rs = allRoutes();
+    for (var i = 0; i < rs.length; i++){
+      var spots = (rs[i] && rs[i].spots) || [];
+      for (var j = 0; j < spots.length; j++){
+        var sp = spots[j];
+        if (!sp) continue;
+        if (typeof sp.lat !== 'number' || typeof sp.lng !== 'number') continue;
+        var m = clean(sp.name);
+        if (!m) continue;
+        if (m === n || m.indexOf(n) >= 0 || n.indexOf(m) >= 0) return sp.lat + ',' + sp.lng;
+      }
+    }
+    return null;
+  }
+
+  // 1番目の社の名前から、そのルートの交通手段を割り出す
+  function transportOf(firstName){
+    var n = clean(firstName), rs = allRoutes();
+    for (var i = 0; i < rs.length; i++){
+      var sp = rs[i] && rs[i].spots && rs[i].spots[0];
+      if (sp && clean(sp.name) === n) return rs[i].transport || '';
+    }
+    return '';
+  }
+  function travelMode(t){
+    if (t === '徒歩') return 'walking';
+    if (t === '電車' || t === 'バス') return 'transit';
+    return 'driving';
+  }
+
+  // 地点の並びからGoogleマップのURLを組み立てる
+  function buildUrl(points, transport){
+    var p = (points || []).filter(Boolean);
+    if (!p.length) return null;
+    if (p.length === 1) {
+      return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p[0]);
+    }
+    var u = 'https://www.google.com/maps/dir/?api=1'
+          + '&origin=' + encodeURIComponent(p[0])
+          + '&destination=' + encodeURIComponent(p[p.length - 1])
+          + '&travelmode=' + travelMode(transport);
+    var way = p.slice(1, -1).slice(0, 9);          // Googleの経由地は最大9つ
+    if (way.length) u += '&waypoints=' + way.map(encodeURIComponent).join('%7C');
+    return u;
+  }
+
+  // ── ① カスタマイズ済みルートの「このルートでナビを開始」 ──
+  function bindNavi(){
+    var btn = document.getElementById('wcNavi');
+    if (!btn) return;
+    btn.setAttribute('data-wapx', '1');     // concierge.js 側の上書きを止める
+    btn.onclick = function(){
+      var names = [].map.call(
+        document.querySelectorAll('#wcPrevBody .wc-tl-nm'),
+        function(n){ return String(n.textContent).trim(); }
+      ).filter(Boolean);
+      if (!names.length) return;
+      // 画面に並んでいる順番のまま。座標が分かるものは座標にする。
+      var pts = names.map(function(nm){ return coordOf(nm) || clean(nm); });
+      var url = buildUrl(pts, transportOf(names[0]));
+      if (url) window.open(url, '_blank');
+    };
+  }
+
+  // ── ② ルート詳細ページの「このルートを作成」 ──
+  function bindSelect(){
+    var btn = document.getElementById('wrpSelect');
+    if (!btn) return;
+    btn.onclick = function(){
+      var names = [].map.call(
+        document.querySelectorAll('#wabiRoutePg .wrp-spot .wrp-spot-nm, #wabiRoutePg .wrp-spot-nm'),
+        function(n){ return String(n.textContent).trim(); }
+      ).filter(Boolean);
+      if (!names.length) {
+        // 画面から拾えないときは、開いているルートのデータから組み立てる
+        var rs = allRoutes();
+        for (var i = 0; i < rs.length; i++){
+          if (rs[i] && rs[i].spots && rs[i].spots.length) { names = rs[i].spots.map(function(s){ return s.name; }); break; }
+        }
+      }
+      if (!names.length) return;
+      var pts = names.map(function(nm){ return coordOf(nm) || clean(nm); });
+      var url = buildUrl(pts, transportOf(names[0]));
+      if (url) window.open(url, '_blank', 'noopener');
+    };
+  }
+
+  // プレビューは開くたびに中身が作り直されるので、短い間隔で貼り直す
+  function apply(){ try { bindNavi(); bindSelect(); } catch(e){} }
+  apply();
+  setInterval(apply, 150);
+})();

@@ -424,44 +424,113 @@
     return out;
   }
 
+  // いま画面に出ているルート（1番目の社の名前から突き止める）
+  var currentRoute = null;
+  function setCurrentRoute(firstName){
+    var n = clean(firstName), rs = allRoutes();
+    currentRoute = null;
+    for (var i = 0; i < rs.length; i++){
+      var sp = rs[i] && rs[i].spots && rs[i].spots[0];
+      if (sp && clean(sp.name) === n) { currentRoute = rs[i]; return; }
+    }
+  }
+
   // 名前から座標を探す
-  //   ① 表示中のルートのデータ  ② 全国の座標表 SHRINE_COORDS
-  // の順に見る。座標が見つかれば「緯度,経度」を返す。
+  //   ① いま開いているルート → 他のルート  ② 全国の座標表 SHRINE_COORDS
+  // いずれも**完全一致だけ**。見つかれば「緯度,経度」を返す。
   function coordOf(name){
     var n = clean(name);
     if (!n) return null;
     var i, j;
 
     // ① ルートのデータ（Placesで取った正確な座標が入っている）
+    //
+    // ★ここも完全一致だけにする★
+    //   以前は部分一致も採っていたため、「伊勢神宮（内宮）」を探しているのに
+    //   別のルートの「伊勢神宮 外宮」を掴んで、出発地が入れ替わってしまっていた。
+    //   さらに、いま開いているルートを最優先で見る。
     var rs = allRoutes();
+    if (currentRoute && currentRoute.spots) rs = [currentRoute].concat(rs);
     for (i = 0; i < rs.length; i++){
       var spots = (rs[i] && rs[i].spots) || [];
       for (j = 0; j < spots.length; j++){
         var sp = spots[j];
         if (!sp) continue;
         if (typeof sp.lat !== 'number' || typeof sp.lng !== 'number') continue;
-        var m = clean(sp.name);
-        if (!m) continue;
-        if (m === n || m.indexOf(n) >= 0 || n.indexOf(m) >= 0) return sp.lat + ',' + sp.lng;
+        if (clean(sp.name) === n) return sp.lat + ',' + sp.lng;
       }
     }
 
     // ② 全国の座標表（index.html の SHRINE_COORDS）
+    //
+    // ★以前は部分一致も採っていたが、これが事故のもとだった★
+    //   例：「大神宮」→「東京大神宮」（東京）を掴んでしまい、
+    //   伊勢のルートが関東まで伸びる、ということが起きる。
+    //   なので**完全一致だけ**にする。
     try {
       if (typeof SHRINE_COORDS !== 'undefined' && SHRINE_COORDS){
-        var keys = Object.keys(SHRINE_COORDS), best = '', k, c;
+        var keys = Object.keys(SHRINE_COORDS), k, c;
         for (i = 0; i < keys.length; i++){
           k = clean(keys[i]);
-          if (!k) continue;
-          if (k === n) { c = SHRINE_COORDS[keys[i]]; return c.lat + ',' + c.lng; }
-          // 部分一致は「いちばん長く一致したもの」を採る（別の社を掴まないように）
-          if ((k.indexOf(n) >= 0 || n.indexOf(k) >= 0) && k.length > best.length) best = keys[i];
+          if (k && k === n) { c = SHRINE_COORDS[keys[i]]; return c.lat + ',' + c.lng; }
         }
-        if (best) { c = SHRINE_COORDS[best]; return c.lat + ',' + c.lng; }
       }
     } catch(e){}
 
     return null;
+  }
+
+  // 2地点の距離（km）
+  function distKm(a, b){
+    if (!a || !b) return 0;
+    var p = a.split(','), q = b.split(',');
+    var la1 = +p[0], ln1 = +p[1], la2 = +q[0], ln2 = +q[1];
+    if (!isFinite(la1) || !isFinite(la2)) return 0;
+    var R = 6371, dLa = (la2-la1)*Math.PI/180, dLn = (ln2-ln1)*Math.PI/180;
+    var x = Math.sin(dLa/2)*Math.sin(dLa/2)
+          + Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLn/2)*Math.sin(dLn/2);
+    return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+  }
+
+  // 1番目の社から遠すぎる地点は、拾い間違いとみなして捨てる
+  var MAX_KM = 120;
+  function sane(base, pt){
+    if (!base || !pt) return true;
+    if (!/^[-\d.]+,[-\d.]+$/.test(pt) || !/^[-\d.]+,[-\d.]+$/.test(base)) return true;
+    return distKm(base, pt) <= MAX_KM;
+  }
+
+  // 住所を「都道府県＋市区町村」までに切り詰める（例：三重県伊勢市）
+  function trimArea(v){
+    var t = String(v || '').replace(/^日本[、,]?\s*/, '').replace(/〒[\d-]+\s*/, '').trim();
+    var m = t.match(/^(.{2,3}[都道府県].{1,6}?[市区町村郡])/);
+    if (m) return m[1];
+    m = t.match(/^(.{2,3}[都道府県])/);
+    if (m) return m[1];
+    return t.replace(/\d.*$/, '').trim();
+  }
+
+  // 出発地の「地域」を取り出す（例：三重県伊勢市）。
+  // 座標が分からない店などに付けて、遠くの同名店を掴まないようにする。
+  function areaOf(firstName){
+    var n = clean(firstName), rs = allRoutes(), i, j;
+    for (i = 0; i < rs.length; i++){
+      var spots = (rs[i] && rs[i].spots) || [];
+      for (j = 0; j < spots.length; j++){
+        if (spots[j] && clean(spots[j].name) === n) {
+          var v = spots[j].loc || spots[j].addr || '';
+          if (v) return trimArea(v);
+        }
+      }
+    }
+    try {
+      if (typeof SHRINES !== 'undefined' && SHRINES){
+        for (i = 0; i < SHRINES.length; i++){
+          if (clean(SHRINES[i].name) === n && SHRINES[i].addr) return trimArea(SHRINES[i].addr);
+        }
+      }
+    } catch(e){}
+    return '';
   }
 
   // 座標が分からないときの「せめてもの手当て」。
@@ -471,14 +540,11 @@
     var n = clean(name);
     try {
       if (typeof SHRINES !== 'undefined' && SHRINES){
-        var hit = null, best = '';
+        // ★完全一致だけ★（部分一致だと別の県の同名社の住所が付いてしまう）
         for (var i = 0; i < SHRINES.length; i++){
-          var sn = clean(SHRINES[i] && SHRINES[i].name);
-          if (!sn) continue;
-          if (sn === n) { hit = SHRINES[i]; break; }
-          if ((sn.indexOf(n) >= 0 || n.indexOf(sn) >= 0) && sn.length > best.length) { best = sn; hit = SHRINES[i]; }
+          if (clean(SHRINES[i] && SHRINES[i].name) === n && SHRINES[i].addr)
+            return n + ' ' + SHRINES[i].addr;
         }
-        if (hit && hit.addr) return n + ' ' + hit.addr;
       }
     } catch(e){}
     return n;
@@ -515,6 +581,24 @@
     return u;
   }
 
+  // 名前の並び → Googleに渡す地点の並び
+  //   ・座標が分かればそれを使う
+  //   ・1番目から遠すぎる座標は捨てる（拾い間違いよけ）
+  //   ・座標が無いものは「名前＋地域」にして、遠くの同名店を掴まないようにする
+  function resolvePoints(names){
+    setCurrentRoute(names[0]);
+    var base = coordOf(names[0]) || '';
+    var area = areaOf(names[0]);
+    return names.map(function(nm, i){
+      var c = coordOf(nm);
+      if (c && (i === 0 || sane(base, c))) return c;
+      var withPlace = nameWithPlace(nm);
+      if (withPlace !== clean(nm)) return withPlace;      // 住所が付いた
+      return area ? (clean(nm) + ' ' + area) : clean(nm); // 地域名を足す
+    });
+  }
+  window.resolvePointsPublic = resolvePoints;
+
   // ── ① カスタマイズ済みルートの「このルートでナビを開始」 ──
   function bindNavi(){
     var btn = document.getElementById('wcNavi');
@@ -526,8 +610,7 @@
         function(n){ return String(n.textContent).trim(); }
       ).filter(Boolean);
       if (!names.length) return;
-      // 画面に並んでいる順番のまま。座標が分かるものは座標にする。
-      var pts = names.map(function(nm){ return coordOf(nm) || nameWithPlace(nm); });
+      var pts = resolvePoints(names);
       var url = buildUrl(pts, transportOf(names[0]));
       if (url) window.open(url, '_blank');
     };
@@ -550,7 +633,7 @@
         }
       }
       if (!names.length) return;
-      var pts = names.map(function(nm){ return coordOf(nm) || nameWithPlace(nm); });
+      var pts = resolvePoints(names);
       var url = buildUrl(pts, transportOf(names[0]));
       if (url) window.open(url, '_blank', 'noopener');
     };
@@ -857,4 +940,81 @@
   }
   tick();
   setInterval(tick, 500);
+})();
+
+/* ══════════════════════════════════════════════════════════════
+   ・「♡ ルートを保存」を押したら、ハートを赤くして保存済みを示す
+   ・ルート確認ページの下の余白を詰める
+   （2026-09-01）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiSaveHeart) return;
+  window.__wabiSaveHeart = true;
+
+  var css = document.createElement('style');
+  css.textContent = [
+    // 保存済みのときのハート
+    '#wcSave.wabi-saved{background:#fff !important;border:1.5px solid #d9534f !important;color:#d9534f !important;}',
+    '#wcSave.wabi-saved .wabi-heart{color:#d9534f;}',
+    '#wcSave .wabi-heart{margin-right:4px;}',
+    // 押した瞬間の小さな鼓動
+    '@keyframes wabiPop{0%{transform:scale(1)}40%{transform:scale(1.28)}100%{transform:scale(1)}}',
+    '#wcSave.wabi-just .wabi-heart{display:inline-block;animation:wabiPop .42s ease;}',
+    // ── ルート確認ページの下の余白を詰める ──
+    //   下部メニュー（約60px）に隠れない分だけ残せば十分。96pxは空きすぎだった。
+    '#wcPrev .wc-inner{padding-bottom:calc(var(--wabi-nav-h,60px) + 14px) !important;}',
+    '#wcPrev .wc-inner > div:last-child{margin-bottom:14px !important;}'
+  ].join('');
+  document.head.appendChild(css);
+
+  function savedList(){
+    try { var a = JSON.parse(localStorage.getItem('wabi_saved_routes') || '[]'); return Array.isArray(a) ? a : []; }
+    catch(e){ return []; }
+  }
+  // いま表示しているルートが保存済みか
+  function isSaved(){
+    try {
+      var rows = [].map.call(document.querySelectorAll('#wcPrevBody .wc-tl-nm'),
+                             function(n){ return String(n.textContent).trim(); }).filter(Boolean);
+      if (!rows.length) return false;
+      var sig = rows.join(',');
+      return savedList().some(function(r){
+        return (r.spots || []).map(function(s){ return s.name; }).join(',') === sig;
+      });
+    } catch(e){ return false; }
+  }
+
+  function paint(btn, justNow){
+    if (!btn) return;
+    var on = isSaved();
+    btn.classList.toggle('wabi-saved', on);
+    btn.innerHTML = '<span class="wabi-heart">' + (on ? '♥' : '♡') + '</span>'
+                  + (on ? 'ルート保存済み' : 'ルートを保存');
+    if (justNow) {
+      btn.classList.add('wabi-just');
+      setTimeout(function(){ btn.classList.remove('wabi-just'); }, 460);
+    }
+  }
+
+  function bind(){
+    var btn = document.getElementById('wcSave');
+    if (!btn) return;
+    // 保存処理が先に入るのを待つ（順番が入れ替わると保存が効かなくなるため）
+    if (btn.getAttribute('data-wsv') !== '1') return;
+    if (btn.getAttribute('data-whb') !== '1'){
+      btn.setAttribute('data-whb', '1');
+      var prev = btn.onclick;                       // 先に入っている保存処理
+      btn.onclick = function(ev){
+        if (typeof prev === 'function') { try { prev.call(btn, ev); } catch(e){} }
+        setTimeout(function(){ paint(btn, true); }, 60);
+      };
+      paint(btn, false);
+    } else {
+      // 別のルートを開き直したときのために、状態だけ合わせ続ける
+      var want = isSaved();
+      if (btn.classList.contains('wabi-saved') !== want) paint(btn, false);
+    }
+  }
+  setInterval(function(){ try { bind(); } catch(e){} }, 250);
+  bind();
 })();

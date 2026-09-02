@@ -3055,18 +3055,44 @@
       + '</div></div>';
   }
 
+  // period（例「2026年9月14日（月）〜16日（水）」）から年月を取り出す。
+  // どちらのファイルが新しいかを、この数字で見分ける。
+  function ym(list){
+    var best = 0;
+    (list || []).forEach(function(e){
+      var m = String(e && e.period || '').match(/(20\d\d)\s*年\s*(\d{1,2})\s*月/);
+      if (m){ var v = (+m[1]) * 100 + (+m[2]); if (v > best) best = v; }
+    });
+    return best;
+  }
+
+  function grab(url){
+    return fetch(url, { cache: 'no-store' })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(j){
+        if (!j || !j.length) return null;
+        var v = j.filter(function(e){ return e && e.title && e.url; });
+        return v.length ? v : null;
+      })
+      .catch(function(){ return null; });
+  }
+
   function load(){
     if (tried) return;
     tried = true;
     try {
-      fetch('data/events.json', { cache: 'no-store' })
-        .then(function(r){ return r.ok ? r.json() : null; })
-        .then(function(j){
-          if (!j || !j.length) return;                 // 空なら内蔵データのまま
-          LIST = j.filter(function(e){ return e && e.title && e.url; });
-          if (!LIST.length) LIST = null;
+      // 正式な置き場所は data/events.json。
+      // ただしアップロード先を間違えてルート直下に置かれることがあるので、
+      // 両方を読んで「新しい月のほう」を採用する。
+      Promise.all([ grab('data/events.json'), grab('events.json') ])
+        .then(function(r){
+          var a = r[0], b = r[1];
+          if (!a && !b) return;                          // どちらも無い → 内蔵データのまま
+          if (!a) { LIST = b; return; }
+          if (!b) { LIST = a; return; }
+          LIST = (ym(b) > ym(a)) ? b : a;                // 新しい月のほうを使う
         })
-        .catch(function(){});                           // 通信できなくても壊さない
+        .catch(function(){});
     } catch(e){}
   }
 
@@ -3127,4 +3153,163 @@
       });
     } catch(e){}
   }, 600);
+})();
+
+/* ══════════════════════════════════════════════════════════════
+   ② 明治神宮で調べると「京都の愛宕神社」が混ざる問題（2026-09-02）
+
+   ★原因★
+   写真や座標を取りにいく findPlaceFromQuery が、
+   「愛宕神社 神社」のように**名前だけ**で問い合わせていた。
+   Googleは場所の指定が無いと、いちばん有名なものを返すので、
+   東京・港区の愛宕神社を探しているのに京都の愛宕神社が返ってくる。
+   （ルートの座標そのものは東京で正しいが、写真と詳細が京都のものになる）
+
+   ★対策★
+   問い合わせに場所の指定が無いときだけ、
+   いま見ているルートの起点のまわり（60km）を指定として足す。
+   起点が分からないときは何もしない（従来どおり）。
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiPlaceBias) return;
+  window.__wabiPlaceBias = true;
+
+  // いま基準にすべき場所（緯度・経度）
+  function center(){
+    // ① 検索カードで確定した施設
+    try {
+      var p = window.wabiPickedPlace;
+      if (p && typeof p.lat === 'number') return { lat: p.lat, lng: p.lng };
+    } catch(e){}
+    // ② いま作られているルートの1番目のスポット
+    try {
+      var rs = window._dynamicRoutes || window._aiRoutesPC;
+      if (rs && rs.length){
+        for (var i = 0; i < rs.length; i++){
+          var s = rs[i] && rs[i].spots && rs[i].spots[0];
+          if (s && typeof s.lat === 'number') return { lat: s.lat, lng: s.lng };
+        }
+      }
+    } catch(e){}
+    // ③ 開いているルート記事・プレビューの1番目
+    try {
+      var r = window.wabiCurrentRoute;
+      if (r && r.spots && r.spots[0] && typeof r.spots[0].lat === 'number')
+        return { lat: r.spots[0].lat, lng: r.spots[0].lng };
+    } catch(e){}
+    return null;
+  }
+
+  function patch(){
+    try {
+      if (!(window.google && google.maps && google.maps.places
+            && google.maps.places.PlacesService)) return;
+      var proto = google.maps.places.PlacesService.prototype;
+      if (!proto || typeof proto.findPlaceFromQuery !== 'function') return;
+      if (proto.findPlaceFromQuery.__wbias) return;
+
+      var orig = proto.findPlaceFromQuery;
+      var wrapped = function(req, cb){
+        try {
+          if (req && !req.locationBias && !req.locationRestriction){
+            var c = center();
+            // 60km以内を優先して探す（同じ名前の遠方の社を掴まないため）
+            if (c) req.locationBias = { center: { lat: c.lat, lng: c.lng }, radius: 60000 };
+          }
+        } catch(e){}
+        return orig.call(this, req, cb);
+      };
+      wrapped.__wbias = true;
+      proto.findPlaceFromQuery = wrapped;
+    } catch(e){}
+  }
+
+  patch();
+  setInterval(patch, 500);
+})();
+
+/* ══════════════════════════════════════════════════════════════
+   ③ ルート提案ページで下部メニューが効かなくなる問題の念押し修正
+   （2026-09-02）
+
+   これまでは click だけを見ていた。だが iPhone では、上に重なった画面が
+   スクロールやタッチを先に受け取ると click が届かないことがある。
+   そこで
+     ・指が触れた瞬間（pointerdown / touchstart）にも反応する
+     ・座標で「下部メニューのどのボタンか」を自分で判定する
+     ・0.35秒たっても本来の click が来なければ、こちらから押してやる
+     ・下部メニューは、あとから足したどの画面よりも必ず上に置く
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiNavHard) return;
+  window.__wabiNavHard = true;
+
+  /* 下部メニューを最前面に固定する（自分で足したシート類より上） */
+  var css = document.createElement('style');
+  css.id = 'wabiNavHardCss';
+  css.textContent = [
+    'html body #wabiNav{',
+    '  z-index:2147483600 !important;',
+    '  pointer-events:auto !important;',
+    '}',
+    'html body #wabiNav .wn{pointer-events:auto !important;touch-action:manipulation;}'
+  ].join('\n');
+  function put(){
+    var o = document.getElementById('wabiNavHardCss');
+    if (o && o.parentNode) o.parentNode.removeChild(o);
+    (document.head || document.documentElement).appendChild(css);
+  }
+  put();
+  var n = 0;
+  var iv = setInterval(function(){ put(); if (++n > 12) clearInterval(iv); }, 900);
+
+  function close(){
+    try { if (typeof window.wabiCloseAiPages === 'function') window.wabiCloseAiPages(); } catch(e){}
+  }
+
+  // その座標にある下部メニューのボタンを返す
+  function wnAt(x, y){
+    if (typeof x !== 'number' || typeof y !== 'number') return null;
+    var nav = document.getElementById('wabiNav');
+    if (!nav) return null;
+    var r = nav.getBoundingClientRect();
+    if (y < r.top - 2 || y > r.bottom + 2) return null;      // 下部メニューの高さの外
+    var hit = null;
+    nav.querySelectorAll('.wn').forEach(function(w){
+      var b = w.getBoundingClientRect();
+      if (x >= b.left - 2 && x <= b.right + 2) hit = w;
+    });
+    return hit;
+  }
+
+  var pending = null;
+
+  function onDown(ev){
+    try {
+      var pt = ev.touches && ev.touches[0] ? ev.touches[0] : ev;
+      var wn = wnAt(pt.clientX, pt.clientY);
+      if (!wn) return;
+      close();                                   // 先に上の画面を閉じる
+      pending = wn;
+      setTimeout(function(){
+        if (pending !== wn) return;              // 本来の click が来た → 何もしない
+        pending = null;
+        try { wn.click(); } catch(e){}           // 来なかった → こちらから押す
+      }, 350);
+    } catch(e){}
+  }
+
+  ['pointerdown', 'touchstart'].forEach(function(t){
+    document.addEventListener(t, onDown, true);
+  });
+
+  document.addEventListener('click', function(ev){
+    try {
+      var t = ev.target;
+      if (t && t.closest && t.closest('#wabiNav .wn')){
+        pending = null;                          // 本来の click が届いた
+        close();
+      }
+    } catch(e){}
+  }, true);
 })();

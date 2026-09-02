@@ -1919,3 +1919,145 @@
   run();
   setInterval(function(){ hook(); run(); }, 400);
 })();
+
+/* ══════════════════════════════════════════════════════════════
+   AIルート作成：「神社中心」を選んでもお寺ばかり出る問題（2026-09-01）
+
+   原因（3つ）
+   1) index.html の buildRoutesViaPlaces は Google の Nearby Search を
+      type:'place_of_worship' で呼んでいる。これは神社・寺・教会をまとめて
+      返す種別なので、寺のほうが多い地域では寺ばかりになる。
+      しかも候補はすべて type:'shrine' と決め打ちで、選んだ種別
+      （神社中心／両方／寺院中心）はどこでも参照されていなかった。
+   2) concierge.js の supplementDynamicRoutes も keyword:'神社 寺' で
+      同じように寺を混ぜて補充していた。
+   3) APIキー無しのときに使う SHRINE_COORDS には、善光寺・川崎大師・
+      金閣寺など寺院が多数入っており、ここでも区別していなかった。
+
+   対策
+   ・名前からお寺／神社を見分ける kindOf() を用意
+   ・Nearby Search（place_of_worship）の結果を、選んだ種別と反対のものだけ
+     取り除く（判定できない名前は残すので、取りこぼしで空にはならない）
+     → 1) と 2) の両方が同時に直る
+   ・buildDynamicRoutes に渡る候補も同じ規則で間引く → 3) が直る
+   ・「両方」を選んだときに種別指定が解除されるようにする
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiKindFilter) return;
+  window.__wabiKindFilter = true;
+
+  /* ── 名前からお寺か神社かを見分ける ─────────────────────── */
+  function kindOf(name){
+    var n = String(name || '').replace(/[（(].*$/, '').trim();
+    if (!n) return '';
+    // 末尾がはっきりお寺（「神宮寺」のように神社の語を含んでいても寺）
+    if (/(寺|院|庵|坊|大師|不動尊|観音|薬師堂|堂|大仏)$/.test(n)) return 'temple';
+    // 神社の語
+    if (/(神社|大社|神宮|大神宮|八幡宮|八幡$|天満宮|天神$|東照宮|稲荷|明神|権現|神明|宮$|社$)/.test(n)) return 'shrine';
+    // お寺の語
+    if (/(寺|院|大師|不動|観音|薬師|門跡|別院|霊場|札所|山門|伽藍)/.test(n)) return 'temple';
+    return '';   // 判定できない → どちらにも寄せない
+  }
+  window.wabiKindOf = kindOf;
+
+  /* ── いま選ばれている種別（トップの神社中心／両方／寺院中心）── */
+  function wantKind(){
+    try {
+      var on = document.querySelector('.hero-search-toggles .hero-search-toggle.on');
+      if (on){
+        var t = (on.textContent || '').replace(/\s+/g, '');
+        if (t.indexOf('神社') === 0) return 'shrine';
+        if (t.indexOf('寺院') === 0) return 'temple';
+        return '';                       // 両方
+      }
+    } catch(e){}
+    try { if (typeof currentType !== 'undefined' && currentType) return currentType; } catch(e){}
+    return '';
+  }
+  window.wabiWantKind = wantKind;
+
+  // 反対の種別だけ取り除く（判定できないものは残す）
+  function drop(list, want, nameOf){
+    if (!want || !list || !list.length) return list;
+    var other = (want === 'shrine') ? 'temple' : 'shrine';
+    var kept = [];
+    for (var i = 0; i < list.length; i++){
+      if (kindOf(nameOf(list[i])) !== other) kept.push(list[i]);
+    }
+    return kept.length ? kept : list;    // 全部消えるくらいなら元のまま
+  }
+
+  /* ── ① Nearby Search（神社仏閣まとめて返す種別）の結果をふるいにかける ── */
+  function patchPlaces(){
+    try {
+      if (!window.google || !google.maps || !google.maps.places) return false;
+      var proto = google.maps.places.PlacesService && google.maps.places.PlacesService.prototype;
+      if (!proto || typeof proto.nearbySearch !== 'function') return false;
+      if (proto.nearbySearch.__wkind) return true;
+
+      var orig = proto.nearbySearch;
+      var wrapped = function(req, cb){
+        var want = wantKind();
+        var isWorship = req && (req.type === 'place_of_worship'
+                        || (req.keyword && /神社|寺/.test(req.keyword)));
+        if (!want || !isWorship || typeof cb !== 'function') return orig.call(this, req, cb);
+        return orig.call(this, req, function(res, status, pagination){
+          try { if (res && res.length) res = drop(res, want, function(p){ return p && p.name; }); } catch(e){}
+          cb(res, status, pagination);
+        });
+      };
+      wrapped.__wkind = true;
+      proto.nearbySearch = wrapped;
+      return true;
+    } catch(e){ return false; }
+  }
+
+  /* ── ② ルート組み立てに渡る候補もふるいにかける ───────── */
+  function patchBuild(){
+    var f = window.buildDynamicRoutes;
+    if (typeof f !== 'function' || f.__wkind) return;
+    var wrapped = function(base, baseCoord, candidates, selTime, selTrans, budget){
+      try {
+        var want = wantKind();
+        if (want && candidates && candidates.length){
+          candidates = drop(candidates, want, function(c){
+            return c && c.shrine && c.shrine.name;
+          });
+          // 種別を正しく持たせておく（テーマ色などで使われる）
+          candidates.forEach(function(c){
+            if (c && c.shrine){
+              var k = kindOf(c.shrine.name);
+              if (k) c.shrine.type = k;
+            }
+          });
+        }
+      } catch(e){}
+      return f.call(this, base, baseCoord, candidates, selTime, selTrans, budget);
+    };
+    wrapped.__wkind = true;
+    wrapped.__orig  = f;
+    window.buildDynamicRoutes = wrapped;
+  }
+
+  /* ── ③ 「両方」を選んだら種別指定を解除する ───────────── */
+  function patchMode(){
+    var f = window.setSearchMode;
+    if (typeof f !== 'function' || f.__wkind) return;
+    var wrapped = function(el, mode){
+      var r = f.call(this, el, mode);
+      if (mode === 'both'){
+        try { window.currentType = ''; } catch(e){}
+        try { if (typeof currentType !== 'undefined') currentType = ''; } catch(e){}
+        try { if (typeof filter === 'function') filter(); } catch(e){}
+      }
+      return r;
+    };
+    wrapped.__wkind = true;
+    wrapped.__orig  = f;
+    window.setSearchMode = wrapped;
+  }
+
+  function run(){ patchPlaces(); patchBuild(); patchMode(); }
+  run();
+  setInterval(run, 500);
+})();

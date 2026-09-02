@@ -437,11 +437,22 @@
 
   // 名前から座標を探す
   //   ① いま開いているルート → 他のルート  ② 全国の座標表 SHRINE_COORDS
+  // 内蔵データに座標が無い地点（飲食店・カフェなど）は、
+  // Googleに一度だけ問い合わせて座標を控えておく。
+  //   ここが空のままだと、Googleマップに「名前」を渡すことになり、
+  //   同じ名前の店が複数あると経路を確定できず、入力画面のまま止まってしまう。
+  var PT_CACHE = {};    // 「名前」→「緯度,経度」
+  var PT_TRIED = {};    // 問い合わせ済みの印（同じ店を何度も聞かない）
+  window.wabiPtCache = PT_CACHE;
+
   // いずれも**完全一致だけ**。見つかれば「緯度,経度」を返す。
   function coordOf(name){
     var n = clean(name);
     if (!n) return null;
     var i, j;
+
+    // ⓪ Googleに問い合わせて分かった座標（飲食店など、内蔵データに無いもの）
+    if (PT_CACHE[n]) return PT_CACHE[n];
 
     // ① ルートのデータ（Placesで取った正確な座標が入っている）
     //
@@ -567,16 +578,27 @@
 
   // 地点の並びからGoogleマップのURLを組み立てる
   function buildUrl(points, transport){
-    var p = (points || []).filter(Boolean);
+    var raw = (points || []).filter(Boolean);
+    // 隣り合う地点がまったく同じだと、Googleが経路を出せず入力画面のまま止まる
+    var p = [];
+    for (var q = 0; q < raw.length; q++){
+      if (q === 0 || String(raw[q]) !== String(raw[q - 1])) p.push(raw[q]);
+    }
     if (!p.length) return null;
     if (p.length === 1) {
       return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p[0]);
     }
+    var way  = p.slice(1, -1).slice(0, 9);         // Googleの経由地は最大9つ
+    var mode = travelMode(transport);
+
+    // ★Googleマップの仕様★
+    //   経由地（waypoints）は 車・徒歩・自転車 のみ対応。
+    //   transit（電車・バス）と一緒に渡すと経路を出せず、
+    //   入力画面のまま止まってしまう。その場合は travelmode を付けない。
     var u = 'https://www.google.com/maps/dir/?api=1'
           + '&origin=' + encodeURIComponent(p[0])
-          + '&destination=' + encodeURIComponent(p[p.length - 1])
-          + '&travelmode=' + travelMode(transport);
-    var way = p.slice(1, -1).slice(0, 9);          // Googleの経由地は最大9つ
+          + '&destination=' + encodeURIComponent(p[p.length - 1]);
+    if (!(mode === 'transit' && way.length)) u += '&travelmode=' + mode;
     if (way.length) u += '&waypoints=' + way.map(encodeURIComponent).join('%7C');
     return u;
   }
@@ -599,16 +621,64 @@
   }
   window.resolvePointsPublic = resolvePoints;
 
+  // ── 座標が分からない地点を、Googleに聞いて控えておく ──────
+  //   ボタンを押した瞬間に問い合わせると、返事を待つ間に
+  //   ポップアップがブロックされてしまうので、画面を開いた時点で先に済ませる。
+  function placesReady(){
+    return !!(window.google && google.maps && google.maps.places
+              && google.maps.places.PlacesService);
+  }
+  var pSvc = null;
+  function prefetchCoords(names){
+    if (!names || !names.length || !placesReady()) return;
+    if (!pSvc){
+      try { pSvc = new google.maps.places.PlacesService(document.createElement('div')); }
+      catch(e){ return; }
+    }
+    var base = coordOf(names[0]) || '';
+    var area = areaOf(names[0]);
+    var seen = {};
+    names.forEach(function(nm){
+      var n = clean(nm);
+      if (!n || PT_CACHE[n] || PT_TRIED[n]) return;
+      var c0 = coordOf(n);
+      if (c0 && !seen[c0]) { seen[c0] = 1; return; }   // 座標が分かっていて重複もない
+      // ここに来るのは
+      //   ・座標が分からない（飲食店など）
+      //   ・別の地点とまったく同じ座標になっている（内蔵データの取り違え）
+      //     例：浅草寺と浅草神社が同じ緯度経度で登録されている
+      PT_TRIED[n] = 1;
+      var q = nameWithPlace(n);
+      if (q === n && area) q = n + ' ' + area;   // 地域名を足して絞り込む
+      try {
+        pSvc.findPlaceFromQuery({ query: q, fields: ['geometry'] }, function(res, st){
+          try {
+            if (st !== google.maps.places.PlacesServiceStatus.OK || !res || !res[0]) return;
+            var g = res[0].geometry && res[0].geometry.location;
+            if (!g) return;
+            var c = g.lat() + ',' + g.lng();
+            if (base && !sane(base, c)) return;   // 出発地から遠すぎる＝別の店
+            PT_CACHE[n] = c;
+          } catch(e){}
+        });
+      } catch(e){}
+    });
+  }
+
+  function namesInPreview(){
+    return [].map.call(
+      document.querySelectorAll('#wcPrevBody .wc-tl-nm'),
+      function(n){ return String(n.textContent).trim(); }
+    ).filter(Boolean);
+  }
+
   // ── ① カスタマイズ済みルートの「このルートでナビを開始」 ──
   function bindNavi(){
     var btn = document.getElementById('wcNavi');
     if (!btn) return;
     btn.setAttribute('data-wapx', '1');     // concierge.js 側の上書きを止める
     btn.onclick = function(){
-      var names = [].map.call(
-        document.querySelectorAll('#wcPrevBody .wc-tl-nm'),
-        function(n){ return String(n.textContent).trim(); }
-      ).filter(Boolean);
+      var names = namesInPreview();
       if (!names.length) return;
       var pts = resolvePoints(names);
       var url = buildUrl(pts, transportOf(names[0]));
@@ -645,7 +715,21 @@
   window.nameWithPlacePublic = nameWithPlace;
 
   // プレビューは開くたびに中身が作り直されるので、短い間隔で貼り直す
-  function apply(){ try { bindNavi(); bindSelect(); } catch(e){} }
+  function apply(){
+    try { bindNavi(); bindSelect(); } catch(e){}
+    // 画面を開いている間に、足りない座標を先読みしておく
+    try {
+      var pv = document.getElementById('wcPrev');
+      if (pv && pv.style.display === 'block') prefetchCoords(namesInPreview());
+      var rp = document.getElementById('wabiRoutePg');
+      if (rp && rp.style.display !== 'none' && rp.offsetHeight > 0){
+        prefetchCoords([].map.call(
+          rp.querySelectorAll('.wrp-spot .nm, .wrp-spot-nm'),
+          function(n){ return String(n.textContent).trim(); }
+        ).filter(Boolean));
+      }
+    } catch(e){}
+  }
   apply();
   setInterval(apply, 150);
 })();
@@ -2182,6 +2266,53 @@
     s.id = 'wabiThemeCardCss';
     s.textContent = RULES;
     (document.head || document.documentElement).appendChild(s);   // 常に最後に置き直す
+  }
+  put();
+  var n = 0;
+  var iv = setInterval(function(){ put(); if (++n > 12) clearInterval(iv); }, 900);
+})();
+
+/* ══════════════════════════════════════════════════════════════
+   カスタマイズ済みルートの神社カードを大きく見やすくする（2026-09-01）
+   写真 54px → 84px、名前 13px → 15.5px、説明 10.5px → 12px
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiPrevCard) return;
+  window.__wabiPrevCard = true;
+
+  var RULES = [
+    'html body #wcPrev .wc-tl{padding:20px 16px !important;border-radius:24px !important;}',
+
+    /* 写真を大きく */
+    'html body #wcPrev .wc-tl-i .wc-tl-th{',
+    '  width:84px !important; height:84px !important; flex:0 0 84px !important;',
+    '  border-radius:16px !important; font-size:34px !important;',
+    '}',
+
+    /* 行の間隔と番号 */
+    'html body #wcPrev .wc-tl-i{padding:12px 0 !important; gap:14px !important;}',
+    'html body #wcPrev .wc-tl-i .wc-tl-n{',
+    '  width:30px !important; height:30px !important; flex:0 0 30px !important; font-size:13.5px !important;',
+    '}',
+
+    /* 文字を読みやすく */
+    'html body #wcPrev .wc-tl-i .wc-tl-nm{font-size:15.5px !important; line-height:1.45 !important;}',
+    'html body #wcPrev .wc-tl-i .wc-tl-mt{font-size:12px !important; margin-top:4px !important;}',
+
+    /* 「移動 約10分」の縦線を写真の大きさに合わせる */
+    'html body #wcPrev .wc-tl-mv{',
+    '  font-size:11.5px !important; height:22px !important; line-height:22px !important;',
+    '  margin-left:14px !important; padding-left:15px !important;',
+    '}'
+  ].join('\n');
+
+  function put(){
+    var old = document.getElementById('wabiPrevCardCss');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+    var s = document.createElement('style');
+    s.id = 'wabiPrevCardCss';
+    s.textContent = RULES;
+    (document.head || document.documentElement).appendChild(s);
   }
   put();
   var n = 0;

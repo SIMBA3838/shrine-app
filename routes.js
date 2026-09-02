@@ -3313,3 +3313,116 @@
     } catch(e){}
   }, true);
 })();
+
+/* ══════════════════════════════════════════════════════════════
+   トップページの文字を1px大きくする（2026-09-02）
+
+   ■ 対象
+     トップページの「おすすめ記事」より上のセクションだけ。
+     ヘッダー／検索カード／巡拝ルート／ランキング／みんなの投稿 など。
+     おすすめ記事・テーマで巡るベスト10・それより下は今のまま。
+
+   ■ 大きさの決め方（大きい文字は触らない）
+       11px  → 12px
+       12px  → 13px
+       13px  → 13.5px
+       15px以上 → そのまま
+     行間も同じ比率で広げる。
+     見出しと本文の大小の関係が変わらないので、デザインの印象は保たれる。
+
+   ■ 大きくしない場所（ご指定）
+     ① 検索窓の下の注意書き
+     ② 「行きたい場所からルート作成」など4つ
+     ③ ランキングカードの「◯件のクチコミ」
+     ＋ 下部メニュー（高さが決まっていて崩れやすいため）
+
+   ■ 二重に大きくならない仕組み
+     一度変えた要素には data-wfs="1" の印を付け、二度目は触らない。
+     画面が描き直されて新しい要素が出てきたら、それだけを大きくする。
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiFontUp) return;
+  window.__wabiFontUp = true;
+
+  // 大きくしない場所
+  var SKIP = [
+    '#wabiNav',            // 下部メニュー
+    '#wabiNameNote',       // ① 検索窓の下の注意書き
+    '.hero-feat',          // ② 行きたい場所から…の4つ
+    '.rcnt'                // ③ ◯件のクチコミ
+  ].join(',');
+
+  function targets(){
+    var home = document.getElementById('pgHome');
+    if (!home) return null;
+    var kids = [].slice.call(home.children);
+    // 「おすすめ記事」の1つ手前まで
+    var stop = -1;
+    for (var i = 0; i < kids.length; i++){
+      var t = (kids[i].innerText || '').slice(0, 40);
+      if (t.indexOf('おすすめ記事') >= 0) { stop = i; break; }
+    }
+    if (stop < 0) stop = 10;         // 見つからないときの安全値
+    return kids.slice(0, stop);
+  }
+
+  function bump(e){
+    try {
+      if (e.getAttribute('data-wfs')) return;          // 済み
+      if (e.closest && e.closest(SKIP)) { e.setAttribute('data-wfs','skip'); return; }
+      var cs = getComputedStyle(e);
+      var fs = parseFloat(cs.fontSize);
+      if (!fs) return;
+      var nv = null;
+      if (fs <= 12.5) nv = fs + 1;
+      else if (fs <= 13.5) nv = fs + 0.5;
+      if (nv == null) { e.setAttribute('data-wfs','keep'); return; }
+      e.setAttribute('data-wfs','1');
+      var ratio = nv / fs;
+      e.style.setProperty('font-size', nv.toFixed(1) + 'px', 'important');
+      var lh = cs.lineHeight;
+      if (/px$/.test(lh)){
+        var lv = parseFloat(lh);
+        if (lv) e.style.setProperty('line-height', (lv * ratio).toFixed(1) + 'px', 'important');
+      }
+    } catch(err){}
+  }
+
+  function run(){
+    try {
+      var secs = targets();
+      if (!secs) return;
+      secs.forEach(function(sec){
+        bump(sec);
+        sec.querySelectorAll('*').forEach(bump);
+      });
+    } catch(err){}
+  }
+
+  // ★concierge.js のデザインが当たってから始める★
+  //   先に走ると、差し替え前の古いサイズ（10.5px など）を基準にしてしまい、
+  //   さらに !important で固定してしまうので、狙いより小さくなる。
+  function ready(){
+    try {
+      return !!document.getElementById('wabiTopFix3')
+          && !!document.body && document.body.classList.contains('wabi-top');
+    } catch(e){ return false; }
+  }
+
+  function start(){
+    run();
+    // 画面が描き直されたときのために、しばらく見張る（新しい要素だけ大きくなる）
+    var n = 0;
+    var iv = setInterval(function(){ run(); if (++n > 60) clearInterval(iv); }, 500);
+    // それ以降もゆっくり見張る（検索結果の描き替えなど）
+    setInterval(run, 2000);
+  }
+
+  var t0 = Date.now();
+  var wait = setInterval(function(){
+    if (ready() || Date.now() - t0 > 8000){    // 万一に備えて8秒で打ち切り
+      clearInterval(wait);
+      start();
+    }
+  }, 100);
+})();

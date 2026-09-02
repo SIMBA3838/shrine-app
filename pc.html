@@ -1364,6 +1364,55 @@ function buildRoutesViaPlaces(query, selTime, selTrans, budget) {
   });
 }
 
+/* ── PC版に無かった補助関数（index.html と同じもの）──────────────
+   これが無いために buildDynamicRoutes が毎回例外で止まり、
+   PC版のAIルート生成が固定ルートにフォールバックしていた。 */
+function deityLineage(deity, name) {
+  var d = (deity || '') + ' ' + (name || '');
+  // 天津神（高天原系）：天照大御神を中心とする系譜
+  if (/天照|瓊瓊杵|邇邇芸|天忍穂耳|天児屋根|天火明|天饒石|皇大神|神明/.test(d)) return { key:'amatsu', label:'天津神（高天原系）' };
+  // 出雲・国津神系：大国主を中心とする国譲りの物語
+  if (/大国主|大己貴|大物主|大穴牟遅|事代主|建御名方|少彦名|味鋤|味耜|大国魂/.test(d)) return { key:'izumo', label:'出雲・国津神系' };
+  // 素戔嗚・須佐之男系：八岐大蛇神話・厄除けの荒ぶる神
+  if (/素戔嗚|須佐之男|スサノオ|牛頭天王|八坂|祇園|氷川/.test(d)) return { key:'susanoo', label:'素戔嗚（須佐之男）系' };
+  // 八幡・応神系：武神・勝負の神
+  if (/応神|誉田別|八幡|品陀和氣/.test(d)) return { key:'hachiman', label:'八幡（応神天皇）系' };
+  // 天神・菅原道真系：学問の神
+  if (/菅原道真|天満|天神/.test(d)) return { key:'tenjin', label:'天神（菅原道真）系' };
+  // 宗像・弁財天・水神系：海・水・財運
+  if (/市杵島|宗像|田心|湍津|江島|弁財天|弁天|厳島|住吉|底筒|鹽土|綿津見/.test(d)) return { key:'water', label:'宗像・水神系' };
+  // 稲荷・食物神系：商売繁盛・五穀豊穣
+  if (/宇迦之御魂|稲荷|豊受|保食|御饌/.test(d)) return { key:'inari', label:'稲荷・食物神系' };
+  // 山岳・龍神系：自然・龍脈
+  if (/高龗|闇龗|龍|木花之佐久夜|浅間|健磐龍|大山積|大山祇|菊理媛|白山/.test(d)) return { key:'dragon', label:'山岳・龍神系' };
+  // 鹿島・香取（武神）系
+  if (/武甕槌|経津主|鹿島|香取/.test(d)) return { key:'takemikazuchi', label:'鹿島・香取（武神）系' };
+  // 仏（寺院）
+  if (/如来|菩薩|観音|不動|明王|大師|空海|盧舎那|釈迦|薬師|阿弥陀|聖観/.test(d)) return { key:'butsu', label:'仏教（寺院）' };
+  return { key:'other', label:'その他' };
+}
+
+function powerAttribute(deity, name) {
+  var lin = deityLineage(deity, name);
+  var d = (deity || '') + ' ' + (name || '');
+  if (lin.key === 'dragon' || /龍|滝|水分|高龗/.test(d)) return { key:'dragon', label:'龍脈・水の気' };
+  if (lin.key === 'water') return { key:'water', label:'水の浄化・財運' };
+  if (lin.key === 'susanoo' || /厄除|八方除|方位|疫病/.test(d)) return { key:'yakuyoke', label:'強力な厄除け' };
+  if (lin.key === 'hachiman' || lin.key === 'takemikazuchi') return { key:'shobu', label:'勝負・必勝の気' };
+  if (lin.key === 'amatsu') return { key:'kaiun', label:'太陽・開運の気' };
+  if (lin.key === 'izumo') return { key:'enmusubi', label:'縁結びの気' };
+  return { key:'sogo', label:'総合的なご神気' };
+}
+
+function goshuinScore(c) {
+  var s = c.shrine;
+  var score = (s.rev || 0) / 1000;
+  if (s.tags && s.tags.indexOf('goshuin') !== -1) score += 5;
+  // 御朱印・切り絵で著名な神社（名前マッチで加点）
+  if (/天満宮|東照宮|大社|神宮|八幡宮|稲荷/.test(s.name || '')) score += 3;
+  return score;
+}
+
 function buildDynamicRoutes(base, baseCoord, candidates, selTime, selTrans, budget) {
   var budgetMin = budget.budgetMin;
   var visitMin = budget.visitMin;
@@ -1494,7 +1543,9 @@ function buildDynamicRoutes(base, baseCoord, candidates, selTime, selTrans, budg
   // 各候補に祭神情報を補完（SHRINESにあれば取得）
   candidates.forEach(function(c){
     if (!c.shrine.deity) {
-      var known = SHRINES.find(function(s){ return s.name === c.shrine.name; });
+      // PC版には SHRINES が無いので、あるときだけ参照する（無いと例外でルート生成が丸ごと失敗する）
+      var known = (typeof SHRINES !== 'undefined' && SHRINES)
+        ? SHRINES.find(function(s){ return s.name === c.shrine.name; }) : null;
       if (known) c.shrine.deity = known.deity;
     }
     c._lineage = deityLineage(c.shrine.deity, c.shrine.name);
@@ -1503,7 +1554,8 @@ function buildDynamicRoutes(base, baseCoord, candidates, selTime, selTrans, budg
   });
   // 起点の系統
   if (!base.deity) {
-    var bk = SHRINES.find(function(s){ return s.name === base.name; });
+    var bk = (typeof SHRINES !== 'undefined' && SHRINES)
+      ? SHRINES.find(function(s){ return s.name === base.name; }) : null;
     if (bk) base.deity = bk.deity;
   }
   var baseLineage = deityLineage(base.deity, base.name);
@@ -2238,6 +2290,504 @@ function openArticle(id){
   document.getElementById('articleDetailBody').innerHTML = html;
   openOverlay('pgArticleDetail');
 }
+
+</script>
+<script>
+
+/* ══════════════════════════════════════════════════════════════
+   わびなび：検索カードの「場所を指定」と同名施設の候補選択
+   （2026-09-02 / モバイル版・PC版で同じコード・同じデータ構造）
+
+   ■ 既存コードは書き換えない
+     ・startAiRoute（モバイル）／ startAiRoutePC（PC）を「包む」だけ
+     ・起点の特定は既存の buildRoutesViaPlaces の textSearch をそのまま使い、
+       確定済みの施設があるときだけ、その結果を返す
+     ・Google Places が使えないときは、必ず従来どおりの動作に戻す
+
+   ■ 保持するデータ（両版で共通）
+     window.wabiPickedPlace = {
+       query, place_id, name, address, pref, city, lat, lng, raw
+     }
+     window.wabiPlaceScope  = { kind:'all'|'pref'|'here', pref, lat, lng }
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiPlacePick) return;
+  window.__wabiPlacePick = true;
+
+  var PREFS = [
+    '北海道','青森県','岩手県','宮城県','秋田県','山形県','福島県',
+    '茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県',
+    '新潟県','富山県','石川県','福井県','山梨県','長野県',
+    '岐阜県','静岡県','愛知県','三重県',
+    '滋賀県','京都府','大阪府','兵庫県','奈良県','和歌山県',
+    '鳥取県','島根県','岡山県','広島県','山口県',
+    '徳島県','香川県','愛媛県','高知県',
+    '福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県'
+  ];
+
+  var IS_PC = !!document.getElementById('aiQueryInput');
+
+  window.wabiPlaceScope = window.wabiPlaceScope || { kind:'all' };
+  var prefCenter = {};        // 都道府県名 → {lat,lng}（一度引いたら覚えておく）
+
+  /* ── 環境の違いを吸収する ───────────────────────────────── */
+  function qInput(){ return document.getElementById(IS_PC ? 'aiQueryInput' : 'heroSearchInput'); }
+  function queryText(){ var el = qInput(); return el ? String(el.value || '').trim() : ''; }
+  function apiKey(){
+    try { if (IS_PC) return window.pcApiKey || ''; } catch(e){}
+    try { if (typeof API_KEY !== 'undefined' && API_KEY) return API_KEY; } catch(e){}
+    try { return window.API_KEY || ''; } catch(e){}
+    return '';
+  }
+  function toast(m){
+    try { if (typeof showToast === 'function') { showToast(m); return; } } catch(e){}
+    try { if (typeof showToastPC === 'function') { showToastPC(m); return; } } catch(e){}
+    try { console.log('[wabi]', m); } catch(e){}
+  }
+  function placesOk(){
+    return !!(window.google && google.maps && google.maps.places && google.maps.places.PlacesService);
+  }
+  var svcObj = null;
+  function svc(){
+    if (svcObj) return svcObj;
+    if (!placesOk()) return null;
+    try { svcObj = new google.maps.places.PlacesService(document.createElement('div')); } catch(e){ svcObj = null; }
+    return svcObj;
+  }
+  // SDKの読み込みは既存の関数に任せる（APIキーを新しく書かない）
+  function ensureSdk(cb){
+    if (placesOk()) return cb(true);
+    var k = apiKey();
+    if (!k || typeof window.loadGoogleMapsSDK !== 'function') return cb(false);
+    try {
+      var p = window.loadGoogleMapsSDK(k);
+      if (p && p.then) p.then(function(){ cb(placesOk()); }).catch(function(){ cb(false); });
+      else cb(placesOk());
+    } catch(e){ cb(false); }
+    var t0 = Date.now();
+    var iv = setInterval(function(){
+      if (placesOk()) { clearInterval(iv); }
+      else if (Date.now() - t0 > 8000) { clearInterval(iv); }
+    }, 300);
+  }
+
+  /* ── 文字の正規化と、住所から都道府県・市区町村を取り出す ── */
+  function norm(s){
+    return String(s == null ? '' : s)
+      .replace(/[（(].*?[)）]/g, '')
+      .replace(/[\s　・,、]/g, '')
+      .trim();
+  }
+  function prefOf(addr){
+    var m = String(addr || '').match(/(北海道|東京都|京都府|大阪府|..[県])/);
+    return m ? m[1] : '';
+  }
+  function cityOf(addr){
+    var a = String(addr || '').replace(/^日本[、,]?\s*/, '').replace(/〒[\d-]+\s*/, '');
+    var m = a.match(/(?:北海道|東京都|京都府|大阪府|..県)(.{1,8}?[市区町村郡])/);
+    return m ? m[1] : '';
+  }
+  function shortAddr(addr){
+    return String(addr || '').replace(/^日本[、,]?\s*/, '').replace(/〒[\d-]+\s*/, '').trim();
+  }
+  // 参拝対象らしいか（既存の isShrineOrTemple があればそれを使う）
+  function worshipLike(name){
+    try { if (typeof isShrineOrTemple === 'function') return isShrineOrTemple(name); } catch(e){}
+    return !/(駅|ホテル|旅館|店|ショップ|コンビニ|銀行|学校|病院|公園|駐車場)$/.test(String(name||''));
+  }
+
+  /* ── 場所（都道府県・現在地）の中心座標を用意する ──────── */
+  function scopeCenter(cb){
+    var sc = window.wabiPlaceScope || { kind:'all' };
+    if (sc.kind === 'here'){
+      if (typeof sc.lat === 'number') return cb({ lat:sc.lat, lng:sc.lng });
+      return cb(null);
+    }
+    if (sc.kind === 'pref' && sc.pref){
+      if (prefCenter[sc.pref]) return cb(prefCenter[sc.pref]);
+      var s = svc();
+      if (!s) return cb(null);
+      try {
+        s.textSearch({ query: sc.pref, language:'ja', region:'JP' }, function(res, st){
+          try {
+            if (st === google.maps.places.PlacesServiceStatus.OK && res && res[0]
+                && res[0].geometry && res[0].geometry.location){
+              prefCenter[sc.pref] = { lat: res[0].geometry.location.lat(), lng: res[0].geometry.location.lng() };
+            }
+          } catch(e){}
+          cb(prefCenter[sc.pref] || null);
+        });
+      } catch(e){ cb(null); }
+      return;
+    }
+    cb(null);
+  }
+
+  /* ── 候補をさがす ───────────────────────────────────────── */
+  var origTextSearch = null;     // 包む前の本物（自分の問い合わせに使う）
+  function rawTextSearch(req, cb){
+    var s = svc();
+    if (!s) return cb(null, 'ERR');
+    var f = origTextSearch || s.textSearch;
+    try { f.call(s, req, cb); } catch(e){ cb(null, 'ERR'); }
+  }
+
+  function findCandidates(q, cb){
+    ensureSdk(function(ok){
+      if (!ok || !svc()) return cb(null);                 // Placesが使えない → 従来動作へ
+      var sc = window.wabiPlaceScope || { kind:'all' };
+      scopeCenter(function(center){
+        var req = { language:'ja', region:'JP',
+                    query: q + (sc.kind === 'pref' && sc.pref ? ' ' + sc.pref : '') };
+        if (center){
+          try {
+            req.location = new google.maps.LatLng(center.lat, center.lng);
+            req.radius   = (sc.kind === 'here') ? 30000 : 100000;
+          } catch(e){}
+        }
+        rawTextSearch(req, function(res, st){
+          var OK = 'OK';
+          try { OK = google.maps.places.PlacesServiceStatus.OK; } catch(e){}
+          if (st !== OK || !res || !res.length) return cb([]);
+          cb(shape(q, res, sc));
+        });
+      });
+    });
+  }
+
+  // 検索結果 → 候補リスト（同じ名前のものだけに絞り、重複を除く）
+  function shape(q, res, sc){
+    var nq = norm(q), out = [], seen = {}, exact = [];
+    for (var i = 0; i < res.length && out.length < 12; i++){
+      var p = res[i];
+      if (!p || !p.place_id || !p.geometry || !p.geometry.location) continue;
+      if (seen[p.place_id]) continue;
+      if (!worshipLike(p.name)) continue;
+      var np = norm(p.name);
+      if (np !== nq && np.indexOf(nq) < 0 && nq.indexOf(np) < 0) continue;
+      seen[p.place_id] = 1;
+      var addr = p.formatted_address || p.vicinity || '';
+      var item = {
+        place_id: p.place_id, name: p.name, address: shortAddr(addr),
+        pref: prefOf(addr), city: cityOf(addr),
+        lat: p.geometry.location.lat(), lng: p.geometry.location.lng(),
+        rating: p.rating || 0, reviews: p.user_ratings_total || 0,
+        raw: p
+      };
+      out.push(item);
+      if (np === nq) exact.push(item);
+    }
+    // 名前がぴったり一致するものがあれば、それだけを候補にする
+    var list = exact.length ? exact : out;
+    // 都道府県が選ばれていれば、その県のものを先に並べる
+    if (sc && sc.kind === 'pref' && sc.pref){
+      var inPref = list.filter(function(x){ return x.pref === sc.pref; });
+      if (inPref.length) list = inPref.concat(list.filter(function(x){ return x.pref !== sc.pref; }));
+    }
+    return list;
+  }
+
+  function setPicked(q, item){
+    window.wabiPickedPlace = {
+      query: q, place_id: item.place_id, name: item.name, address: item.address,
+      pref: item.pref, city: item.city, lat: item.lat, lng: item.lng, raw: item.raw
+    };
+  }
+
+  /* ── 見た目（オーバーレイと下からのシート） ───────────── */
+  var CSS = [
+    '.wpk-mask{position:fixed;inset:0;z-index:2147482000;background:rgba(20,14,8,.5);display:none;}',
+    '.wpk-mask.on{display:block;}',
+    ".wpk-sheet{position:fixed;left:0;right:0;bottom:0;z-index:2147482001;background:#FAF8F4;",
+      "border-radius:22px 22px 0 0;max-height:82vh;overflow-y:auto;-webkit-overflow-scrolling:touch;",
+      "font-family:'Shippori Mincho','Noto Serif JP',serif;color:#2D2D2D;display:none;",
+      "padding-bottom:calc(18px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px rgba(0,0,0,.25);}",
+    '.wpk-sheet.on{display:block;}',
+    '.wpk-sheet .bar{width:44px;height:4px;border-radius:3px;background:#DCD4C6;margin:10px auto 4px;}',
+    '.wpk-hd{position:sticky;top:0;background:#FAF8F4;padding:10px 18px 12px;border-bottom:1px solid #EFE9DD;z-index:2;}',
+    '.wpk-ttl{font-size:16px;font-weight:800;letter-spacing:.04em;}',
+    ".wpk-sub{font-size:12.5px;color:#7A7268;margin-top:5px;font-family:'Noto Serif JP',serif;line-height:1.7;}",
+    '.wpk-list{padding:8px 14px 6px;}',
+    '.wpk-it{display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;background:#fff;',
+      'border:1px solid #EAE3D6;border-radius:16px;padding:14px 14px;margin-bottom:10px;cursor:pointer;',
+      'font-family:inherit;color:inherit;text-align:left;}',
+    '.wpk-it:active{background:#F5F0E6;}',
+    '.wpk-it .em{font-size:22px;flex:0 0 26px;text-align:center;}',
+    '.wpk-it .bd{flex:1;min-width:0;}',
+    '.wpk-it .nm,.wpk-it .ad,.wpk-it .rt{display:block;}',
+    '.wpk-it .nm{font-size:15.5px;font-weight:700;line-height:1.4;}',
+    ".wpk-it .ad{font-size:12.5px;color:#7A7268;margin-top:4px;line-height:1.6;font-family:'Noto Serif JP',serif;}",
+    '.wpk-it .rt{font-size:11.5px;color:#C08A2E;font-weight:700;margin-top:4px;}',
+    '.wpk-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;padding:10px 14px 6px;}',
+    '.wpk-grid button{padding:14px 6px;border-radius:14px;border:1px solid #EAE3D6;background:#fff;',
+      'font-family:inherit;font-size:14.5px;font-weight:700;color:#2D2D2D;cursor:pointer;}',
+    '.wpk-grid button.on{background:#3A1D5D;color:#fff;border-color:#3A1D5D;}',
+    '.wpk-cancel{display:block;width:calc(100% - 28px);margin:8px 14px 4px;padding:14px 0;border-radius:14px;',
+      'border:1px solid #EAE3D6;background:#fff;font-family:inherit;font-size:14.5px;font-weight:700;color:#7A7268;cursor:pointer;}',
+    /* 場所ボタンは1つで横いっぱいなので、指で押しやすい高さにする */
+    '#wabiPlaceBtn{padding-top:.55rem !important;padding-bottom:.55rem !important;}',
+    '@media(min-width:820px){',
+      '.wpk-sheet{left:50%;right:auto;bottom:auto;top:50%;transform:translate(-50%,-50%);',
+        'width:560px;max-width:92vw;border-radius:20px;max-height:78vh;}',
+      '.wpk-grid{grid-template-columns:repeat(4,1fr);}',
+    '}'
+  ].join('\n');
+
+  var mask, sheet;
+  function ui(){
+    if (sheet) return;
+    var st = document.createElement('style'); st.id = 'wabiPlacePickCss'; st.textContent = CSS;
+    (document.head || document.documentElement).appendChild(st);
+    mask = document.createElement('div');  mask.className = 'wpk-mask';
+    sheet = document.createElement('div'); sheet.className = 'wpk-sheet';
+    document.body.appendChild(mask); document.body.appendChild(sheet);
+    mask.onclick = close;
+  }
+  function open(html){
+    ui();
+    sheet.innerHTML = '<div class="bar"></div>' + html;
+    mask.classList.add('on'); sheet.classList.add('on'); sheet.scrollTop = 0;
+  }
+  function close(){ if (sheet){ sheet.classList.remove('on'); mask.classList.remove('on'); } }
+  window.wabiClosePlaceSheet = close;
+  function esc(s){
+    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ── 場所を指定するシート ───────────────────────────────── */
+  function labelOfScope(){
+    var sc = window.wabiPlaceScope || { kind:'all' };
+    if (sc.kind === 'here') return '📍 現在地から探す';
+    if (sc.kind === 'pref' && sc.pref) return '🗾 ' + sc.pref;
+    return '📍 全国';
+  }
+  function paintPlaceBtn(){
+    var b = document.getElementById('wabiPlaceBtn');
+    if (b){
+      var want = labelOfScope() + '　▼';
+      if (b.textContent.trim() !== want) b.textContent = want;
+    }
+  }
+  function openScopeSheet(){
+    open('<div class="wpk-hd"><div class="wpk-ttl">場所を指定</div>'
+      + '<div class="wpk-sub">指定しなくても検索できます。同じ名前の神社・お寺が多いときに役立ちます。</div></div>'
+      + '<div class="wpk-list">'
+      + '<button class="wpk-it" data-a="here"><span class="em">📍</span><span class="bd"><span class="nm">現在地から探す</span>'
+      +   '<span class="ad">いまいる場所の周辺を優先します</span></span></button>'
+      + '<button class="wpk-it" data-a="pref"><span class="em">🗾</span><span class="bd"><span class="nm">都道府県を選ぶ</span>'
+      +   '<span class="ad">47都道府県から選べます</span></span></button>'
+      + '<button class="wpk-it" data-a="all"><span class="em">🌐</span><span class="bd"><span class="nm">全国</span>'
+      +   '<span class="ad">場所をしぼらずに探します</span></span></button>'
+      + '</div><button class="wpk-cancel" data-a="cancel">キャンセル</button>');
+    sheet.querySelectorAll('[data-a]').forEach(function(b){
+      b.onclick = function(){
+        var a = b.getAttribute('data-a');
+        if (a === 'cancel'){ close(); return; }
+        if (a === 'all'){ window.wabiPlaceScope = { kind:'all' }; paintPlaceBtn(); close(); return; }
+        if (a === 'pref'){ openPrefSheet(); return; }
+        if (a === 'here'){ useHere(); return; }
+      };
+    });
+  }
+  function openPrefSheet(){
+    var sc = window.wabiPlaceScope || {};
+    open('<div class="wpk-hd"><div class="wpk-ttl">都道府県を選ぶ</div>'
+      + '<div class="wpk-sub">選んだ都道府県の神社・お寺を優先して探します。</div></div>'
+      + '<div class="wpk-grid">'
+      + PREFS.map(function(p){
+          return '<button data-p="' + esc(p) + '"' + (sc.pref === p ? ' class="on"' : '') + '>' + esc(p) + '</button>';
+        }).join('')
+      + '</div><button class="wpk-cancel" data-a="back">戻る</button>');
+    sheet.querySelectorAll('[data-p]').forEach(function(b){
+      b.onclick = function(){
+        window.wabiPlaceScope = { kind:'pref', pref: b.getAttribute('data-p') };
+        paintPlaceBtn(); close();
+      };
+    });
+    var bk = sheet.querySelector('[data-a=back]');
+    if (bk) bk.onclick = openScopeSheet;
+  }
+  function useHere(){
+    if (!navigator.geolocation){
+      toast('この端末では現在地を取得できません。都道府県からお選びください');
+      openPrefSheet(); return;
+    }
+    toast('現在地を確認しています…');
+    navigator.geolocation.getCurrentPosition(function(pos){
+      window.wabiPlaceScope = { kind:'here', lat: pos.coords.latitude, lng: pos.coords.longitude };
+      paintPlaceBtn(); close();
+      toast('現在地の周辺を優先して探します');
+    }, function(){
+      // 拒否・失敗しても壊さない。別の方法を案内する
+      toast('現在地を取得できませんでした。都道府県からお選びください');
+      try { openPrefSheet(); } catch(e){}
+    }, { enableHighAccuracy:false, timeout:8000, maximumAge:300000 });
+  }
+
+  /* ── 同名候補を選ぶシート ───────────────────────────────── */
+  function openPicker(q, list, done){
+    open('<div class="wpk-hd"><div class="wpk-ttl">どちらの「' + esc(q) + '」ですか？</div>'
+      + '<div class="wpk-sub">同じ名前の神社・お寺が ' + list.length + ' か所見つかりました。<br>目的の場所をお選びください。</div></div>'
+      + '<div class="wpk-list">'
+      + list.map(function(x, i){
+          var ic = (window.wabiKindOf && window.wabiKindOf(x.name) === 'temple') ? '卍' : '⛩';
+          return '<button class="wpk-it" data-i="' + i + '"><span class="em">' + ic + '</span>'
+            + '<span class="bd"><span class="nm">' + esc(x.name) + '</span>'
+            + '<span class="ad">' + esc(x.address || (x.pref + x.city)) + '</span>'
+            + (x.rating ? '<span class="rt">★ ' + x.rating.toFixed(1)
+                + (x.reviews ? '（' + x.reviews.toLocaleString() + '件）' : '') + '</span>' : '')
+            + '</span></button>';
+        }).join('')
+      + '</div><button class="wpk-cancel" data-a="cancel">やめる</button>');
+    sheet.querySelectorAll('[data-i]').forEach(function(b){
+      b.onclick = function(){
+        var x = list[+b.getAttribute('data-i')];
+        close();
+        setPicked(q, x);
+        var el = qInput();
+        if (el) el.value = x.name;          // 入力欄も正式名称にそろえる
+        toast('「' + (x.pref || '') + (x.city || '') + ' ' + x.name + '」で作成します');
+        setTimeout(function(){ done(x); }, 60);
+      };
+    });
+    var c = sheet.querySelector('[data-a=cancel]');
+    if (c) c.onclick = close;
+  }
+
+  /* ── 検索カードに「場所を指定」を差し込む ───────────────── */
+  function insertField(){
+    if (document.getElementById('wabiPlaceBtn')) { paintPlaceBtn(); return; }
+    var host, label, row, btn;
+    if (IS_PC){
+      var fields = document.querySelector('.search-fields');
+      if (!fields || !fields.parentNode) return;
+      label = document.createElement('div');
+      label.className = 'ai-field-label';
+      label.style.marginTop = '20px';
+      label.textContent = '場所を指定';
+      row = document.createElement('div');
+      row.className = 'ai-pill-row';
+      btn = document.createElement('button');
+      btn.className = 'ai-pill on';
+      btn.id = 'wabiPlaceBtn';
+      btn.type = 'button';
+      row.appendChild(btn);
+      fields.parentNode.insertBefore(label, fields.nextSibling);
+      label.parentNode.insertBefore(row, label.nextSibling);
+    } else {
+      var wrap = document.querySelector('.hero-search .hero-search-input-wrap');
+      if (!wrap || !wrap.parentNode) return;
+      var after = document.querySelector('.hero-search .hero-search-toggles') || wrap;
+      label = document.createElement('div');
+      label.className = 'hero-search-row-label';
+      label.style.marginTop = '.5rem';
+      label.textContent = '場所を指定';
+      row = document.createElement('div');
+      row.className = 'hero-search-pills';
+      btn = document.createElement('button');
+      btn.className = 'hero-search-pill on';
+      btn.id = 'wabiPlaceBtn';
+      btn.type = 'button';
+      row.appendChild(btn);
+      after.parentNode.insertBefore(label, after.nextSibling);
+      label.parentNode.insertBefore(row, label.nextSibling);
+    }
+    btn.onclick = function(ev){ ev.preventDefault(); ev.stopPropagation(); openScopeSheet(); };
+    paintPlaceBtn();
+  }
+
+  /* ── textSearch を包む（確定した施設をそのまま起点にする）── */
+  function patchTextSearch(){
+    if (!placesOk()) return;
+    var proto = google.maps.places.PlacesService.prototype;
+    if (!proto || typeof proto.textSearch !== 'function' || proto.textSearch.__wpk) return;
+    var orig = proto.textSearch;
+    origTextSearch = orig;
+    var wrapped = function(req, cb){
+      try {
+        var p = window.wabiPickedPlace;
+        // 起点をさがす問い合わせ（利用者が入れた文字そのもの）のときだけ差し替える
+        if (p && p.raw && req && typeof req.query === 'string'
+            && (req.query === p.query || req.query === p.name) && typeof cb === 'function'){
+          var OK = google.maps.places.PlacesServiceStatus.OK;
+          setTimeout(function(){ try { cb([p.raw], OK); } catch(e){} }, 0);
+          return;
+        }
+        // 場所が指定されているときは、検索範囲をそっと寄せる
+        var sc = window.wabiPlaceScope;
+        if (req && !req.location && sc){
+          if (sc.kind === 'here' && typeof sc.lat === 'number'){
+            req.location = new google.maps.LatLng(sc.lat, sc.lng); req.radius = 30000;
+          } else if (sc.kind === 'pref' && sc.pref && prefCenter[sc.pref]){
+            req.location = new google.maps.LatLng(prefCenter[sc.pref].lat, prefCenter[sc.pref].lng);
+            req.radius = 100000;
+          }
+        }
+      } catch(e){}
+      return orig.call(this, req, cb);
+    };
+    wrapped.__wpk = true;
+    proto.textSearch = wrapped;
+  }
+
+  /* ── AIルート作成を包む ─────────────────────────────────── */
+  function sameScope(p){
+    var sc = window.wabiPlaceScope || { kind:'all' };
+    if (!p) return false;
+    if (sc.kind === 'pref' && sc.pref && p.pref && p.pref !== sc.pref) return false;
+    return true;
+  }
+  function wrapStart(name){
+    var f = window[name];
+    if (typeof f !== 'function' || f.__wpk) return;
+    var wrapped = function(){
+      var self = this, args = arguments;
+      var q = queryText();
+      if (!q) return f.apply(self, args);                       // 名前なし → 従来どおり
+      var p = window.wabiPickedPlace;
+      if (p && (p.query === q || p.name === q) && sameScope(p)) return f.apply(self, args);  // 確定済み
+      if (window.wabiPickedPlace && window.wabiPickedPlace.query !== q) window.wabiPickedPlace = null;
+
+      var fired = false;
+      function go(){ if (fired) return; fired = true; f.apply(self, args); }
+      // Places が遅い・使えないときも必ず動くように、6秒で従来動作へ
+      var guard = setTimeout(go, 6000);
+
+      findCandidates(q, function(list){
+        clearTimeout(guard);
+        if (list === null) return go();                         // Placesが使えない → 従来どおり
+        if (!list.length){ toast('「' + q + '」の検索結果が見つかりませんでした'); return go(); }
+        if (list.length === 1){ setPicked(q, list[0]); return go(); }   // 一意 → そのまま
+        openPicker(q, list, function(){ fired = false; go(); });        // 複数 → 選んでもらう
+      });
+      return;
+    };
+    wrapped.__wpk = true;
+    wrapped.__orig = f;
+    window[name] = wrapped;
+  }
+
+  /* ── 動かす ─────────────────────────────────────────────── */
+  function run(){
+    try { insertField(); } catch(e){}
+    try { patchTextSearch(); } catch(e){}
+    try { wrapStart(IS_PC ? 'startAiRoutePC' : 'startAiRoute'); } catch(e){}
+    // 入力が変わったら、確定済みの施設は捨てる
+    try {
+      var el = qInput();
+      if (el && !el.__wpk){
+        el.__wpk = 1;
+        el.addEventListener('input', function(){
+          var p = window.wabiPickedPlace;
+          if (p && p.query !== queryText() && p.name !== queryText()) window.wabiPickedPlace = null;
+        });
+      }
+    } catch(e){}
+  }
+  run();
+  setInterval(run, 600);
+})();
 
 </script>
 </body>

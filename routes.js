@@ -1621,56 +1621,66 @@
 
 
 /* ══════════════════════════════════════════════════════════════
-   ⑤ ログアウトしたら、マイページの写真と名前も元に戻す
-      ・ログアウト中は「巡礼者 太郎」＋人型アイコンに戻す
-      ・自分で決めた名前と写真は預かっておき、ログインし直したら戻す
-   （2026-09-01）
+   ⑤ ログアウト中は、名前とアイコンを既定の見た目に戻す（2026-09-01 改訂）
+
+   前回の版はログイン→ログアウトの「切り替わった瞬間」だけを見ていたため、
+   すでにログアウト済みの端末（前回ログアウトしたあとに読み込んだ場合）では
+   何も起きず、ヘッダーに名前とアイコンが残ったままだった。
+
+   今回は保存データを消さず、ログアウト中だけ
+   wabiName / wabiAvatar / wabiNameMine / wabiAvatarMine を
+   「読めない」状態にする（マスクする）方式に変更した。
+     ・concierge.js の __wabiMineProfile は「名前があるとき」だけ
+       ヘッダーを塗り替えるので、読めなくなれば塗り替えない
+     ・マイページの apply() も既定表示になる
+     ・保存データ自体は残るので、ログインし直せばそのまま戻る
    ══════════════════════════════════════════════════════════════ */
 (function(){
-  if (window.__wabiLogoutProfile) return;
-  window.__wabiLogoutProfile = true;
+  if (window.__wabiLogoutProfile2) return;
+  window.__wabiLogoutProfile2 = true;
 
-  var NM = 'wabiName',      AV = 'wabiAvatar';
-  var MN = 'wabiNameMine',  MA = 'wabiAvatarMine';
-  var KN = 'wabiNameKeep',  KA = 'wabiAvatarKeep';
+  var MASK = { wabiName:1, wabiAvatar:1, wabiNameMine:1, wabiAvatarMine:1 };
   var DEFAULT_NAME = '巡礼者 太郎';
-  var PERSON = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" '
-             + 'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-             + '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>'
-             + '<circle cx="12" cy="7" r="4"></circle></svg>';
+  var PERSON_BIG = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" '
+    + 'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
+    + '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>'
+    + '<circle cx="12" cy="7" r="4"></circle></svg>';
+  var PERSON_SM = '<svg viewBox="0 0 20 20" fill="none">'
+    + '<circle cx="10" cy="6.5" r="3.2" stroke="currentColor" stroke-width="1.6"/>'
+    + '<path d="M3.5 17c0-3.6 13-3.6 13 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
 
-  function g(k){ try { return localStorage.getItem(k) || ''; } catch(e){ return ''; } }
-  function s(k, v){ try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch(e){} }
+  var _get = localStorage.getItem.bind(localStorage);
+
+  // ログイン判定は何度も呼ばれるので 250ms だけ結果を使い回す
+  var cache = false, cacheAt = 0;
   function loggedIn(){
-    try { var u = JSON.parse(localStorage.getItem('wabiUser') || 'null'); return !!(u && u.id); }
-    catch(e){ return false; }
+    var t = Date.now();
+    if (t - cacheAt < 250) return cache;
+    cacheAt = t;
+    try {
+      var u = JSON.parse(_get('wabiUser') || 'null');
+      cache = !!(u && u.id);
+    } catch(e){ cache = false; }
+    return cache;
   }
 
-  function onLogout(){
-    // 自分で決めた名前・写真を預かってから消す（MineもConcierge側が戻さないよう空に）
-    var nm = g(NM) || g(MN);
-    var av = g(AV) || g(MA);
-    if (nm) s(KN, nm);
-    if (av) s(KA, av);
-    s(NM, ''); s(AV, ''); s(MN, ''); s(MA, '');
-    resetDom();
-  }
-
-  function onLogin(){
-    var nm = g(KN), av = g(KA);
-    if (nm && !g(NM)){ s(NM, nm); s(MN, nm); }
-    if (av && !g(AV)){ s(AV, av); s(MA, av); }
-  }
+  // ★ログアウト中は名前と写真を「無い」ことにする（消しはしない）
+  localStorage.getItem = function(k){
+    if (MASK[k] === 1 && !loggedIn()) return null;
+    return _get(k);
+  };
 
   function resetDom(){
     try {
+      // マイページのアイコン
       var box = document.querySelector('#wcMypage .mp-av');
       if (box){
         var im = box.querySelector('img');
         if (im && im.parentNode) im.parentNode.removeChild(im);
-        if (!box.querySelector('svg')) box.insertAdjacentHTML('afterbegin', PERSON);
+        if (!box.querySelector('svg')) box.insertAdjacentHTML('afterbegin', PERSON_BIG);
         box.classList.remove('has-photo');
       }
+      // マイページの名前
       var nmEl = document.querySelector('#wcMypage .mp-name');
       if (nmEl){
         var now = (nmEl.textContent || '').replace(/\s*✎\s*$/, '').trim();
@@ -1678,18 +1688,20 @@
           nmEl.innerHTML = DEFAULT_NAME + '<span class="wp-pen">✎</span>';
         }
       }
+      // ヘッダーのログインボタン（アイコンと名前が残ってしまうのを戻す）
+      var btn = document.getElementById('wlBtn');
+      if (btn){
+        var txt = (btn.textContent || '').trim();
+        if (btn.querySelector('img') || txt !== 'ログイン'){
+          btn.innerHTML = PERSON_SM + 'ログイン';     // onclick はボタン本体に付いているので残る
+        }
+      }
     } catch(e){}
   }
 
-  var was = loggedIn();
-  setInterval(function(){
-    var now = loggedIn();
-    if (was && !now) onLogout();
-    else if (!was && now) onLogin();
-    was = now;
-    // ログアウト中で、自分で決めた写真も無いなら、いつでも既定の見た目に保つ
-    if (!now && !g(AV) && !g(NM)) resetDom();
-  }, 400);
+  function tick(){ if (!loggedIn()) resetDom(); }
+  tick();
+  setInterval(tick, 400);
 })();
 
 /* ══════════════════════════════════════════════════════════════

@@ -1688,14 +1688,7 @@
           nmEl.innerHTML = DEFAULT_NAME + '<span class="wp-pen">✎</span>';
         }
       }
-      // ヘッダーのログインボタン（アイコンと名前が残ってしまうのを戻す）
-      var btn = document.getElementById('wlBtn');
-      if (btn){
-        var txt = (btn.textContent || '').trim();
-        if (btn.querySelector('img') || txt !== 'ログイン'){
-          btn.innerHTML = PERSON_SM + 'ログイン';     // onclick はボタン本体に付いているので残る
-        }
-      }
+      // ヘッダーのボタンは __wabiHeaderBtn が一手に引き受ける（二重に書くとチカチカするため）
     } catch(e){}
   }
 
@@ -2060,4 +2053,137 @@
   function run(){ patchPlaces(); patchBuild(); patchMode(); }
   run();
   setInterval(run, 500);
+})();
+
+/* ══════════════════════════════════════════════════════════════
+   ① ヘッダーのボタンが「ログイン」と自分のアイコンで
+      交互に切り替わってチカチカする問題（2026-09-01）
+
+   原因：このボタンを書き換える処理が concierge.js だけでも4か所あり
+        （paintButton / syncHeaderName / repaintHeader / __wabiMineProfile）、
+        それぞれが別のタイミング・別の条件で走るため、状態が食い違うと
+        数百ミリ秒ごとに書き合いになって点滅する。
+
+   対策：このボタンの中身は、ここ1か所だけが決める。
+        MutationObserver で誰かが書き換えた瞬間を捉え、
+        「同じフレームのうちに」正しい中身へ戻す。
+        画面に描かれる前に直るので、点滅そのものが起きない。
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiHeaderBtn) return;
+  window.__wabiHeaderBtn = true;
+
+  var PERSON = '<svg viewBox="0 0 20 20" fill="none">'
+    + '<circle cx="10" cy="6.5" r="3.2" stroke="currentColor" stroke-width="1.6"/>'
+    + '<path d="M3.5 17c0-3.6 13-3.6 13 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+
+  var _get = localStorage.getItem.bind(localStorage);
+  function user(){
+    try { var u = JSON.parse(_get('wabiUser') || 'null'); return (u && u.id) ? u : null; }
+    catch(e){ return null; }
+  }
+
+  // 正しい中身を決める（ログイン中＝写真＋名前 ／ ログアウト中＝人型＋ログイン）
+  function want(){
+    var u = user();
+    if (!u) return { img: '', text: 'ログイン' };
+    var nm = '', av = '';
+    try { nm = _get('wabiName') || ''; } catch(e){}
+    try { av = _get('wabiAvatar') || ''; } catch(e){}
+    var name = nm || u.name || '巡礼者';
+    if (name.length > 6) name = name.slice(0, 6) + '…';
+    return { img: av || u.pic || '', text: name };
+  }
+
+  function sigOf(w){ return (w.img ? '1' : '0') + '|' + w.text; }
+  function nowSig(btn){ return (btn.querySelector('img') ? '1' : '0') + '|' + (btn.textContent || '').trim(); }
+  function htmlOf(w){
+    return (w.img
+      ? '<img src="' + w.img + '" style="width:20px;height:20px;border-radius:50%;object-fit:cover">'
+      : PERSON) + w.text;
+  }
+
+  var busy = false;
+  function apply(){
+    if (busy) return;
+    var btn = document.getElementById('wlBtn');
+    if (!btn) return;
+    var w = want();
+    if (nowSig(btn) === sigOf(w)) return;      // すでに正しい → 何もしない
+    busy = true;
+    try { btn.innerHTML = htmlOf(w); } catch(e){}   // onclick はボタン本体に付いているので消えない
+    busy = false;
+  }
+
+  var obs = null;
+  try { obs = new MutationObserver(apply); } catch(e){}
+
+  function bind(){
+    var btn = document.getElementById('wlBtn');
+    if (!btn || btn.__wobs) return;
+    btn.__wobs = true;
+    if (obs) obs.observe(btn, { childList:true, subtree:true, characterData:true });
+    apply();
+  }
+
+  bind();
+  apply();
+  setInterval(function(){ bind(); apply(); }, 400);   // ボタンが作り直されたときの保険
+})();
+
+
+/* ══════════════════════════════════════════════════════════════
+   ② 「テーマで巡るベスト10」のカードを見やすくする（2026-09-01）
+      ・細字のサブタイトル（説明文）を外す
+      ・タイトルを一回り大きく（12.5px → 15.5px）
+      ・14枚すべてに効く（index.html の10枚＋concierge.js が足す4枚）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiThemeCard) return;
+  window.__wabiThemeCard = true;
+
+  var RULES = [
+    /* 細字のサブタイトルを消す */
+    'html body #themeGrid .theme-card.theme-card .theme-card-desc,',
+    'html body .theme-grid .theme-card.theme-card .theme-card-desc{display:none !important;}',
+
+    /* タイトルを一回り大きく。3行まで表示して、はみ出す分だけ省略 */
+    /* concierge.js の body.wabi-top #pgHome .theme-card-title{13px} に勝つため
+       クラスを重ねて詳細度を上げている（.theme-card を3回書くのは意図的） */
+    'html body #themeGrid .theme-card.theme-card.theme-card .theme-card-title,',
+    'html body .theme-grid .theme-card.theme-card.theme-card .theme-card-title{',
+    '  font-size:15.5px !important;',
+    '  line-height:1.45 !important;',
+    '  font-weight:700 !important;',
+    '  margin-bottom:0 !important;',
+    '  letter-spacing:.01em !important;',
+    '  display:-webkit-box !important;',
+    '  -webkit-line-clamp:4 !important;',
+    '  -webkit-box-orient:vertical !important;',
+    '  overflow:hidden !important;',
+    '  text-shadow:0 1px 4px rgba(0,0,0,.85) !important;',
+    '}',
+
+    /* 文字が下に寄りすぎないよう、余白を少しだけ整える */
+    'html body #themeGrid .theme-card.theme-card .theme-card-body,',
+    'html body .theme-grid .theme-card.theme-card .theme-card-body{padding:.7rem .8rem .85rem !important;}',
+
+    /* 文字が読みやすいよう、下側の影を少し濃く */
+    'html body #themeGrid .theme-card::after,',
+    'html body .theme-grid .theme-card::after{',
+    '  background:linear-gradient(180deg,rgba(0,0,0,.10) 0%,rgba(0,0,0,.42) 45%,rgba(0,0,0,.88) 100%) !important;',
+    '}'
+  ].join('\n');
+
+  function put(){
+    var old = document.getElementById('wabiThemeCardCss');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+    var s = document.createElement('style');
+    s.id = 'wabiThemeCardCss';
+    s.textContent = RULES;
+    (document.head || document.documentElement).appendChild(s);   // 常に最後に置き直す
+  }
+  put();
+  var n = 0;
+  var iv = setInterval(function(){ put(); if (++n > 12) clearInterval(iv); }, 900);
 })();

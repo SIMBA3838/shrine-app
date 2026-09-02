@@ -2327,6 +2327,9 @@ function openArticle(id){
 
   var IS_PC = !!document.getElementById('aiQueryInput');
 
+  // 検索窓の下に出す注意書き
+  var NOTE_TEXT = '※「〇〇神社」と「〇〇神宮」「〇〇大社」など、呼称の違いによって検索結果が異なる場合があります。';
+
   window.wabiPlaceScope = window.wabiPlaceScope || { kind:'all' };
   var prefCenter = {};        // 都道府県名 → {lat,lng}（一度引いたら覚えておく）
 
@@ -2672,6 +2675,15 @@ function openArticle(id){
     if (IS_PC){
       var fields = document.querySelector('.search-fields');
       if (!fields || !fields.parentNode) return;
+      // 検索窓のすぐ下に注意書き（大きさと色は「場所を指定」と同じクラスを使う）
+      if (!document.getElementById('wabiNameNote')){
+        var noteP = document.createElement('div');
+        noteP.id = 'wabiNameNote';
+        noteP.className = 'ai-field-label';
+        noteP.style.cssText = 'margin-top:10px;line-height:1.7;';
+        noteP.textContent = NOTE_TEXT;
+        fields.parentNode.insertBefore(noteP, fields.nextSibling);
+      }
       label = document.createElement('div');
       label.className = 'ai-field-label';
       label.style.marginTop = '20px';
@@ -2683,11 +2695,21 @@ function openArticle(id){
       btn.id = 'wabiPlaceBtn';
       btn.type = 'button';
       row.appendChild(btn);
-      fields.parentNode.insertBefore(label, fields.nextSibling);
+      var afterP = document.getElementById('wabiNameNote') || fields;
+      afterP.parentNode.insertBefore(label, afterP.nextSibling);
       label.parentNode.insertBefore(row, label.nextSibling);
     } else {
       var wrap = document.querySelector('.hero-search .hero-search-input-wrap');
       if (!wrap || !wrap.parentNode) return;
+      // 検索窓のすぐ下に注意書き（大きさと色は「場所を指定」と同じクラスを使う）
+      if (!document.getElementById('wabiNameNote')){
+        var noteM = document.createElement('div');
+        noteM.id = 'wabiNameNote';
+        noteM.className = 'hero-search-row-label';
+        noteM.style.cssText = 'margin:.45rem 0 .1rem;line-height:1.7;';
+        noteM.textContent = NOTE_TEXT;
+        wrap.parentNode.insertBefore(noteM, wrap.nextSibling);
+      }
       var after = document.querySelector('.hero-search .hero-search-toggles') || wrap;
       label = document.createElement('div');
       label.className = 'hero-search-row-label';

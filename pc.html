@@ -2435,6 +2435,7 @@ function openArticle(id){
   function findCandidates(q, cb){
     ensureSdk(function(ok){
       if (!ok || !svc()) return cb(null);                 // Placesが使えない → 従来動作へ
+      var sc0 = window.wabiPlaceScope || { kind:'all' };
       var sc = window.wabiPlaceScope || { kind:'all' };
       scopeCenter(function(center){
         var req = { language:'ja', region:'JP',
@@ -2448,7 +2449,7 @@ function openArticle(id){
         rawTextSearch(req, function(res, st){
           var OK = 'OK';
           try { OK = google.maps.places.PlacesServiceStatus.OK; } catch(e){}
-          if (st !== OK || !res || !res.length) return cb([]);
+          if (st !== OK || !res || !res.length) return cb({ list: [], outOfPref: false });
           cb(shape(q, res, sc));
         });
       });
@@ -2479,12 +2480,16 @@ function openArticle(id){
     }
     // 名前がぴったり一致するものがあれば、それだけを候補にする
     var list = exact.length ? exact : out;
-    // 都道府県が選ばれていれば、その県のものを先に並べる
+
+    // ★都道府県が選ばれているときは、その県のものだけにしぼる★
+    //   以前は「先に並べる」だけだったため、Googleが県外の1件しか返さないと
+    //   それを自動で確定してしまい、埼玉県を選んだのに千葉の神社が使われていた。
     if (sc && sc.kind === 'pref' && sc.pref){
       var inPref = list.filter(function(x){ return x.pref === sc.pref; });
-      if (inPref.length) list = inPref.concat(list.filter(function(x){ return x.pref !== sc.pref; }));
+      if (inPref.length) return { list: inPref, outOfPref: false };
+      return { list: list, outOfPref: true };     // 県内に無い → 必ず利用者に選んでもらう
     }
-    return list;
+    return { list: list, outOfPref: false };
   }
 
   function setPicked(q, item){
@@ -2603,6 +2608,8 @@ function openArticle(id){
       b.onclick = function(){
         window.wabiPlaceScope = { kind:'pref', pref: b.getAttribute('data-p') };
         paintPlaceBtn(); close();
+        // 中心座標をいま取っておく（作成ボタンを押したときの待ち時間を減らす）
+        try { scopeCenter(function(){}); } catch(e){}
       };
     });
     var bk = sheet.querySelector('[data-a=back]');
@@ -2626,9 +2633,12 @@ function openArticle(id){
   }
 
   /* ── 同名候補を選ぶシート ───────────────────────────────── */
-  function openPicker(q, list, done){
+  function openPicker(q, list, done, missPref){
+    var sub = missPref
+      ? ('<b>' + esc(missPref) + 'では見つかりませんでした。</b><br>ほかの場所の候補です。よろしければお選びください。')
+      : ('同じ名前の神社・お寺が ' + list.length + ' か所見つかりました。<br>目的の場所をお選びください。');
     open('<div class="wpk-hd"><div class="wpk-ttl">どちらの「' + esc(q) + '」ですか？</div>'
-      + '<div class="wpk-sub">同じ名前の神社・お寺が ' + list.length + ' か所見つかりました。<br>目的の場所をお選びください。</div></div>'
+      + '<div class="wpk-sub">' + sub + '</div></div>'
       + '<div class="wpk-list">'
       + list.map(function(x, i){
           var ic = (window.wabiKindOf && window.wabiKindOf(x.name) === 'temple') ? '卍' : '⛩';
@@ -2751,13 +2761,23 @@ function openArticle(id){
 
       var fired = false;
       function go(){ if (fired) return; fired = true; f.apply(self, args); }
-      // Places が遅い・使えないときも必ず動くように、6秒で従来動作へ
-      var guard = setTimeout(go, 6000);
+      // Places が遅い・使えないときも必ず動くように、12秒で従来動作へ
+      //（都道府県を選ぶと問い合わせが2回になるため、6秒では足りないことがあった）
+      var guard = setTimeout(go, 12000);
 
-      findCandidates(q, function(list){
+      findCandidates(q, function(r){
         clearTimeout(guard);
-        if (list === null) return go();                         // Placesが使えない → 従来どおり
-        if (!list.length){ toast('「' + q + '」の検索結果が見つかりませんでした'); return go(); }
+        if (r === null) return go();                            // Placesが使えない → 従来どおり
+        var list = r.list || [];
+        var sc = window.wabiPlaceScope || { kind:'all' };
+        if (!list.length){
+          toast(sc.kind === 'pref' && sc.pref
+            ? sc.pref + 'で「' + q + '」が見つかりませんでした'
+            : '「' + q + '」の検索結果が見つかりませんでした');
+          return go();
+        }
+        // 選んだ都道府県の外しか無いときは、勝手に決めずに必ず選んでもらう
+        if (r.outOfPref) return openPicker(q, list, function(){ fired = false; go(); }, sc.pref);
         if (list.length === 1){ setPicked(q, list[0]); return go(); }   // 一意 → そのまま
         openPicker(q, list, function(){ fired = false; go(); });        // 複数 → 選んでもらう
       });
@@ -2787,6 +2807,167 @@ function openArticle(id){
   }
   run();
   setInterval(run, 600);
+})();
+
+</script>
+<script>
+
+/* ══════════════════════════════════════════════════════════════
+   選んだ神社が使われず、関係のない固定ルート（鹿島神宮など）が
+   出てしまう問題の修正（2026-09-02）
+
+   ★何が起きていたか★
+   index.html の buildRoutesViaPlaces は、起点のまわりを
+   nearbySearch で探して1件も見つからないと null を返す。
+   すると _dynamicRoutes が null になり、AI画面は
+   作り置きの10ルート（先頭が東国三社巡り＝鹿島神宮）に戻る。
+   郊外の小さな神社を選ぶと、8kmの範囲に他の社が無くてこうなっていた。
+
+   ★対策は2段構え★
+   ① 周辺検索が空振りしたら、範囲を広げて自動でもう一度さがす
+      （8km →（×3）→（×6・最大50km））
+   ② それでも駄目なときは、選んだ神社を起点に
+      既存の buildDynamicRoutes を自分で呼び直してルートを作る
+      （関数はそのまま使うので、ルートの作り方は今までと同じ）
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiRouteRescue) return;
+  window.__wabiRouteRescue = true;
+
+  function placesOk(){
+    return !!(window.google && google.maps && google.maps.places && google.maps.places.PlacesService);
+  }
+  var mySvc = null;
+  function svc(){
+    if (mySvc) return mySvc;
+    if (!placesOk()) return null;
+    try { mySvc = new google.maps.places.PlacesService(document.createElement('div')); } catch(e){ mySvc = null; }
+    return mySvc;
+  }
+  function toast(m){
+    try { if (typeof showToast === 'function') { showToast(m); return; } } catch(e){}
+    try { if (typeof showToastPC === 'function') { showToastPC(m); return; } } catch(e){}
+  }
+  function isWorshipReq(req){
+    return !!(req && (req.type === 'place_of_worship' || (req.keyword && /神社|寺/.test(req.keyword))));
+  }
+
+  /* ── ① 周辺検索が空振りしたら範囲を広げる ───────────────── */
+  function patchWiden(){
+    if (!placesOk()) return;
+    var proto = google.maps.places.PlacesService.prototype;
+    if (!proto || typeof proto.nearbySearch !== 'function' || proto.nearbySearch.__wwiden) return;
+    var inner = proto.nearbySearch;
+    var wrapped = function(req, cb){
+      var self = this;
+      if (!isWorshipReq(req) || typeof cb !== 'function' || !req.radius){
+        return inner.call(self, req, cb);
+      }
+      var base = req.radius;
+      var steps = [base, Math.min(base * 3, 50000), Math.min(base * 6, 50000)];
+      var i = 0;
+      function attempt(){
+        var r = {};
+        for (var k in req) r[k] = req[k];
+        r.radius = steps[i];
+        inner.call(self, r, function(res, st, pg){
+          var empty = !res || !res.length;
+          if (empty && i < steps.length - 1 && steps[i + 1] > steps[i]){
+            i++; attempt(); return;                 // 見つからない → 範囲を広げて再挑戦
+          }
+          cb(res, st, pg);
+        });
+      }
+      attempt();
+    };
+    wrapped.__wwiden = true;
+    proto.nearbySearch = wrapped;
+  }
+
+  /* ── ② 固定ルートに戻ってしまったら、自分で組み立て直す ─── */
+  function selTime(){
+    var el = document.querySelector('#timePills .hero-search-pill.on')
+          || document.querySelector('#aiTimePills .ai-pill.on');
+    if (!el) return '3時間';
+    return (el.getAttribute('data-v') || el.textContent || '3時間').trim();
+  }
+  function selTrans(){
+    var el = document.querySelector('#transportPills .hero-search-pill.on')
+          || document.querySelector('#aiTransPills .ai-pill.on');
+    if (!el) return '電車';
+    return (el.getAttribute('data-v') || el.textContent || '電車').trim();
+  }
+
+  var busy = false, doneFor = '';
+  function rescue(){
+    try {
+      var p = window.wabiPickedPlace;
+      if (!p || !p.lat) return;
+      var isPC = !!document.getElementById('aiQueryInput');
+      var cur = isPC ? window._aiRoutesPC : window._dynamicRoutes;
+      // undefined＝取得中／配列＝成功。null のときだけ助ける
+      if (cur !== null) { if (cur) doneFor = ''; return; }
+      if (busy || doneFor === p.place_id) return;
+      if (typeof window.buildDynamicRoutes !== 'function' || typeof window.aiBudgetFor !== 'function') return;
+      if (!svc()) return;
+      busy = true;
+
+      var t = selTime(), tr = selTrans();
+      var budget = window.aiBudgetFor(t);
+      var baseCoord = { lat: p.lat, lng: p.lng };
+      var raw = p.raw || {};
+      var base = {
+        name: p.name, addr: p.address || '', tags: [], type: 'shrine',
+        rating: raw.rating || 0,
+        photo: (raw.photos && raw.photos.length) ? raw.photos[0].getUrl({ maxWidth: 500 }) : null
+      };
+
+      // 広めにもう一度さがす（見つからなくても続行する）
+      var req = { location: new google.maps.LatLng(p.lat, p.lng),
+                  radius: Math.max(budget.nearbyRadiusM || 8000, 30000),
+                  type: 'place_of_worship', language: 'ja' };
+      svc().nearbySearch(req, function(res, st){
+        var cands = [];
+        try {
+          if (res && res.length){
+            res.forEach(function(x){
+              if (!x || !x.geometry || !x.geometry.location) return;
+              if (x.name === base.name) return;
+              if (typeof isShrineOrTemple === 'function' && !isShrineOrTemple(x.name)) return;
+              var c = { lat: x.geometry.location.lat(), lng: x.geometry.location.lng() };
+              var d = 9999;
+              try { if (typeof shrineDistKm === 'function') d = shrineDistKm(baseCoord, c); } catch(e){}
+              cands.push({
+                shrine: { name: x.name, addr: x.vicinity || '', tags: [], type: 'shrine',
+                          rating: x.rating || 0, rev: x.user_ratings_total || 0,
+                          photo: (x.photos && x.photos.length) ? x.photos[0].getUrl({ maxWidth: 500 }) : null },
+                coord: c, dist: d, known: false
+              });
+            });
+            cands.sort(function(a, b){ return a.dist - b.dist; });
+          }
+        } catch(e){}
+
+        var routes = null;
+        try { routes = window.buildDynamicRoutes(base, baseCoord, cands, t, tr, budget); } catch(e){}
+        busy = false;
+        if (!routes || !routes.length){
+          doneFor = p.place_id;
+          toast('「' + p.name + '」のまわりで巡拝先を見つけられませんでした');
+          return;
+        }
+        doneFor = p.place_id;
+        if (isPC) window._aiRoutesPC = routes; else window._dynamicRoutes = routes;
+        try { if (typeof window.renderRouteCards === 'function') window.renderRouteCards(); } catch(e){}
+        try { if (isPC && typeof window.renderAiRouteCardsPC === 'function') window.renderAiRouteCardsPC(tr, t); } catch(e){}
+        if (!cands.length) toast('「' + p.name + '」だけのルートを用意しました');
+      });
+    } catch(e){ busy = false; }
+  }
+
+  function run(){ try { patchWiden(); } catch(e){} try { rescue(); } catch(e){} }
+  run();
+  setInterval(run, 400);
 })();
 
 </script>

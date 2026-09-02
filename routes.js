@@ -3013,3 +3013,118 @@
   run();
   setInterval(run, 400);
 })();
+
+/* ══════════════════════════════════════════════════════════════
+   「この時期おすすめイベント」を data/events.json から読む（2026-09-02）
+
+   ★これまでの問題★
+   イベント10件は concierge.js（881KB）に直接書き込まれていたため、
+   iPhone からは差し替えられず、7〜8月の終わった行事が出たままだった。
+
+   ★これから★
+   data/events.json（数KB）を差し替えるだけで更新できる。
+   ファイルが無い・読めないときは、これまでどおり concierge.js の
+   内蔵データが表示されるので、サイトが空になることはない。
+
+   JSONの形（1件ぶん）
+   { "id":"", "title":"", "sub":"", "area":"", "place":"",
+     "period":"", "tag":"", "photo":"", "url":"" }
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  if (window.__wabiEventsJson) return;
+  window.__wabiEventsJson = true;
+
+  var LIST = null;      // 読み込んだイベント
+  var tried = false;
+
+  function esc(s){
+    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // concierge.js の evCard とまったく同じ形にする（見た目を変えないため）
+  function card(e){
+    return '<div class="wev-card" data-url="' + esc(e.url) + '">'
+      + '<div class="im" data-ph="' + esc(e.photo || e.place || e.title) + '">'
+      +   '<span class="ar">' + esc(e.area || '') + '</span></div>'
+      + '<div class="bd">'
+      +   '<div class="tt">' + esc(e.title) + '</div>'
+      +   '<div class="sb">' + esc(e.sub || '') + '</div>'
+      +   '<div class="pd">' + esc(e.period || '') + '</div>'
+      +   '<span class="go">公式ページで詳しく見る ›</span>'
+      + '</div></div>';
+  }
+
+  function load(){
+    if (tried) return;
+    tried = true;
+    try {
+      fetch('data/events.json', { cache: 'no-store' })
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(j){
+          if (!j || !j.length) return;                 // 空なら内蔵データのまま
+          LIST = j.filter(function(e){ return e && e.title && e.url; });
+          if (!LIST.length) LIST = null;
+        })
+        .catch(function(){});                           // 通信できなくても壊さない
+    } catch(e){}
+  }
+
+  function paint(){
+    if (!LIST) return;
+    [['seasonList', 5], ['seasonListFull', 0]].forEach(function(pair){
+      var el = document.getElementById(pair[0]);
+      if (!el) return;
+      if (el.getAttribute('data-wev-src') === 'json') return;   // 済み
+      var items = pair[1] ? LIST.slice(0, pair[1]) : LIST;
+      el.innerHTML = items.map(card).join('');
+      el.setAttribute('data-wev-src', 'json');
+      bind(el);
+    });
+  }
+
+  function bind(root){
+    root.querySelectorAll('.wev-card').forEach(function(c){
+      if (c.getAttribute('data-b')) return;
+      c.setAttribute('data-b', '1');                    // concierge 側の二重結線を防ぐ
+      c.onclick = function(){
+        var u = c.getAttribute('data-url');
+        if (u) window.open(u, '_blank', 'noopener');
+      };
+    });
+    photos(root);
+  }
+
+  // 写真は Google から。取れなくてもカードは出る
+  var svc = null;
+  function photos(root){
+    try {
+      if (!(window.google && google.maps && google.maps.places)) return;
+      if (!svc) svc = new google.maps.places.PlacesService(document.createElement('div'));
+      root.querySelectorAll('.im[data-ph]').forEach(function(im){
+        if (im.getAttribute('data-done')) return;
+        var q = im.getAttribute('data-ph');
+        if (!q) return;
+        im.setAttribute('data-done', '1');
+        svc.findPlaceFromQuery({ query: q, fields: ['photos'] }, function(res, st){
+          try {
+            if (st !== google.maps.places.PlacesServiceStatus.OK || !res || !res[0]) return;
+            if (!res[0].photos || !res[0].photos.length) return;
+            im.style.backgroundImage = 'url(' + res[0].photos[0].getUrl({ maxWidth: 600 }) + ')';
+          } catch(e){}
+        });
+      });
+    } catch(e){}
+  }
+
+  load();
+  setInterval(function(){
+    paint();
+    try {
+      ['seasonList', 'seasonListFull'].forEach(function(id){
+        var el = document.getElementById(id);
+        if (el && el.getAttribute('data-wev-src') === 'json') photos(el);
+      });
+    } catch(e){}
+  }, 600);
+})();

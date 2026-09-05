@@ -1776,9 +1776,36 @@
     } catch(e){}
   }
 
-  function tick(){ if (!loggedIn()) resetDom(); }
-  tick();
-  setInterval(tick, 400);
+  /* ── 見張り役をここ1か所にまとめる（2026-09-02）──────────────
+     これまでは 0.4秒ごとに見に行って直していたため、
+     他の処理が名前を書く → 0.4秒後にこちらが書き直す、をくり返し、
+     ログイン名と「巡礼者 太郎」が交互に表示されていた。
+     画面の書き換えを検知して“画面に出る前”に直す方式に変更。
+     これなら書き直しが目に見えない。                            */
+  var busy = false;
+  function fixNow(){
+    if (busy) return;
+    if (loggedIn()) return;
+    busy = true;
+    try { resetDom(); } catch(e){}
+    busy = false;
+  }
+
+  var watched = false;
+  function attach(){
+    var pg = document.getElementById('wcMypage');
+    if (!pg || watched) { fixNow(); return; }
+    watched = true;
+    try {
+      new MutationObserver(fixNow).observe(pg, {
+        childList: true, subtree: true, characterData: true
+      });
+    } catch(e){ watched = false; }
+    fixNow();
+  }
+
+  attach();
+  setInterval(attach, 800);   // 取りこぼし用のゆっくりした見回り
 })();
 
 /* ══════════════════════════════════════════════════════════════
@@ -3425,4 +3452,267 @@
       start();
     }
   }, 100);
+})();
+
+/* ============================================================
+   __wabiHeroCopy : トップの説明文「行きたい神社やお寺、」の
+                    改行前の読点（、）を消す
+   ------------------------------------------------------------
+   index.html の .hero-copy-sub は
+     行きたい神社やお寺、<br>使える時間や…
+   となっており、直後で改行するため「、」が不要。
+   index.html は1.3MBあり携帯からアップロードできないため、
+   ここ（routes.js）で表示時に取り除く。
+   ・<br> の直前にある「、」だけを消す（文中の読点は残す）
+   ・一度直した要素には印を付け、二度処理しない
+   ============================================================ */
+(function(){
+  'use strict';
+  function fix(el){
+    if (!el || el.getAttribute('data-whc')) return;
+    var h = el.innerHTML;
+    if (h.indexOf('、') < 0) return;
+    var n = h.replace(/、(\s*<br\s*\/?>)/gi, '$1');   // 改行直前の読点だけ削除
+    if (n !== h) el.innerHTML = n;
+    el.setAttribute('data-whc', '1');
+  }
+  function run(){
+    try {
+      var ls = document.querySelectorAll('.hero-copy-sub');
+      for (var i = 0; i < ls.length; i++) fix(ls[i]);
+    } catch (e) {}
+  }
+  function boot(){
+    run();
+    var n = 0;
+    var iv = setInterval(function(){ run(); if (++n > 40) clearInterval(iv); }, 300);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();
+
+/* ══════════════════════════════════════════════════════════════
+   みんなの最新投稿：写真が神社・お寺と合っていないのを直す
+   （2026-09-05）
+
+   これまでの作り
+   ・index.html の USER_POSTS には、寺社と関係のない
+     フリー素材（Unsplash）の写真が入っていた
+   ・concierge.js が Wikipedia の pageimages で上書きしていたが、
+     Wikipedia が返すのは記事の代表画像なので、
+     神社の紋章・地図・人物画・別の建物などが混ざる
+
+   直し方
+   ・Google Places（サイト内で既に使っている仕組み。鍵の追加なし）で
+     「寺社名＋住所」で検索し、その場所の写真を取る
+   ・返ってきた場所の名前と都道府県が一致するかを必ず確認してから使う
+     （確認できないものは写真を出さず、鳥居マークのままにする）
+   ・結果は端末内に7日間おぼえる（毎回の呼び出しを減らすため）
+   ・Wikipedia の写真で上書きされないよう、書き換えを見張って直す
+
+   ※合っている確証のない写真は「出さない」。
+     関係ない写真を出すより、鳥居マークのほうが正しい。
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  'use strict';
+  if (window.__wabiPostPhoto) return;
+  window.__wabiPostPhoto = true;
+
+  var CACHE_KEY = 'wabiPostPhoto';
+  var TTL = 7 * 24 * 60 * 60 * 1000;   // 7日
+  var PHOTO = {};                       // 寺社名 → 確認できた写真URL
+
+  function loadCache(){
+    try {
+      var o = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+      var now = Date.now();
+      Object.keys(o).forEach(function(k){
+        if (o[k] && o[k].u && (now - (o[k].t || 0)) < TTL) PHOTO[k] = o[k].u;
+      });
+    } catch(e){}
+  }
+  function saveCache(name, url){
+    try {
+      var o = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+      o[name] = { u: url, t: Date.now() };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(o));
+    } catch(e){}
+  }
+  function dropCache(name){
+    try {
+      var o = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+      delete o[name];
+      localStorage.setItem(CACHE_KEY, JSON.stringify(o));
+    } catch(e){}
+  }
+
+  function prefOf(addr){
+    var m = String(addr || '').match(/^(.{2,3}?[都道府県])/);
+    return m ? m[1] : '';
+  }
+
+  /* 返ってきた場所が本当にその寺社かを確かめる
+     （別の県の同名神社をつかまないようにするため）        */
+  function looksRight(post, place){
+    if (!place) return false;
+    var want = String(post.shrine || '').replace(/\s/g, '');
+    var got  = String(place.name || '').replace(/\s/g, '');
+    if (!want || !got) return false;
+    if (got.indexOf(want) < 0 && want.indexOf(got) < 0) return false;
+    var pref = prefOf(post.addr);
+    if (pref){
+      var ad = String(place.formatted_address || '');
+      if (ad && ad.indexOf(pref) < 0) return false;
+    }
+    return true;
+  }
+
+  /* ── 画面への反映 ───────────────────────────────── */
+  function paintCard(card){
+    try {
+      var pid = card.getAttribute('data-pid');
+      if (!pid || String(pid).charAt(0) === 'u') return;   // 自分の投稿は触らない
+      var post = postById(pid);
+      if (!post) return;
+      var url = PHOTO[post.shrine] || '';
+      var im  = card.querySelector('img');
+      if (!im) return;
+      if (url){
+        if (im.getAttribute('src') !== url) im.setAttribute('src', url);
+        card.classList.remove('noimg');
+        if (!im.getAttribute('data-wpp')){
+          im.setAttribute('data-wpp', '1');
+          im.addEventListener('error', function(){
+            // 写真URLの期限切れなど：覚えている内容を捨てて鳥居に戻す
+            dropCache(post.shrine); delete PHOTO[post.shrine];
+            card.classList.add('noimg');
+          });
+        }
+      } else {
+        // 確証のある写真がまだ無い：関係ない写真は出さず鳥居にする
+        if (im.getAttribute('src')) im.removeAttribute('src');
+        card.classList.add('noimg');
+      }
+    } catch(e){}
+  }
+
+  function paintAll(){
+    try {
+      var cards = document.querySelectorAll('.community-box .wcp-card');
+      for (var i = 0; i < cards.length; i++) paintCard(cards[i]);
+    } catch(e){}
+  }
+
+  function postById(pid){
+    try {
+      if (typeof USER_POSTS === 'undefined') return null;
+      for (var i = 0; i < USER_POSTS.length; i++){
+        if (String(USER_POSTS[i].id) === String(pid)) return USER_POSTS[i];
+      }
+    } catch(e){}
+    return null;
+  }
+
+  /* ── 元の（関係ない）写真をまず外す ──────────────── */
+  function stripWrongImages(){
+    try {
+      if (typeof USER_POSTS === 'undefined' || !USER_POSTS.length) return false;
+      for (var i = 0; i < USER_POSTS.length; i++){
+        var p = USER_POSTS[i];
+        if (p.__wpp) continue;
+        p.__wpp = 1;
+        p.__imgOrig = p.img || '';
+        p.img = PHOTO[p.shrine] || '';
+        if (p.photos && p.photos.length) p.photos = p.img ? [p.img] : [];
+      }
+      return true;
+    } catch(e){ return false; }
+  }
+
+  /* ── Google Places で正しい写真を取る ─────────────── */
+  function placesReady(){
+    try { return !!(window.google && google.maps && google.maps.places
+                 && google.maps.places.PlacesService); } catch(e){ return false; }
+  }
+
+  function lookupAll(){
+    if (typeof USER_POSTS === 'undefined') return;
+    var svc;
+    try { svc = new google.maps.places.PlacesService(document.createElement('div')); }
+    catch(e){ return; }
+
+    var todo = [];
+    for (var i = 0; i < USER_POSTS.length; i++){
+      var p = USER_POSTS[i];
+      if (!p || !p.shrine) continue;
+      if (String(p.id || '').charAt(0) === 'u') continue;   // 自分の投稿
+      if (PHOTO[p.shrine]) continue;                        // 覚えている
+      if (todo.indexOf(p) < 0) todo.push(p);
+    }
+    if (!todo.length) { paintAll(); return; }
+
+    // 一度に投げると弾かれるので 300ms ずつずらす
+    todo.forEach(function(p, idx){
+      setTimeout(function(){
+        try {
+          svc.findPlaceFromQuery({
+            query: p.shrine + ' ' + (p.addr || ''),
+            fields: ['photos', 'name', 'formatted_address']
+          }, function(res, st){
+            try {
+              if (st !== google.maps.places.PlacesServiceStatus.OK) return;
+              if (!res || !res[0]) return;
+              var place = res[0];
+              if (!looksRight(p, place)) return;            // 確認できないものは使わない
+              if (!place.photos || !place.photos.length) return;
+              var url = place.photos[0].getUrl({ maxWidth: 600 });
+              if (!url) return;
+              PHOTO[p.shrine] = url;
+              saveCache(p.shrine, url);
+              // データ側も直す（もっと見る／投稿の詳細ページ用）
+              for (var k = 0; k < USER_POSTS.length; k++){
+                if (USER_POSTS[k].shrine === p.shrine){
+                  USER_POSTS[k].img = url;
+                  USER_POSTS[k].photos = [url];
+                }
+              }
+              paintAll();
+            } catch(e){}
+          });
+        } catch(e){}
+      }, idx * 300);
+    });
+  }
+
+  /* ── 起動 ────────────────────────────────────────── */
+  loadCache();
+
+  var n0 = 0;
+  var iv0 = setInterval(function(){
+    if (stripWrongImages() || ++n0 > 60) clearInterval(iv0);
+  }, 100);
+  stripWrongImages();
+
+  var n1 = 0;
+  var iv1 = setInterval(function(){
+    if (placesReady()){ clearInterval(iv1); lookupAll(); }
+    else if (++n1 > 150) clearInterval(iv1);       // 15秒であきらめる（鳥居のまま）
+  }, 100);
+
+  /* Wikipedia の写真で上書きされたら、画面に出る前に戻す */
+  function watch(){
+    try {
+      var box = document.querySelector('.community-box');
+      if (!box || box.__wpp) return;
+      box.__wpp = 1;
+      new MutationObserver(function(){ paintAll(); })
+        .observe(box, { childList:true, subtree:true, attributes:true, attributeFilter:['src'] });
+      paintAll();
+    } catch(e){}
+  }
+  watch();
+  setInterval(function(){ watch(); paintAll(); }, 1000);
 })();

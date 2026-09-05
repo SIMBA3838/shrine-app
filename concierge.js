@@ -242,43 +242,100 @@
     return WC_DATA[route.id] || WC_DATA.dyn;
   }
   function haversine(a,b,c,d2){var R=6371e3,p=Math.PI/180;var x=(c-a)*p,y=(d2-b)*p;var s=Math.sin(x/2)*Math.sin(x/2)+Math.cos(a*p)*Math.cos(c*p)*Math.sin(y/2)*Math.sin(y/2);return 2*R*Math.asin(Math.sqrt(s));}
+  /* ────────────────────────────────────────────────────────────
+     周辺スポットの検索（2026-09-05 改訂）
+
+     以前は「1番目の神社の周り」だけを検索していた。そのため
+     どのグルメ・カフェ・観光地も1番目の神社の近くのものばかりで、
+     「一番近い神社の次に入れる」という並べ替えが成り立たなかった。
+
+     いまは ルート上のすべての神社の周りを検索し、
+     スポット1件ごとに「どの神社の近くか（nearName / nearIdx）」を
+     持たせている。これを使って ensureItems が並び順を決める。
+
+     ・グルメ／カフェ／観光 … 神社ごとに検索（最大6か所まで）
+     ・宿泊 … 最後の立ち寄り先の周りだけ（泊まるのは最後のため）
+     ・同じ店が複数の神社で見つかったときは、近いほうの神社に付ける
+     ──────────────────────────────────────────────────────────── */
   function fetchDynamicNearby(route, cb){
     try{
-      var s0 = route.spots[0];
-      if (typeof API_KEY==='undefined' || !API_KEY || typeof google==='undefined' || !google.maps || !google.maps.places || !s0 || !s0.lat){ cb(null); return; }
+      var nm = function(x){ return String(x||'').replace(/[（(].*$/,''); };
+      var spots = (route.spots||[]).filter(function(s){ return s && s.lat; });
+      if (typeof API_KEY==='undefined' || !API_KEY || typeof google==='undefined'
+          || !google.maps || !google.maps.places || !spots.length){ cb(null); return; }
+
       var svc = new google.maps.places.PlacesService(document.createElement('div'));
-      var center = new google.maps.LatLng(s0.lat, s0.lng);
-      var out = { near:String(s0.name).replace(/[（(].*$/,''), gourmet:[], cafe:[], sight:[], exp:[], hotel:[],
-        advice: String(s0.name).replace(/[（(].*$/,'')+'周辺の人気スポットをAIが選びました。ランチやカフェを追加して、あなただけの巡拝プランに仕上げましょう。' };
-      var jobs = [
-        {key:'gourmet', type:'restaurant', radius:800,  emoji:'🍱', grad:G.food,  genre:'お食事処'},
-        {key:'cafe',    type:'cafe',       radius:800,  emoji:'☕',  grad:G.cafe,  genre:'カフェ'},
-        {key:'sight',   type:'tourist_attraction', radius:1500, emoji:'🏞', grad:G.sight, genre:'観光名所'},
-        {key:'hotel',   type:'lodging',    radius:1500, emoji:'🏨', grad:G.hotel, genre:'ホテル'}
-      ];
+      var base = spots.slice(0, 6);                       // 呼び出し回数を抑えるため最大6か所
+      var lastIdx = spots.length - 1;
+      var shrineNames = {};
+      spots.forEach(function(s){ shrineNames[s.name] = 1; });
+
+      var out = { near: nm(spots[0].name), gourmet:[], cafe:[], sight:[], exp:[], hotel:[],
+        advice: nm(spots[0].name) + '周辺の人気スポットをAIが選びました。ランチやカフェを追加して、あなただけの巡拝プランに仕上げましょう。' };
+
+      var jobs = [];
+      base.forEach(function(sp, si){
+        jobs.push({key:'gourmet', type:'restaurant',         radius:800,  emoji:'🍱', grad:G.food,  genre:'お食事処', sp:sp, si:si});
+        jobs.push({key:'cafe',    type:'cafe',               radius:800,  emoji:'☕',  grad:G.cafe,  genre:'カフェ',   sp:sp, si:si});
+        jobs.push({key:'sight',   type:'tourist_attraction', radius:1500, emoji:'🏞', grad:G.sight, genre:'観光名所', sp:sp, si:si});
+      });
+      // 宿泊は最後の立ち寄り先の周り（少し広めに探す）
+      jobs.push({key:'hotel', type:'lodging', radius:3000, emoji:'🏨', grad:G.hotel, genre:'ホテル',
+                 sp:spots[lastIdx], si:lastIdx});
+
+      var pool = { gourmet:{}, cafe:{}, sight:{}, exp:{}, hotel:{} };   // 店名 → 一番近い神社の分
+
+      function keep(key, item){
+        var cur = pool[key][item.name];
+        if (!cur || item._dist < cur._dist) pool[key][item.name] = item;
+      }
+
       var done = 0;
+      function finish(){
+        ['gourmet','cafe','sight','exp','hotel'].forEach(function(k){
+          var arr = Object.keys(pool[k]).map(function(n){ return pool[k][n]; });
+          // 神社の並び順 → 評価の高い順
+          arr.sort(function(a,b){ return (a.nearIdx-b.nearIdx) || ((b.rating||0)-(a.rating||0)); });
+          // 神社1か所につき3件まで、合計12件まで
+          var cnt = {}, res = [];
+          arr.forEach(function(it){
+            cnt[it.nearIdx] = (cnt[it.nearIdx]||0) + 1;
+            if (cnt[it.nearIdx] <= 3 && res.length < 12) res.push(it);
+          });
+          out[k] = res;
+        });
+        cb(out);
+      }
+
       jobs.forEach(function(job){
-        svc.nearbySearch({location:center, radius:job.radius, type:job.type}, function(res, status){
+        var c = new google.maps.LatLng(job.sp.lat, job.sp.lng);
+        svc.nearbySearch({location:c, radius:job.radius, type:job.type}, function(res, status){
           if (status===google.maps.places.PlacesServiceStatus.OK && res){
-            var notHotel = function(p){ return job.key==='hotel' || !(p.types && p.types.indexOf('lodging')>-1); };
-            var list = res.filter(function(p){ return notHotel(p) && p.rating>=4.0 && (p.user_ratings_total||0)>=50 && p.name!==s0.name; });
-            // 4件に満たなければ条件をゆるめて補充（人気順）
-            var relaxed = res.filter(function(p){ return notHotel(p) && (p.user_ratings_total||0)>=5 && p.name!==s0.name; })
+            var okType = function(p){ return job.key==='hotel' || !(p.types && p.types.indexOf('lodging')>-1); };
+            var notShrine = function(p){ return !shrineNames[p.name]; };
+            var list = res.filter(function(p){ return okType(p) && notShrine(p) && p.rating>=4.0 && (p.user_ratings_total||0)>=50; });
+            // 3件に満たなければ条件をゆるめて補充（人気順）
+            var relaxed = res.filter(function(p){ return okType(p) && notShrine(p) && (p.user_ratings_total||0)>=5; })
               .sort(function(a,b){ return (b.user_ratings_total||0)-(a.user_ratings_total||0); });
-            relaxed.forEach(function(p){ if (list.length<4 && list.indexOf(p)<0) list.push(p); });
+            relaxed.forEach(function(p){ if (list.length<3 && list.indexOf(p)<0) list.push(p); });
             list.sort(function(a,b){ return (b.rating||0)-(a.rating||0); });
-            out[job.key] = list.slice(0,4).map(function(p){
-              var dist = (p.geometry&&p.geometry.location)?haversine(s0.lat,s0.lng,p.geometry.location.lat(),p.geometry.location.lng()):600;
+
+            list.slice(0,4).forEach(function(p){
+              var la = (p.geometry&&p.geometry.location) ? p.geometry.location.lat() : job.sp.lat;
+              var ln = (p.geometry&&p.geometry.location) ? p.geometry.location.lng() : job.sp.lng;
+              var dist = haversine(job.sp.lat, job.sp.lng, la, ln);
               var mins = Math.max(1, Math.round(dist/80));
-              return { name:p.name, genre:job.genre, rating:p.rating||4.0, reviews:p.user_ratings_total||0,
+              keep(job.key, {
+                name:p.name, genre:job.genre, rating:p.rating||4.0, reviews:p.user_ratings_total||0,
                 walk:(mins>20?'車'+Math.round(mins/5)+'分':'徒歩'+mins+'分'),
                 ai:Math.min(99, Math.round((p.rating||4)*19 + Math.min((p.user_ratings_total||0),1000)/125)),
                 img:I(job.emoji, job.grad),
-                photoUrl:(p.photos&&p.photos.length)?p.photos[0].getUrl({maxWidth:500}):null };
+                photoUrl:(p.photos&&p.photos.length)?p.photos[0].getUrl({maxWidth:500}):null,
+                nearName:nm(job.sp.name), nearIdx:job.si, lat:la, lng:ln, _dist:dist });
             });
           }
           done++;
-          if (done===jobs.length) cb(out);
+          if (done===jobs.length) finish();
         });
       });
     }catch(e){ cb(null); }
@@ -491,16 +548,19 @@
   ];
   var CAT_LABEL = {gourmet:'ランチ',cafe:'カフェ',sight:'観光',exp:'体験',hotel:'宿泊'};
 
+  // そのスポットが「どの神社の近く」かを返す（無ければ従来どおり1番目の神社）
+  function nearOf(item){ return (item && item.nearName) || currentNear || ''; }
+
   function cardHtml(item, cat, idx){
     return '<div class="wc-card">'
-      + '<div class="wc-img" data-q="'+esc(item.name+' '+(currentNear||''))+'" style="background:'+item.img.grad+'">'
+      + '<div class="wc-img" data-q="'+esc(item.name+' '+nearOf(item))+'" style="background:'+item.img.grad+'">'
       +   (item.photoUrl ? '<img src="'+esc(item.photoUrl)+'" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">' : '')
       +   '<span style="filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));'+(item.photoUrl?'display:none;':'')+'">'+item.img.emoji+'</span>'
       +   '<span class="wc-ai">🌿 おすすめ度 '+item.ai+'点</span>'
       + '</div>'
       + '<div class="wc-body">'
       +   '<div class="wc-name" title="'+esc(item.name+'（'+item.genre+'）')+'">'+item.name+'</div>'
-      +   '<div class="wc-meta">★<b style="color:#2a2018">'+item.rating.toFixed(1)+'</b>（'+item.reviews+'）・'+item.walk+'</div>'
+      +   '<div class="wc-meta">★<b style="color:#2a2018">'+item.rating.toFixed(1)+'</b>（'+item.reviews+'）・'+(item.nearName?item.nearName+'から':'')+item.walk+'</div>'
       +   (item.price ? '<div class="wc-price">'+item.price+'</div>' : '')
       +   '<button class="wc-add" data-cat="'+cat.key+'" data-idx="'+idx+'">＋ ルートに追加</button>'
       + '</div></div>';
@@ -642,7 +702,37 @@
   var STAY = {shrine:40, gourmet:60, cafe:30, sight:30, exp:60};
   var CAT_BADGE = {gourmet:'ランチ', cafe:'カフェ・休憩', sight:'観光', exp:'体験', hotel:'宿泊'};
 
-  // 並び順つきのルート項目リストを最新化（神社＋追加スポット）
+  /* ────────────────────────────────────────────────────────────
+     並び順つきのルート項目リストを最新化（神社＋追加スポット）
+     （2026-09-05 並べ替えルールを追加）
+
+     ・宿泊施設 … 必ずルートの一番最後（あとから何を足しても最後のまま）
+     ・それ以外（グルメ・カフェ・観光・体験）
+        … そのスポットが見つかった神社（nearName）のすぐ次に入れる
+           同じ神社に複数入れるときは、追加した順に並べる
+     ・nearName が無い古いデータや固定ルートは、今までどおり末尾に足す
+     ・すでに並んでいるものは動かさないので、≡ での手動並べ替えは残る
+     ──────────────────────────────────────────────────────────── */
+  function isHotelItem(it){ return it && it.type==='add' && it.a && it.a.cat==='hotel'; }
+
+  // その追加スポットを入れる位置（対応する神社の直後）を返す。判らなければ -1
+  function insertPosFor(a, list){
+    var near = a && a.item && a.item.nearName;
+    if (!near) return -1;
+    var base = -1;
+    for (var i = 0; i < list.length; i++){
+      var it = list[i];
+      if (it.type !== 'shrine') continue;
+      var nm = String(it.spot.name || '').replace(/[（(].*$/, '');
+      if (nm === near || nm.indexOf(near) >= 0 || near.indexOf(nm) >= 0){ base = i; break; }
+    }
+    if (base < 0) return -1;
+    // その神社のあとに既に入っているスポットの、さらに次へ（宿泊の前で止める）
+    var at = base + 1;
+    while (at < list.length && list[at].type === 'add' && !isHotelItem(list[at])) at++;
+    return at;
+  }
+
   function ensureItems(){
     if (!state.route) return;
     var prev = state.items || [];
@@ -655,9 +745,16 @@
       if (!valid.some(function(it){ return it.type==='shrine' && it.spot.name===s.name; })) valid.push({type:'shrine', spot:s});
     });
     state.added.forEach(function(a){
-      if (!valid.some(function(it){ return it.type==='add' && it.a.key===a.key; })) valid.push({type:'add', a:a});
+      if (valid.some(function(it){ return it.type==='add' && it.a.key===a.key; })) return;
+      var it = {type:'add', a:a};
+      if (a.cat === 'hotel'){ valid.push(it); return; }          // 宿泊はこのあと必ず最後に寄せる
+      var at = insertPosFor(a, valid);
+      if (at < 0) valid.push(it); else valid.splice(at, 0, it);
     });
-    state.items = valid;
+    // 宿泊施設は常に一番最後へ
+    var beds = [], rest = [];
+    valid.forEach(function(it){ (isHotelItem(it) ? beds : rest).push(it); });
+    state.items = rest.concat(beds);
   }
 
   // ─────────────────────────────────────────
@@ -766,7 +863,7 @@
           + '<div class="wcb-img" data-ocat="'+a.cat+'" data-okey="'+esc(a.key)+'" style="background:'+a.item.img.grad+'">'
           + (a.item.photoUrl?'<img src="'+esc(a.item.photoUrl)+'" loading="lazy">':a.item.img.emoji)+'</div>'
           + '<div class="wcb-info"><div class="wcb-nm" data-ocat="'+a.cat+'" data-okey="'+esc(a.key)+'"><span class="t">'+a.item.name+'</span><span class="wcb-bdg">'+(CAT_BADGE[a.cat]||'')+'</span></div>'
-          + '<div class="wcb-sb">'+(currentNear||'')+'から'+a.item.walk+'</div>'
+          + '<div class="wcb-sb">'+nearOf(a.item)+'から'+a.item.walk+'</div>'
           + '<div class="wcb-tags"><span class="wcb-tag">'+a.item.genre+'</span><span class="wcb-tag ai">おすすめ度 '+a.item.ai+'点</span></div></div>'
           + (isHotel
              ? '<div class="wcb-stay"><span>宿泊</span><b>1泊</b></div>'
@@ -1012,12 +1109,12 @@
       + '<div class="wc-sd-back" id="sdBack">‹</div><div class="wc-sd-heart">♡</div>'
       + '<div class="wc-sd-badge">🌿 おすすめ度 '+item.ai+'点</div>'
       + '<div class="wc-sd-tit">'+item.name+'</div>'
-      + '<div class="wc-sd-meta">★ '+item.rating.toFixed(1)+'（'+item.reviews+'件の口コミ）・'+(currentNear||'')+'から'+item.walk+'</div>'
+      + '<div class="wc-sd-meta">★ '+item.rating.toFixed(1)+'（'+item.reviews+'件の口コミ）・'+nearOf(item)+'から'+item.walk+'</div>'
       + '<div class="wc-sd-btns"><button class="wc-sd-add" id="sdAdd">＋ ルートに追加</button><button class="wc-sd-map" id="sdMap">📍 地図で見る</button></div>'
       + '</div>';
     // ② AIおすすめ理由
     h += '<div class="wc-sd-card wc-sd-reason"><div class="wc-sd-h">🌿 AIがおすすめする理由</div>'
-      + '<div class="wc-sd-txt">'+item.name+'は、'+(currentNear||'神社')+'から'+item.walk+'。巡礼の途中で立ち寄りやすい'+item.genre+'の人気店です。地元の方にも観光客にも親しまれており、参拝とあわせて訪れるのに最適です。</div>'
+      + '<div class="wc-sd-txt">'+item.name+'は、'+(nearOf(item)||'神社')+'から'+item.walk+'。巡礼の途中で立ち寄りやすい'+item.genre+'の人気店です。地元の方にも観光客にも親しまれており、参拝とあわせて訪れるのに最適です。</div>'
       + '<div class="wc-sd-chips"><span class="wc-sd-chip">地元で人気</span><span class="wc-sd-chip">'+item.walk+'</span><span class="wc-sd-chip">'+item.genre+'</span></div></div>';
     // ③ 写真ギャラリー（Placesで後から差し込み）
     h += '<div class="wc-sd-card"><div class="wc-sd-h">📷 写真</div><div class="wc-sd-g" id="sdGallery">'
@@ -1084,7 +1181,7 @@
 
     // ボタン類の配線
     document.getElementById('sdBack').onclick = function(){ spotPg.style.display='none'; };
-    function mapOpen(){ window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(item.name+' '+(currentNear||'')),'_blank'); }
+    function mapOpen(){ window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(item.name+' '+nearOf(item)),'_blank'); }
     document.getElementById('sdMap').onclick = mapOpen;
     document.getElementById('sdMap2').onclick = mapOpen;
     document.getElementById('sdAdd').onclick = function(){ addCurrentSpot(); };
@@ -1142,7 +1239,7 @@
     };
     try{
       if (typeof API_KEY==='undefined' || !API_KEY || typeof google==='undefined' || !google.maps || !google.maps.places){ fallbackRevs(); return; }
-      var q = item.name+' '+(currentNear||'');
+      var q = item.name+' '+nearOf(item);
       var svc = new google.maps.places.PlacesService(document.createElement('div'));
       var apply = function(p){
         // 写真

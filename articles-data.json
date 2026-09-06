@@ -1,6 +1,26 @@
 {
  "articles": [
   {
+   "id": "t16",
+   "title": "【火と水の行】高尾山薬王院と犬鳴山七宝瀧寺。炎の上を歩き、滝に打たれる",
+   "date": "2026-09-06",
+   "cat": "体験",
+   "type": "寺院",
+   "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/%E9%AB%98%E5%B0%BE%E5%B1%B1%E8%96%AC%E7%8E%8B%E9%99%A2%E6%9C%89%E5%96%9C%E5%AF%BA_%E6%9C%AC%E5%A0%82.jpg/1280px-%E9%AB%98%E5%B0%BE%E5%B1%B1%E8%96%AC%E7%8E%8B%E9%99%A2%E6%9C%89%E5%96%9C%E5%AF%BA_%E6%9C%AC%E5%A0%82.jpg",
+   "excerpt": "参拝は「見る」ものだと思っていました。けれど寺には、訪れた人自身が身体を動かす場所があります",
+   "status": "published"
+  },
+  {
+   "id": "t17",
+   "title": "【苔と浄土の庭】西芳寺と毛越寺。百二十種の緑と、水鏡にうつる平安",
+   "date": "2026-09-06",
+   "cat": "寺院",
+   "type": "寺院",
+   "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Saihouji-kokedera02.jpg/1280px-Saihouji-kokedera02.jpg",
+   "excerpt": "門をくぐると、音のきこえ方が変わります。土を踏む音が吸い込まれ、自分の呼吸だけが大きく聞こえ",
+   "status": "published"
+  },
+  {
    "id": "a14",
    "title": "【武蔵国の古社】大宮氷川神社と調神社。二千年の杜と、狛犬ならぬ“狛うさぎ”",
    "date": "2026-08-05",

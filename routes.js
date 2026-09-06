@@ -3716,3 +3716,185 @@
   watch();
   setInterval(function(){ watch(); paintAll(); }, 1000);
 })();
+
+/* ══════════════════════════════════════════════════════════════
+   記事の写真に、撮影者とライセンスの表示を入れる（2026-09-06）
+
+   記事31本の写真はすべて ウィキメディア・コモンズ から取っている。
+   コモンズの写真は多くが「撮影者名とライセンス名を表示すること」を
+   条件に使用を許しているが、これまで表示が無かった。
+
+   撮影者名とライセンスは写真ごとに違うため、決め打ちでは書けない。
+   そこで「見る人のブラウザが、コモンズ本体に問い合わせて出す」方式にした。
+   ・記事を開いたら、写真のファイル名からコモンズに一括で問い合わせる
+   ・返ってきた撮影者名・ライセンス名をそのまま写真の下に出す
+   ・答えが返るまで／返らないときは「出典：ウィキメディア・コモンズ」と
+     写真のページへのリンクだけ出す（これは常に正しい）
+   ・調べた結果は端末内に90日おぼえる（毎回問い合わせない）
+
+   ※小さなカードの写真には入れない（デザインが崩れるため）。
+   大きく表示される記事ページの写真に入れる。
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  'use strict';
+  if (window.__wabiImgCredit) return;
+  window.__wabiImgCredit = true;
+
+  var API = 'https://commons.wikimedia.org/w/api.php';
+  var FILEPAGE = 'https://commons.wikimedia.org/wiki/File:';
+  var CKEY = 'wabiImgCredit';
+  var TTL = 90 * 24 * 60 * 60 * 1000; // 90日
+  var MINW = 200; // これより小さい写真には入れない
+  var memo = {}; // ファイル名 → {a:撮影者, l:ライセンス}
+
+  /* 画像URL → コモンズのファイル名
+     例 upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Foo.jpg/1280px-Foo.jpg → Foo.jpg */
+  function fileOf(src){
+    var m = String(src||'').match(
+      /upload\.wikimedia\.org\/wikipedia\/commons\/(?:thumb\/)?[0-9a-f]\/[0-9a-f]{2}\/([^\/?#]+)/);
+    if (!m) return null;
+    try { return decodeURIComponent(m[1]); } catch(e){ return m[1]; }
+  }
+
+  /* コモンズが返す撮影者欄はHTMLなので、文字だけ取り出す */
+  function plain(html){
+    try {
+      var d = document.createElement('div');
+      d.innerHTML = String(html||'');
+      return (d.textContent || '').replace(/\s+/g,' ').trim().slice(0,80);
+    } catch(e){ return ''; }
+  }
+  function esc(s){
+    return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function loadCache(){
+    try {
+      var o = JSON.parse(localStorage.getItem(CKEY) || '{}'), now = Date.now();
+      Object.keys(o).forEach(function(k){
+        if (o[k] && (now - (o[k].t||0)) < TTL) memo[k] = o[k];
+      });
+    } catch(e){}
+  }
+  function saveCache(){
+    try {
+      var o = {};
+      Object.keys(memo).forEach(function(k){ o[k] = memo[k]; });
+      localStorage.setItem(CKEY, JSON.stringify(o));
+    } catch(e){}
+  }
+
+  var css = '.wimg-cr{font-size:10px;line-height:1.5;color:#a89a80;margin:5px 0 14px;'
+          + 'text-align:right;font-family:"Noto Sans JP",sans-serif;}'
+          + '.wimg-cr a{color:#a89a80;text-decoration:underline;}'
+          /* 記事の一番上の写真は画面いっぱいなので、右端に余白を足す */
+          + '.wimg-cr.hero{padding:0 16px;margin:6px 0 2px;}';
+  try {
+    var st = document.createElement('style');
+    st.id = 'wabiImgCreditCss'; st.textContent = css;
+    document.head.appendChild(st);
+  } catch(e){}
+
+  /* 1枚ぶんの表示を作る（判っている情報だけを書く） */
+  function lineFor(file){
+    var url = FILEPAGE + encodeURIComponent(file.replace(/ /g,'_'));
+    var d = memo[file];
+    if (d && d.a){
+      return '写真：' + esc(d.a)
+           + (d.l ? ' ／ ' + esc(d.l) : '')
+           + ' ／ <a href="' + esc(url) + '" target="_blank" rel="noopener">ウィキメディア・コモンズ</a>';
+    }
+    // まだ判らない：確実に正しいことだけ出す
+    return '出典：<a href="' + esc(url) + '" target="_blank" rel="noopener">ウィキメディア・コモンズ</a>';
+  }
+
+  /* 表示を差し込む位置を決める。
+     記事の一番上の写真（.article-hero）のように、写真を切り抜いて
+     見せている入れ物の中に入れると、表示が写真の上に重なって読めない。
+     はみ出しを隠している入れ物は飛び越えて、その外側に置く。 */
+  function anchorFor(im){
+    var el = im;
+    for (var i = 0; i < 4; i++){
+      var pa = el.parentNode;
+      if (!pa || pa === document.body || pa.nodeType !== 1) break;
+      var cs;
+      try { cs = getComputedStyle(pa); } catch(e){ break; }
+      var clips = (cs.overflow === 'hidden' || cs.overflowY === 'hidden');
+      var tight = pa.getBoundingClientRect().bottom <= el.getBoundingClientRect().bottom + 1;
+      if (!clips && !tight) break;
+      el = pa;
+    }
+    return el;
+  }
+
+  function paint(root){
+    var imgs;
+    try { imgs = (root || document).querySelectorAll('img'); } catch(e){ return []; }
+    var want = [];
+    [].forEach.call(imgs, function(im){
+      var file = fileOf(im.getAttribute('src'));
+      if (!file) return;
+      var w = im.getBoundingClientRect().width || im.naturalWidth || 0;
+      if (w && w < MINW) return; // 小さなカードは対象外
+      var cr = im.__wcr;
+      if (!cr || !cr.parentNode){
+        cr = document.createElement('div');
+        cr.className = 'wimg-cr';
+        im.__wcr = cr;
+        var after = anchorFor(im);
+        if (after !== im) cr.className = 'wimg-cr hero'; // 画面いっぱいの写真
+        if (after && after.parentNode) after.parentNode.insertBefore(cr, after.nextSibling);
+      }
+      var html = lineFor(file);
+      if (cr.innerHTML !== html) cr.innerHTML = html;
+      if (!memo[file] && want.indexOf(file) < 0) want.push(file);
+    });
+    return want;
+  }
+
+  var asking = {};
+  function ask(files){
+    var todo = files.filter(function(f){ return !asking[f]; });
+    if (!todo.length) return;
+    todo.forEach(function(f){ asking[f] = 1; });
+    // まとめて問い合わせる（一度に20件まで）
+    for (var i = 0; i < todo.length; i += 20){
+      (function(chunk){
+        var titles = chunk.map(function(f){ return 'File:' + f; }).join('|');
+        var url = API + '?action=query&format=json&origin=*&prop=imageinfo'
+                + '&iiprop=extmetadata'
+                + '&iiextmetadatafilter=Artist%7CLicenseShortName'
+                + '&titles=' + encodeURIComponent(titles);
+        fetch(url).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){
+          if (!j || !j.query || !j.query.pages) return;
+          var pages = j.query.pages, got = false;
+          Object.keys(pages).forEach(function(k){
+            var p = pages[k];
+            var title = String(p.title||'').replace(/^File:/,'');
+            var ii = p.imageinfo && p.imageinfo[0];
+            var ex = (ii && ii.extmetadata) || {};
+            var artist = plain(ex.Artist && ex.Artist.value);
+            var license = plain(ex.LicenseShortName && ex.LicenseShortName.value);
+            if (artist || license){
+              memo[title] = { a:artist, l:license, t:Date.now() };
+              got = true;
+            }
+          });
+          if (got){ saveCache(); paint(document.getElementById('pgArticleDetail')); }
+        }).catch(function(){});
+      })(todo.slice(i, i + 20));
+    }
+  }
+
+  function run(){
+    var pg = document.getElementById('pgArticleDetail');
+    if (!pg || pg.style.display === 'none') return;
+    var want = paint(pg);
+    if (want.length) ask(want);
+  }
+
+  loadCache();
+  run();
+  setInterval(run, 1200);
+})();
